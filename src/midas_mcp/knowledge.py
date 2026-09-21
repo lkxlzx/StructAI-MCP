@@ -226,6 +226,41 @@ PITFALLS: list[dict] = [
      "secondary quantity from the spec - slope, element lengths, and the legacy "
      "per-load scalars - resetting them FIRST, so a spec that drops a load cannot "
      "leave the previous run's value behind and have the report quote it"},
+    {"area": "report", "trap": "a parameterised run whose report still describes the "
+     "model the driver was built against",
+     "symptom": "the spec changes the span, the sections or the supports and the "
+     "analysis is correct, but the report's model table still reads '20 m', '5', "
+     "'N1/N5', 'COLUMN_H400X200X8X12' - and the pre-solve stability check passes or "
+     "fails against node ids ('1', '5') that the spec never named",
+     "fix": "every label in the report and in the checks must be derived from the "
+     "installed model rather than written as text: geometry and counts from the model, "
+     "section names and dimensions from the section records, support ids from the "
+     "spec's own node list, the pinned/fixed wording from the CONSTRAINT string "
+     "itself, the units from the response's DIST/FORCE, and the '8 extremes' count "
+     "from the number of peaks. Where a value genuinely cannot be derived - a "
+     "structure code this driver has not verified - print the raw code instead of a "
+     "familiar plane name. A literal is a claim about a run that has already changed"},
+    {"area": "file", "trap": "running 'python -m midas_mcp.frame' from a source "
+     "checkout that has no src on the path",
+     "symptom": "ModuleNotFoundError: No module named 'midas_mcp' - while the same "
+     "checkout's unittest run passes, because the first test module discovered "
+     "happens to insert <root>/src into sys.path and every later module inherits it",
+     "fix": "install once with 'pip install -e .' or set PYTHONPATH=src for the "
+     "command; a tool that spawns the driver must export it itself, because only the "
+     "environment is inherited, never the parent's sys.path. Verified live: the "
+     "one-shot run only started once PYTHONPATH pointed at src"},
+    {"area": "report", "trap": "reading the frame verdict from the top level of the "
+     "'midas_frame_run' answer",
+     "symptom": "the reply's 'ok' is there but 'analysis', 'criteria', 'verifications' "
+     "and 'steps' all read as missing, and the 'report' looks misplaced - the shape "
+     "does not match the CLI's '--json' verdict, so a caller concludes the tool "
+     "failed when it simply answered in its own envelope",
+     "fix": "the tool always answers {ok, endpoint, method, status, category, message, "
+     "report, data}: 'report' is the rendered report at the TOP level and the verdict "
+     "of the same shape as --json is nested under 'data'. Read ok/report from the "
+     "envelope and the counts from data. A refusal is a normal answer in that shape - "
+     "ok false, category MODEL_NOT_EMPTY, report empty - not a transport error, so a "
+     "client that only accepts a JSON-RPC 'result' envelope will see nothing at all"},
 ]
 
 RECIPES: dict[str, dict] = {

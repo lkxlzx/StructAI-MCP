@@ -58,8 +58,28 @@ python -m midas_mcp.frame --spec specs/portal-frame.json          # the report
 python -m midas_mcp.frame --spec specs/portal-frame.json --json   # + the verdict
 ```
 
+Both commands need `midas_mcp` importable in that shell: either `pip install -e .`
+once, or prefix the command with `PYTHONPATH=src` (`set PYTHONPATH=src` in
+PowerShell).  `midas_frame_run` exports the child's `PYTHONPATH` itself, so the
+tool path works without an install.
+
 The MCP tool is `midas_frame_run`, e.g. `{"spec_path": "specs/portal-frame.json"}`.
 Both paths run the same driver, so they cannot drift apart.
+
+Varying the frame needs no second spec file — pass the keys to override inline,
+and the report describes the frame that was actually built:
+
+```json
+{"spec_path": "specs/portal-frame.json",
+ "spec": {"span": 24.0, "eave": 7.0, "ridge": 9.5,
+          "sections": {"COLUMN": {"id": 1, "name": "COLUMN_H450X200X9X14",
+                                  "vsize": [0.45, 0.2, 0.009, 0.014, 0, 0, 0, 0]}}},
+ "clear": true}
+```
+
+Verified live: that call answers `ok: true`, 18/18 steps, 13/13 criteria, 4/4
+balance checks, and a report whose model table reads 24 m / 7 m / 9.5 m with the
+new section names — none of the 20 m frame's numbers survive into it.
 
 `specs/portal-frame.json` is the validated 20 m span / 6 m eave / 8 m ridge
 frame.  Every key is optional — an omitted key keeps the validated value — and
@@ -74,6 +94,11 @@ self-consistency checks that actually ran and passed; exit code 0 means the same
 thing.  Everything the report says *about the run* — the tool list, the artifact
 directory — is read back from the run itself rather than hardcoded, and a
 refused run hands back no report at all.
+The tool wraps that verdict rather than returning it bare:
+`{ok, endpoint, method, status, category, message, report, data}`, where `data`
+is the verdict above and `report` is the rendered report.  A refusal answers
+`category: "MODEL_NOT_EMPTY"` with an empty `report`, so a caller that reads only
+the top level still cannot mistake it for a run.
 
 Verified live on Gen NX 2027: 18/18 steps, 13/13 criteria, 4/4 self-consistency
 checks, `ANALYSIS = SUCCESS`, exit 0, about five minutes.
