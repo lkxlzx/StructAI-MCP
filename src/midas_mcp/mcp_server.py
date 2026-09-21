@@ -20,7 +20,8 @@ from typing import Any
 
 from . import knowledge
 from .config import Config, Secret
-from .dispatch import build_tools, tool_db_assign, tool_db_delete, tool_db_query, tool_doc
+from .dispatch import (build_tools, tool_db_assign, tool_db_delete,
+                       tool_db_query, tool_doc, tool_frame_run)
 from .errors import RpcError, ToolError
 from .jsonrpc import ok
 from .registry import Registry
@@ -35,6 +36,7 @@ TOOL_DISPATCH = {
     "midas_db_query": tool_db_query,
     "midas_db_assign": tool_db_assign,
     "midas_db_delete": tool_db_delete,
+    "midas_frame_run": tool_frame_run,
 }
 
 _RESOURCE_NAMES = {
@@ -45,6 +47,8 @@ _RESOURCE_NAMES = {
     "midas://recipes/steel-frame": ("text/markdown", lambda: knowledge.recipe_markdown("steel-frame")),
     "midas://recipes/rc-section": ("text/markdown", lambda: knowledge.recipe_markdown("rc-section")),
     "midas://recipes/load-balance": ("text/markdown", lambda: knowledge.recipe_markdown("load-balance")),
+    "midas://recipes/one-shot": ("text/markdown",
+                                 lambda: knowledge.recipe_markdown("one-shot")),
 }
 
 
@@ -103,6 +107,11 @@ class McpServer:
         version = requested if requested in SUPPORTED_VERSIONS else NEWEST
         instructions = (
             knowledge.routing_markdown()
+            + "One-shot path: midas_frame_run builds a steel portal frame from a "
+            "spec, runs the analysis, verifies the results against load "
+            "equilibrium and returns the finished report. Prefer it over driving "
+            "midas_db_assign step by step, and read midas://recipes/steel-frame "
+            "before building a frame by hand. "
             + "Guard rails in force: the crash guard refuses to assign a "
             "boundary/load record to a missing node/element id (that crashes "
             "MIDAS). EIGV.Type is forced to LANCZOS. Deleting requires explicit "
@@ -193,8 +202,21 @@ class McpServer:
 
 
 def _text_of(result: dict) -> str:
-    """Render a result envelope as human/LLM text."""
+    """Render a result envelope as human/LLM text.
+
+    ``midas_frame_run`` returns the report itself as the answer, so it is
+    printed whole: the generic ``data`` blob below is truncated to 4000
+    characters, and a truncated report reads as a complete one while hiding the
+    very numbers it is quoted for.
+    """
     import json
+    if result.get("report"):
+        head = (f"ok: {result.get('endpoint', '')} ({result.get('method', '')} "
+                f"{result.get('status', '')})"
+                if result.get("ok") is True
+                else f"error: {result.get('category', '')} - "
+                     f"{result.get('message', '')}")
+        return f"{head}\n\n{result['report']}"
     if result.get("ok") is True:
         lines = [f"ok: {result.get('endpoint', '')} ({result.get('method', '')} "
                  f"{result.get('status', '')})"]

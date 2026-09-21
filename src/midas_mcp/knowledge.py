@@ -174,6 +174,58 @@ PITFALLS: list[dict] = [
     {"area": "write", "trap": "an id snapshot taken once and reused for the whole session",
      "symptom": "'<EP> keys records on NODE ids that do not exist' is raised for nodes created earlier in the same session, so a correct write looks like a modelling error",
      "fix": "fixed in the connector: the per-family id snapshot now expires after a few seconds and is dropped by every write that changes it - DB: assign and delete (a partially failed delete included), DOC:NEW/OPEN/CLOSE/IMPORT/IMPORTMXT, and the OPE:AUTOMESH / OPE:DIVIDEELEM actions that mint nodes and elements. A failed read is no longer cached either. So if the message still appears, the id really is missing: re-read DB:NODE. The snapshot exists so the crash guard does not re-read NODE/ELEM on every write, and it expires because the model can also be edited by hand in the MIDAS GUI"},
+    {"area": "file", "trap": "moving a driver into the package and still launching it "
+     "by file path",
+     "symptom": "the child MCP server dies instantly, the parent raises 'MCP server "
+     "closed its output', and the server's stderr log holds 'ImportError: attempted "
+     "relative import with no known parent package'",
+     "fix": "launch every in-package entry point as a MODULE - subprocess with "
+     "[sys.executable, '-m', 'midas_mcp.frame', '--server'] and PYTHONPATH pointing "
+     "at src. A file path hands the interpreter a top-level script, and a module "
+     "that uses relative imports has no parent package in that mode. Verified live: "
+     "the same driver completed 18/18 once switched from a path to -m"},
+    {"area": "report", "trap": "a report that states its own tool list and artifact "
+     "directory from literals",
+     "symptom": "the header names 4 tools after a 5th was added, and points at "
+     "artifacts/PORTAL-FRAME-TEST-001/ while the run wrote to the --out-dir it was "
+     "given - so the report sends the reader to another run's files",
+     "fix": "anything in a report that describes the run must come from the run: read "
+     "the tool list from the tools.json the run itself captured, and derive the "
+     "artifact directory from the live out_dir. A hardcoded header is a claim about "
+     "a run that has already changed"},
+    {"area": "report", "trap": "deciding 'did it work' from a state file the failed "
+     "run never overwrote",
+     "symptom": "a run that refuses at the preflight leaves the PREVIOUS run's "
+     "state.json and report.md in place, so the machine-readable verdict says "
+     "ok/SUCCESS and hands back the previous model's report as this run's answer",
+     "fix": "drop the state file AND the rendered report when a run starts, and write "
+     "a verdict on EVERY exit path including the refusal; then gate the verdict's "
+     "report on the analysis value, so only the paths that actually rendered one "
+     "(SUCCESS/FAILED) can quote a report.md. Dropping state.json alone is not "
+     "enough: the report is read back from its own file, so a refusal still quoted "
+     "the previous run's 200-line report - caught only by reading the refused run's "
+     "--json output, not by its exit code. Also make ok require analysis==SUCCESS, "
+     "a non-empty criterion list and a non-empty self-check list: all([]) is true, "
+     "so a run that died before the checks existed is otherwise indistinguishable "
+     "from a clean one. Verified live: the refusal now answers {ok: false, "
+     "analysis: REFUSED, note: ..., report: ''}"},
+    {"area": "delete", "trap": "believing a per-id 'still present' immediately after "
+     "DELETE",
+     "symptom": "clearing a document prints '4 of 4 delete(s) failed; 0 deleted.' for "
+     "DB:LCOM-GEN, yet the collection reads empty a moment later and the preflight "
+     "that follows sees a clean document",
+     "fix": "MIDAS can answer 200 to a DELETE it applies slightly later. Judge a clear "
+     "by the read-back AFTER every collection has been asked to empty, not by the "
+     "per-id verification; a driver that judges by the per-id result prints a failure "
+     "on every successful clear and trains the reader to ignore the word FAILED"},
+    {"area": "write", "trap": "a spec-driven run that silently ignores a mistyped key",
+     "symptom": "the model is built without the load or the geometry the caller "
+     "described, and every check still passes because the checks only see the model "
+     "that was built",
+     "fix": "refuse unknown spec keys by name and list the known ones, and derive every "
+     "secondary quantity from the spec - slope, element lengths, and the legacy "
+     "per-load scalars - resetting them FIRST, so a spec that drops a load cannot "
+     "leave the previous run's value behind and have the report quote it"},
 ]
 
 RECIPES: dict[str, dict] = {
@@ -217,7 +269,9 @@ RECIPES: dict[str, dict] = {
         ],
         "note": "any model edit invalidates results; re-run /doc/ANAL before reading. "
                 "Every reported extreme must name the element/node AND the combination, "
-                "and the combination must come from the same component as the value.",
+                "and the combination must come from the same component as the value. "
+                "For a single-bay steel portal frame do not do this by hand at all - "
+                "the 'one-shot' recipe runs this whole list in one call.",
     },
     "load-balance": {
         "title": "prove a load case by equilibrium before quoting results",
@@ -252,6 +306,31 @@ RECIPES: dict[str, dict] = {
         ],
         "note": "accepted DGNCODE set is narrow (ACI318, KCI-USD, GB50010-02, BS8110-97).",
     },
+    "one-shot": {
+        "title": "one call: spec -> model -> analysis -> verified report",
+        "steps": [
+            "reach for this FIRST. A steel portal frame end to end - build, "
+            "analyse, self-verify, report - is one call: the midas_frame_run "
+            "tool, or `python -m midas_mcp.frame --spec specs/portal-frame.json`",
+            "pass the model as a spec: an object, or spec_path for a file. "
+            "Omitted keys keep the validated 20 m span / 6 m eave / 8 m ridge "
+            "frame; an unknown key is refused by name, never ignored",
+            "read the verdict, not the log. --json prints one line: {ok, "
+            "analysis, criteria, verifications, steps, failed, note, report}. ok "
+            "is true only for analysis==SUCCESS with a non-empty criterion list, "
+            "no failed criterion, and self-consistency checks that ran and passed",
+            "a refused run answers analysis=REFUSED with a note and an empty "
+            "report: the live MIDAS document was not empty. Pass clear=true / "
+            "--clear, or clear it in the GUI",
+            "the report is the answer. report.md lands in out_dir beside "
+            "state.json, the raw res_*.json responses and the mcp_audit.jsonl / "
+            "http_audit.jsonl trail",
+        ],
+        "note": "verified live: 18/18 steps, 13/13 criteria, 4/4 self-consistency "
+                "checks, analysis SUCCESS, exit 0, about 5 minutes. Drive "
+                "midas_db_assign by hand only when the model is not a steel "
+                "portal frame.",
+    },
 }
 
 
@@ -276,6 +355,10 @@ def recipe_markdown(name: str) -> str:
 def routing_markdown() -> str:
     return (
         "# MIDAS routing rules\n"
+        "- for a steel portal frame the whole job is ONE call: the midas_frame_run "
+        "tool, or `python -m midas_mcp.frame --spec specs/portal-frame.json`. It "
+        "builds, analyses, self-verifies and returns the report - read "
+        "midas://recipes/one-shot before driving the steps below by hand\n"
         "- use midas_db_query for reads and to discover endpoints (search)\n"
         "- use midas_db_assign for writes/actions; mode create=POST, update=PUT\n"
         "- use midas_db_delete with explicit target_ids; never 'delete all' implicitly\n"

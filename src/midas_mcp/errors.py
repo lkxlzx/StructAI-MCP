@@ -106,3 +106,15 @@ class RpcError(Exception):
         if self.data is not None:
             err["data"] = self.data
         return {"jsonrpc": "2.0", "id": rpc_id, "error": err}
+
+
+class FrameRunError(ToolError):
+    """The one-shot portal-frame driver could not produce a verdict.
+
+    Distinct from a generic upstream failure because the recovery is specific:
+    read the driver's own message (credentials, an unusable spec, or a
+    non-empty MIDAS document the preflight refused) rather than retrying the
+    call.
+    """
+
+    category = "FRAME_RUN_FAILED"

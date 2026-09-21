@@ -9,10 +9,15 @@ from __future__ import annotations
 
 import json
 import logging
+import os
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
 import threading
 from typing import Any, Callable
 
-from .errors import InputError, ToolError
+from .errors import FrameRunError, InputError, ToolError
 from .guards import Guards
 from .knowledge import pitfalls_markdown, recipe_markdown, routing_markdown
 from .midas_http import MidasClient
@@ -97,6 +102,42 @@ def build_tools() -> list[dict]:
                     "delete_all": {"type": "boolean", "default": False},
                 },
                 "required": ["endpoint", "target_ids"],
+            },
+            "outputSchema": {"type": "object"},
+            "annotations": {"readOnlyHint": False, "destructiveHint": True,
+                            "idempotentHint": False},
+        },
+        {
+            "name": "midas_frame_run",
+            "description": "One-shot steel portal frame: build the model from a spec, "
+                           "run the analysis, verify the results against load "
+                           "equilibrium, and return the finished report. Use this "
+                           "instead of driving midas_db_assign step by step.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "spec": {
+                        "type": "object",
+                        "description": "Model spec. Omitted keys keep the validated "
+                                       "20 m span / 6 m eave / 8 m ridge frame; an "
+                                       "unknown key is refused, never ignored.",
+                    },
+                    "spec_path": {
+                        "type": "string",
+                        "description": "JSON spec file, e.g. specs/portal-frame.json",
+                    },
+                    "out_dir": {
+                        "type": "string",
+                        "description": "Where report.md / state.json and the audit "
+                                       "trail are written.",
+                    },
+                    "clear": {
+                        "type": "boolean",
+                        "default": False,
+                        "description": "Delete this driver's own DB collections first; "
+                                       "only needed after an interrupted run.",
+                    },
+                },
             },
             "outputSchema": {"type": "object"},
             "annotations": {"readOnlyHint": False, "destructiveHint": True,
@@ -559,3 +600,128 @@ def _unserved_load_names(raw: str, data_hint: dict | None) -> list[str]:
         return str(name).split("(", 1)[0]
 
     return sorted({str(n) for n in requested if base(n) not in returned})
+
+
+# --------------------------------------------------------------------------
+# midas_frame_run: the one-shot portal-frame pipeline
+# --------------------------------------------------------------------------
+#: Wall-clock budget for the one-shot run.  A single analysis is allowed
+#: ``timeouts.analysis`` (1800 s by default) on its own, so this is a
+#: stuck-process backstop rather than a bound on the analysis itself.
+_FRAME_RUN_TIMEOUT_S = 3600.0
+
+
+def tool_frame_run(args: dict, deps: Deps) -> dict:
+    """Build, analyse, self-verify and report a steel portal frame in one call.
+
+    A wrapper around ``python -m midas_mcp.frame --json``, not a second
+    implementation, so the tool and the command an operator runs cannot drift
+    apart.  It has to be a *subprocess*: the driver prints its report to
+    stdout, and inside this server stdout is the JSON-RPC stream, so an
+    in-process run would corrupt the protocol.
+    """
+    _guards, client, _registry = deps()
+    inline = args.get("spec") or {}
+    if not isinstance(inline, dict):
+        raise InputError("spec must be an object of model keys.")
+    spec_path = args.get("spec_path")
+    if spec_path is not None and not isinstance(spec_path, str):
+        raise InputError("spec_path must be a string.")
+
+    from .frame import load_spec
+    try:
+        base = load_spec(spec_path) if spec_path else {}
+    except (OSError, ValueError) as exc:
+        raise InputError(f"spec_path is not usable: {exc}") from exc
+    if not isinstance(base, dict):
+        raise InputError("spec_path must contain a JSON object.")
+
+    #: The inline spec is the more specific instruction, so it wins over the file.
+    merged = {**base, **inline}
+    if args.get("out_dir"):
+        merged["out_dir"] = str(args["out_dir"])
+
+    argv = [sys.executable, "-m", "midas_mcp.frame", "--json"]
+    if args.get("clear"):
+        argv.append("--clear")
+
+    env = dict(os.environ)
+    #: The session's own target and key, so the child talks to the same MIDAS
+    #: this server is bound to - otherwise a config profile the child does not
+    #: rediscover from its own cwd silently retargets the run.  Both go through
+    #: the environment, never argv: a key on a command line is readable from
+    #: the process table.
+    env["MIDAS_MAPI_KEY"] = client.cfg.mapi_key.reveal()
+    env["MIDAS_BASE_URL"] = client.cfg.base_url
+    env["PYTHONIOENCODING"] = "utf-8"
+    #: ``python -m midas_mcp.frame`` has to import the package, and a source
+    #: checkout is not on the child's path by itself.
+    src = str(Path(__file__).resolve().parents[1])
+    env["PYTHONPATH"] = os.pathsep.join(
+        [src] + ([env["PYTHONPATH"]] if env.get("PYTHONPATH") else []))
+
+    with tempfile.TemporaryDirectory(prefix="midas-frame-") as tmp:
+        path = Path(tmp) / "spec.json"
+        path.write_text(json.dumps(merged, ensure_ascii=False), encoding="utf-8")
+        argv += ["--spec", str(path)]
+        try:
+            done = subprocess.run(
+                argv, env=env, cwd=str(Path(__file__).resolve().parents[2]),
+                capture_output=True, text=True, encoding="utf-8",
+                errors="replace", timeout=_FRAME_RUN_TIMEOUT_S)
+        except subprocess.TimeoutExpired as exc:
+            raise FrameRunError(
+                f"the frame run exceeded {_FRAME_RUN_TIMEOUT_S:.0f} s and was "
+                "killed; check whether MIDAS is still busy or wedged"
+            ) from exc
+        except OSError as exc:
+            raise FrameRunError(f"could not start the driver: {exc}") from exc
+
+    verdict = None
+    for line in reversed((done.stdout or "").splitlines()):
+        line = line.strip()
+        if line.startswith("{"):
+            try:
+                verdict = json.loads(line)
+            except ValueError:
+                continue
+            break
+    if not isinstance(verdict, dict):
+        # 2 = missing credentials or an unusable spec, 3 = the preflight refused
+        # a non-empty MIDAS document; neither prints a verdict.  The tail of the
+        # child's own message is what makes this actionable.
+        detail = (done.stderr or done.stdout or "").strip()[-600:]
+        raise FrameRunError(
+            f"the driver exited {done.returncode} without a verdict: {detail}")
+
+    report = verdict.pop("report", "")
+    good = bool(verdict.get("ok"))
+    analysis = verdict.get("analysis")
+    note = verdict.get("note")
+    if good:
+        category = None
+    elif analysis == "REFUSED":
+        # The preflight declined to build on a non-empty document.  Retrying
+        # the identical call changes nothing, so the category has to name the
+        # situation rather than the generic failure.
+        category = "MODEL_NOT_EMPTY"
+    elif analysis in (None, "NOT_RUN"):
+        category = "FRAME_RUN_FAILED"
+    else:
+        category = "SELF_CHECK_FAILED"
+    message = (f"analysis={analysis} "
+               f"criteria={len(verdict.get('criteria') or [])} "
+               f"failed={len(verdict.get('failed') or [])} "
+               f"exit={verdict.get('exit_code')}")
+    if note:
+        message += f" - {note}"
+    return {
+        "ok": good,
+        "endpoint": "FRAME:RUN",
+        "method": "RUN",
+        "status": 200 if good else 500,
+        "category": category,
+        "message": message,
+        "report": report,
+        "data": verdict,
+    }

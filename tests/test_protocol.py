@@ -53,12 +53,17 @@ class ProtocolUnitTests(unittest.TestCase):
         self.assertNotEqual(r["result"]["protocolVersion"], "2099-99-99")
         self.assertIn("instructions", r["result"])
 
-    def test_tools_list_exactly_four(self):
+    def test_tools_list_matches_the_dispatch_table(self):
+        """``tools/list`` must advertise exactly what ``tools/call`` serves.
+
+        Asserting the literal names would go stale the moment a tool is added,
+        and a tool that is callable but unlisted is invisible to the client.
+        """
         r = self._call({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
         names = [t["name"] for t in r["result"]["tools"]]
-        self.assertEqual(sorted(names),
-                         ["midas_db_assign", "midas_db_delete",
-                          "midas_db_query", "midas_doc"])
+        self.assertEqual(len(names), len(set(names)))
+        self.assertEqual(sorted(names), sorted(mcp_server.TOOL_DISPATCH))
+        self.assertIn("midas_frame_run", names)
 
     def test_ping(self):
         self.assertEqual(self._call({"jsonrpc": "2.0", "id": 3,

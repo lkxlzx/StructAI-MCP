@@ -1,7 +1,7 @@
 # MIDAS NX MCP Connector
 
 Zero-dependency (stdlib only) MCP server for MIDAS Gen / Civil NX.  Exposes the
-MIDAS NX Open API to an LLM host through **exactly four tools**, backed by an
+MIDAS NX Open API to an LLM host through **five tools**, backed by an
 offline-generated **Endpoint Registry** and safety guards that encode the hard-won
 live-testing pitfalls.
 
@@ -48,7 +48,37 @@ Environment variables still win over the file, so a one-off or CI run needs no
 edits: `MIDAS_MAPI_KEY="ci key" python -m midas_mcp --profile "MIDAS CIVIL NX"`.
 The key is never accepted on the command line.
 
-## The four tools
+## One-shot run
+
+A steel portal frame end to end — build, analyse, self-verify against load
+equilibrium, print the report — is **one command** or **one tool call**:
+
+```bash
+python -m midas_mcp.frame --spec specs/portal-frame.json          # the report
+python -m midas_mcp.frame --spec specs/portal-frame.json --json   # + the verdict
+```
+
+The MCP tool is `midas_frame_run`, e.g. `{"spec_path": "specs/portal-frame.json"}`.
+Both paths run the same driver, so they cannot drift apart.
+
+`specs/portal-frame.json` is the validated 20 m span / 6 m eave / 8 m ridge
+frame.  Every key is optional — an omitted key keeps the validated value — and
+an unknown key is **refused by name**, never silently ignored.  A run refuses to
+build on a non-empty MIDAS document unless `--clear` is passed, so a report
+never mixes two models.
+
+The verdict is one JSON line: `{ok, analysis, criteria, verifications, steps,
+failed, note, report}`.  `ok` is deliberately hard to earn — it needs
+`analysis == "SUCCESS"`, a non-empty criterion list, no failed criterion, and
+self-consistency checks that actually ran and passed; exit code 0 means the same
+thing.  Everything the report says *about the run* — the tool list, the artifact
+directory — is read back from the run itself rather than hardcoded, and a
+refused run hands back no report at all.
+
+Verified live on Gen NX 2027: 18/18 steps, 13/13 criteria, 4/4 self-consistency
+checks, `ANALYSIS = SUCCESS`, exit 0, about five minutes.
+
+## The five tools
 
 | Tool | Purpose | Maps to |
 |---|---|---|
@@ -56,6 +86,7 @@ The key is never accepted on the command line.
 | `midas_db_query` | read data; search endpoints; schema introspection | `GET /db/X` (or `/info/db/X`) |
 | `midas_db_assign` | create/update data; run POST actions | `POST`/`PUT`, wrapper by registry |
 | `midas_db_delete` | delete specific ids | `DELETE /db/X/<id>` |
+| `midas_frame_run` | one-shot steel portal frame: spec → model → analysis → verified report | `python -m midas_mcp.frame` |
 
 Every MIDAS endpoint is addressed by a registry **key** (`DB:NODE`,
 `POST:TABLE:REACTIONG`, `DESIGN:RC:KDS-41-20-2022:DCO`), never by a raw URL the
@@ -88,7 +119,8 @@ per endpoint (see `registry/registry.json`, ~590 endpoints).
 - `midas://knowledge/routing` — tool/ordering rules (also inlined into
   `initialize.instructions`)
 - `midas://registry/index` — full endpoint key list by namespace
-  `midas://recipes/modal-rs`, `midas://recipes/steel-frame`,
+  `midas://recipes/one-shot` — **read this first for a steel portal frame**;
+  then `midas://recipes/modal-rs`, `midas://recipes/steel-frame`,
   `midas://recipes/load-balance`, `midas://recipes/rc-section` — end-to-end
   worked sequences. `load-balance` is the equilibrium proof to run before
   quoting any extreme value.

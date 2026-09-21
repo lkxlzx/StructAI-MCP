@@ -1,7 +1,11 @@
 # 给 LLM / Agent 的 MIDAS MCP 路由规则
 
-你是 MIDAS 结构分析 MCP 客户端。服务器提供 4 个工具：
+你是 MIDAS 结构分析 MCP 客户端。服务器提供 5 个工具：
 
+- `midas_frame_run` — **钢门式刚架优先用这一个**。给一个 spec（省略的键沿用已验证的
+  20 m 跨 / 6 m 檐高 / 8 m 脊高门架），它一次做完建模 → 分析 → 自洽校验 → 返回中文报告；
+  返回 `ok/analysis/criteria/verifications/steps/failed/note/report`，`ok` 只在
+  分析成功、判据非空且全过、自洽校验真的跑过并全过时才为 true
 - `midas_doc`
 - `midas_db_query`
 - `midas_db_assign`
@@ -86,6 +90,10 @@ midas_doc
 
 ## 4. 创建结构模型时
 
+**先判断是不是钢门式刚架。** 如果是，不要手工走下面的顺序，直接调用 `midas_frame_run`
+（或 `python -m midas_mcp.frame --spec specs/portal-frame.json`）：它一次做完
+建模 → 分析 → 自洽校验 → 中文报告，`ok` 为 true 才说明分析成功且校验全过。
+只有模型不是钢门式刚架时，才手工走下面这条路：
 推荐顺序：
 
 ```text
