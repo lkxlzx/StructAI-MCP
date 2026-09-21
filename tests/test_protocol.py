@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 os.environ.setdefault("MIDAS_MAPI_KEY", "test-key")
 
-from midas_mcp import mcp_server  # noqa: E402
+from midas_mcp import knowledge, mcp_server  # noqa: E402
 
 
 def _fresh_server():
@@ -91,12 +91,43 @@ class ProtocolUnitTests(unittest.TestCase):
         r = self._call({"jsonrpc": "2.0", "id": 7, "method": "resources/list"})
         uris = {x["uri"] for x in r["result"]["resources"]}
         self.assertIn("midas://knowledge/pitfalls", uris)
+        # every recipe in the knowledge base must be reachable as a resource,
+        # otherwise the documented procedure is invisible to the model
+        for recipe in knowledge.RECIPES:
+            self.assertIn(f"midas://recipes/{recipe}", uris)
         rr = self._call({"jsonrpc": "2.0", "id": 8, "method": "resources/read",
                          "params": {"uri": "midas://knowledge/pitfalls"}})
         self.assertIn("MIDAS knowledge", rr["result"]["contents"][0]["text"])
         with self.assertRaises(mcp_server.RpcError):
             self._call({"jsonrpc": "2.0", "id": 9, "method": "resources/read",
                         "params": {"uri": "midas://nope"}})
+
+    def test_every_registered_resource_builds(self):
+        """A resource whose builder raises (a mistyped recipe name, say) fails here.
+
+        The recipe resources are built by name, so a rename in knowledge.RECIPES
+        that is not mirrored in mcp_server._RESOURCE_NAMES would otherwise only
+        surface as a runtime error on the model's resources/read.
+        """
+        for uri, (_mt, builder) in mcp_server._RESOURCE_NAMES.items():
+            if builder is None:
+                continue  # built at request time from the registry
+            with self.subTest(uri=uri):
+                text = builder()
+                self.assertIsInstance(text, str)
+                self.assertTrue(text.strip(), uri)
+        for uri in mcp_server._RESOURCE_NAMES:
+            if uri.startswith("midas://recipes/"):
+                with self.subTest(recipe=uri):
+                    self.assertIn(uri.rsplit("/", 1)[-1], knowledge.RECIPES)
+
+    def test_knowledge_entries_are_complete(self):
+        """Every pitfall must carry all three fields, and the traps must be unique."""
+        traps = [p["trap"] for p in knowledge.PITFALLS]
+        self.assertEqual(len(traps), len(set(traps)), "duplicate pitfall trap text")
+        for p in knowledge.PITFALLS:
+            for field in ("area", "trap", "symptom", "fix"):
+                self.assertTrue(p.get(field), f"{field} missing in {p}")
 
 
 class SubprocessStdioTests(unittest.TestCase):

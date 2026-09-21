@@ -44,6 +44,7 @@ _RESOURCE_NAMES = {
     "midas://recipes/modal-rs": ("text/markdown", lambda: knowledge.recipe_markdown("modal-rs")),
     "midas://recipes/steel-frame": ("text/markdown", lambda: knowledge.recipe_markdown("steel-frame")),
     "midas://recipes/rc-section": ("text/markdown", lambda: knowledge.recipe_markdown("rc-section")),
+    "midas://recipes/load-balance": ("text/markdown", lambda: knowledge.recipe_markdown("load-balance")),
 }
 
 

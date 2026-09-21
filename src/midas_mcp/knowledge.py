@@ -150,6 +150,30 @@ PITFALLS: list[dict] = [
     {"area": "post", "trap": "assuming the supports can always react a load's torque",
      "symptom": "a case with a net moment about the vertical axis leaves a residual MZ equal to the applied torque, looking like a modelling error",
      "fix": "check DB:CONS first. When every constraint ends in 0000 for RX/RY/RZ, no support restrains rotation directly; a pin-jointed grid then resists torque only through the lever arm of its in-plane forces, and a pure torque couple applied at a single node has no such arm. Report it as a property of the support system, not as a numerical failure"},
+    {"area": "load", "trap": "believing STYP.bSELFWEIGHT adds the self-weight as a static load",
+     "symptom": "the dead-load balance is short by the entire self-weight, or a second DB:BODF record is added to compensate and the weight is then counted twice",
+     "fix": "on Gen NX 2027 STYP.bSELFWEIGHT is Convert-Self-Weight-to-Mass: it only feeds the mass matrix for dynamic analysis and adds no static load. The static self-weight comes from exactly one DB:BODF record (LCNAME + FV vector). Verified live on the portal frame: one BODF record with FV=[0,0,-1] reproduced the POST/TABLE:ELEMENTWEIGHT total to 1.3e-5 kN"},
+    {"area": "result", "trap": "reading a plane-frame model's unused DOFs as missing or broken data",
+     "symptom": "UY/RX/RZ come back 0.000 for every node in every combination, which looks like a dead result column or a wrong DOF mapping",
+     "fix": "read DB:STYP first: 1 is the X-Z plane (only DX/DZ/RY active), 2 is Y-Z (DY/DZ/RX), 3 is X-Y (DX/DY/RZ), 0 is full 3-D. The zero rows are the model's own DOF definition, not missing data. Map result columns by the names the reply's own HEAD carries and never translate a DOF name across conventions"},
+    {"area": "post", "trap": "matching a result table's columns by literal header text or by position",
+     "symptom": "POST/TABLE:ELEMENTWEIGHT reads as unparseable, or a value is silently taken from the wrong column: its HEAD is ['Index','Element','Total Weight',...], the field is 'Total Weight' WITH a space, so a parser that looks for 'TotalWeight' or indexes DATA[i][2] drifts as soon as MIDAS inserts or reorders a column",
+     "fix": "index every row by its own HEAD, normalised (case-folded, separators stripped): take the column whose normalised name is 'totalweight', and take the element id from the column normalised to 'element'/'elem', not from a fixed position. Verified live: the same reply yields 3.67757/7.95423/7.95423/3.67757 kN for elements 1-4"},
+    {"area": "post", "trap": "checking a load balance with the reaction MOMENT components",
+     "symptom": "the moment residual stays large (tens of kN.m) on a model that balances exactly, and each wind case shows a residual equal to the applied overturning moment",
+     "fix": "when DB:CONS ends in 0000 for RX/RY/RZ the supports are hinges and the reaction moments are released - they read exactly 0 and carry no information. Take moments about the origin from the reaction FORCES instead: for an X-Z plane frame M = sum(z*FX - x*FZ). Verified live: the false 101.98 kN.m residual became 1e-5, and both wind cases exactly 0"},
+    {"area": "post", "trap": "reconciling the dead load without a sign convention",
+     "symptom": "the self-weight back-calculated from the support reactions comes out with the wrong sign or magnitude and looks inconsistent with POST/TABLE:ELEMENTWEIGHT",
+     "fix": "for an X-Z plane frame the implied self-weight is -(sum(FZ) + every other applied FZ): the roof load acts downward too, so it is ADDED back. Verified live: sum(FZ)=+33.4616 kN with a -10.1980 kN roof load gives 23.2636 kN against ELEMENTWEIGHT 23.2636 kN, residual 1.3e-5"},
+    {"area": "post", "trap": "labelling a governing combination from a different component than the value",
+     "symptom": "every element's 'governing combination' comes back as the first combination in the list although the values differ; on a plane frame the in-plane moment is M2 (Moment-y) and M3 is identically 0, so a peak taken over M3 degenerates to the first row",
+     "fix": "derive the label and the value from the SAME component set: peak |M2| and |M3| together for the value, then report the combination that produced that value. Verified live: elements read COMB1/COMB1/COMB1/COMB1 before the fix and COMB3/COMB3/COMB2/COMB2 after"},
+    {"area": "report", "trap": "printing a self-consistency check instead of gating on it",
+     "symptom": "a report prints a load-balance residual and still exits 0 with every check PASS, so a model whose weight, equilibrium or governing combination is wrong is reported as verified",
+     "fix": "a numerical self-check is a gate, not a paragraph: it belongs in the same PASS/FAIL list as the endpoint checks and in the process exit code. The connector supplies the numbers (result_summary, ELEMENTWEIGHT, REACTIONG); the caller must assert them, and a check that cannot fail is not a check"},
+    {"area": "write", "trap": "an id snapshot taken once and reused for the whole session",
+     "symptom": "'<EP> keys records on NODE ids that do not exist' is raised for nodes created earlier in the same session, so a correct write looks like a modelling error",
+     "fix": "fixed in the connector: the per-family id snapshot now expires and is dropped after any successful write to that family and after DOC:NEW/IMPORT/OPEN. If the message still appears the id really is missing - re-read DB:NODE. The snapshot exists so the crash guard does not re-read NODE/ELEM on every write, and it expires because the model can also be edited by hand in the MIDAS GUI"},
 ]
 
 RECIPES: dict[str, dict] = {
@@ -165,15 +189,58 @@ RECIPES: dict[str, dict] = {
         "note": "EIGV and SPLC must coexist or ANAL answers 'Analysis is not allowed.'",
     },
     "steel-frame": {
-        "title": "steel frame modeling to design-force read-back",
+        "title": "steel portal frame: model, analyse, then prove the results",
         "steps": [
-            "use BEAM elements and H-section (SHAPE='H', vSIZE [H,B,tw,tf])",
-            "assign boundary/loads on existing ids (crash guard)",
-            "read result tables with (ST)/(CB) suffixed LOAD_CASE_NAMES",
-            "for steel check use DESIGN:STEEL:*:CODE-ANAL then *:CODE-TABLE; "
-            "the /post/TABLE design-force endpoints return empty on this build",
+            "declare the model's plane first - DB:STYP 1=X-Z, 2=Y-Z, 3=X-Y, 0=3-D - "
+            "and read it back: it defines which DOFs are live, so the result columns "
+            "can be mapped without guessing DOF names",
+            "DB:UNIT -> DB:MATL (PARAM.P_TYPE=2 with E/POISN/DEN) -> DB:SECT "
+            "(SHAPE='H', vSIZE [H,B,tw,tf] in metres) -> DB:NODE -> DB:ELEM (TYPE='BEAM')",
+            "DB:CONS with an explicit constraint string: 1110000 is DX/DY/DZ fixed and "
+            "RX/RY/RZ free. Do not release the beam-column moment connections - it is "
+            "a rigid frame and those connections are the frame's whole behaviour",
+            "DB:STLD load cases, then the self-weight as exactly ONE DB:BODF record "
+            "(LCNAME + FV=[0,0,-1]). STYP.bSELFWEIGHT adds no static load, so setting "
+            "it here as well double-counts the weight",
+            "DB:BMLD beam loads, keyed per element with a per-element ITEMS id",
+            "DB:LCOM-GEN combinations (iTYPE 0=Add, 1=Envelope, 2=ABS, 3=SRSS)",
+            "DB:EIGV TYPE=LANCZOS with an explicit iFREQ, then read iFREQ back BEFORE "
+            "running DOC:ANAL - widening the table request changes nothing",
+            "DOC:ANAL once. A [警告] body is a warning, not a rejection: confirm by "
+            "reading a result table rather than believing the status code",
+            "read results with '<NAME>(ST)' for cases and '<NAME>(CB)' for "
+            "combinations; each combination answers as (all)/(max)/(min) envelopes",
+            "prove the run with the 'load-balance' recipe before quoting any extreme "
+            "value, and put that proof in the PASS/FAIL list",
+            "for the steel check use DESIGN:STEEL:*:CODE-ANAL then *:CODE-TABLE; the "
+            "/post/TABLE design-force endpoints return empty on this build",
         ],
-        "note": "any model edit invalidates results; re-run /doc/ANAL before reading.",
+        "note": "any model edit invalidates results; re-run /doc/ANAL before reading. "
+                "Every reported extreme must name the element/node AND the combination, "
+                "and the combination must come from the same component as the value.",
+    },
+    "load-balance": {
+        "title": "prove a load case by equilibrium before quoting results",
+        "steps": [
+            "read DB:UNIT first - every number below is in those units",
+            "read POST/TABLE:REACTIONG for the case ('<NAME>(ST)') or the combination "
+            "('<NAME>(CB)') and sum the reaction FORCES. Do NOT use the reaction "
+            "moments: with constraints ending in 0000 for RX/RY/RZ the supports are "
+            "hinges and those components read exactly 0",
+            "for an X-Z plane frame take moments about the origin from the forces: "
+            "M = sum(z*FX - x*FZ)",
+            "build the applied six-vector from the loads you wrote, plus the "
+            "self-weight couple: POST/TABLE:ELEMENTWEIGHT gives per-element "
+            "'Total Weight' w acting at the element centroid, so add "
+            "M = sum(-cy*w, cx*w, 0)",
+            "residual = sum(reactions) + applied, per component. Assert it - do not "
+            "print it",
+            "for the DEAD case also reconcile the weight itself: implied self-weight "
+            "= -(sum(FZ) + every other applied FZ) must equal the ELEMENTWEIGHT total",
+        ],
+        "note": "verified live on a single-storey steel portal frame: force and moment "
+                "residuals 1e-5, both wind cases exactly 0, and the DEAD self-weight "
+                "reconciled to 1.3e-5 kN. A check that cannot fail is not a check.",
     },
     "rc-section": {
         "title": "RC member + rebar",
@@ -216,5 +283,11 @@ def routing_markdown() -> str:
         "- read results only after a successful ANAL; re-run ANAL after any model change\n"
         "- modal/eigen questions (frequency, period, participation mass, mode shape) are answered by POST:TABLE:EIGENVALUEMODE; buckling by POST:TABLE:BUCKLINGMODE. Their summaries are in the reply's SUB_TABLES, parsed into result_summary.modal_result / .buckling_result\n"
         "- never conclude a result is absent because the primary table is empty; check SUB_TABLES first\n"
+        "- the recipes midas://recipes/steel-frame and midas://recipes/load-balance "
+        "are the worked sequences for a frame: build order first, then the "
+        "equilibrium proof. Read 'load-balance' before reporting any extreme value\n"
+        "- a self-consistency check (equilibrium residual, self-weight "
+        "reconciliation) is a gate, not a paragraph: put it in the same PASS/FAIL "
+        "list as the endpoint checks and in the exit code\n"
         "- the MAPI-Key is server-side only; it never appears in tool results\n"
     )

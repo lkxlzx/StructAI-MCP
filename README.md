@@ -88,8 +88,10 @@ per endpoint (see `registry/registry.json`, ~590 endpoints).
 - `midas://knowledge/routing` — tool/ordering rules (also inlined into
   `initialize.instructions`)
 - `midas://registry/index` — full endpoint key list by namespace
-- `midas://recipes/modal-rs`, `midas://recipes/steel-frame`,
-  `midas://recipes/rc-section` — end-to-end worked sequences
+  `midas://recipes/modal-rs`, `midas://recipes/steel-frame`,
+  `midas://recipes/load-balance`, `midas://recipes/rc-section` — end-to-end
+  worked sequences. `load-balance` is the equilibrium proof to run before
+  quoting any extreme value.
 
 ## Development
 
