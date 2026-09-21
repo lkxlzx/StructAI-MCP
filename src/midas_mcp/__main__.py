@@ -96,6 +96,9 @@ def main(argv: list[str] | None = None) -> int:
         return run_http(server, cfg, host=args.host, port=args.port)
 
     transport = StdioTransport(server.handle)
+    #: The server emits notifications through the transport, so it has to know
+    #: about it: a progress notification and a response share one stdout.
+    server.notify = transport.notify
     try:
         return transport.run()
     finally:

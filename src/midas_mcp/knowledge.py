@@ -261,6 +261,25 @@ PITFALLS: list[dict] = [
      "envelope and the counts from data. A refusal is a normal answer in that shape - "
      "ok false, category MODEL_NOT_EMPTY, report empty - not a transport error, so a "
      "client that only accepts a JSON-RPC 'result' envelope will see nothing at all"},
+    {"area": "report", "trap": "a client that waits for the frame run and times "
+     "out before the driver is finished",
+     "symptom": "the run itself is fine, but the tools/call never returns to the "
+     "caller: the server's own budget is 7200 s and does not protect the client, "
+     "whose timeout is often 60 s. The operator sees a dead call and no report, "
+     "then re-runs and pays the whole cost again",
+     "fix": "either pass params._meta.progressToken so notifications/progress "
+     "arrive per step while the call is still open, or call with background=true "
+     "and poll midas_frame_status - that poll returns the report once running is "
+     "false. Verified live: a job id in 0.0 s, polls showing steps 0 -> 4 -> 7 "
+     "-> 11 -> 12, 18 notifications under the token, and the finished poll "
+     "carrying the 9331-character report"},
+    {"area": "report", "trap": "reading 'no steps yet' as a hung frame run",
+     "symptom": "steps_done stays 0 for well over a minute after the job starts, "
+     "and the poll looks stuck",
+     "fix": "the driver prints its clear: line only after every delete has been "
+     "accepted, and that took 166 s and 222 s on two live runs - the step lines start "
+     "only after it. Watch elapsed_s, not the step count, to tell slow from "
+     "wedged; a genuine stall ends in the 7200 s kill, not in silence"},
 ]
 
 RECIPES: dict[str, dict] = {
@@ -357,14 +376,26 @@ RECIPES: dict[str, dict] = {
             "a refused run answers analysis=REFUSED with a note and an empty "
             "report: the live MIDAS document was not empty. Pass clear=true / "
             "--clear, or clear it in the GUI",
+            "a run takes 3-6 minutes and answers only when it is over. If the "
+            "client's own timeout is shorter, call it with background=true: the "
+            "answer is a job_id at once, and midas_frame_status polls report "
+            "the driver's own steps until running is false - the poll that "
+            "finds it finished carries the report. Supplying a progressToken "
+            "also gets one notifications/progress per step while waiting",
             "the report is the answer. report.md lands in out_dir beside "
             "state.json, the raw res_*.json responses and the mcp_audit.jsonl / "
             "http_audit.jsonl trail",
         ],
         "note": "verified live: 18/18 steps, 13/13 criteria, 4/4 self-consistency "
-                "checks, analysis SUCCESS, exit 0, about 5 minutes. Drive "
-                "midas_db_assign by hand only when the model is not a steel "
-                "portal frame.",
+                "checks, analysis SUCCESS, exit 0, about 3-6 minutes. The "
+                "progress path is verified too: background=true returned a job "
+                "id in 0.0 s, the polls showed steps 0 -> 4 -> 7 -> 11 -> 12, "
+                "and a blocking call with a progressToken delivered 18 "
+                "notifications/progress, progress 1..18, before its response. "
+                "The polls showed steps 0 -> 5 -> 7 -> 11 -> 12, and the guard "
+                "refused a second run and any write while one was in flight. "
+                "Drive midas_db_assign by hand only when the model is not a "
+                "steel portal frame.",
     },
 }
 

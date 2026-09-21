@@ -13,7 +13,7 @@ import threading
 from typing import Callable
 
 from .errors import RpcError
-from .jsonrpc import dumps_line, parse_line
+from .jsonrpc import dumps_line, notify as notify_msg, parse_line
 
 log = logging.getLogger("midas_mcp.stdio")
 
@@ -32,6 +32,16 @@ class StdioTransport:
 
     def _send(self, msg: dict) -> None:
         self._write(dumps_line(msg))
+
+    def notify(self, method: str, params: dict | None = None) -> None:
+        """Push one JSON-RPC notification to the client.
+
+        Written under the same lock as the responses: a progress notification
+        is emitted from a reader thread while the request that started it is
+        still being handled on this thread, and interleaving the two writes
+        would corrupt the NDJSON stream.
+        """
+        self._send(notify_msg(method, params))
 
     def run(self) -> int:
         log.info("stdio transport start")

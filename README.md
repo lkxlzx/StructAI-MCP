@@ -1,7 +1,7 @@
 # MIDAS NX MCP Connector
 
 Zero-dependency (stdlib only) MCP server for MIDAS Gen / Civil NX.  Exposes the
-MIDAS NX Open API to an LLM host through **five tools**, backed by an
+MIDAS NX Open API to an LLM host through **six tools**, backed by an
 offline-generated **Endpoint Registry** and safety guards that encode the hard-won
 live-testing pitfalls.
 
@@ -103,7 +103,33 @@ the top level still cannot mistake it for a run.
 Verified live on Gen NX 2027: 18/18 steps, 13/13 criteria, 4/4 self-consistency
 checks, `ANALYSIS = SUCCESS`, exit 0, about five minutes.
 
-## The five tools
+### Long runs: progress, and not waiting for them
+
+The run above answers only when it is finished, which is three to six minutes.
+Two ways out, and they compose:
+
+- **Progress.** Pass `params._meta.progressToken` on a blocking `tools/call` and
+  the server emits one `notifications/progress` per driver step as it is printed
+  - 18 for a complete run.  Verified live: 18 notifications, `progress` 1..18,
+  the right token, all before the response.  A background call gets none: MCP
+  progress belongs to a request that is still in flight, and that one is
+  answered at once.  Over `--transport http` there is no progress channel at
+  all, and the server's own instructions say so rather than advertising it.
+- **Polling.** `{"background": true}` returns `{job_id, running, status: 202}`
+  straight away; `midas_frame_status {"job_id": ...}` then reports the steps the
+  driver has printed so far, and the poll that finds `running: false` returns the
+  same envelope as the blocking call, report included.  One frame run at a time:
+  a second run, or any other write, is refused while one is in flight, because
+  the driver builds in the live document.  Reads stay allowed.
+
+Verified live: the job id came back in 0.0 s; the polls showed `steps_done`
+0 → 5 → 7 → 11 → 12 while the run was in flight; the finished poll carried the
+9541-character report, 13/13 criteria and 4/4 self-checks with
+`ANALYSIS = SUCCESS`; and the blocking call's 18 progress notifications arrived
+before its response.  A job does not survive a server restart, and
+`midas_frame_status` says so rather than pretending the id was never valid.
+
+## The six tools
 
 | Tool | Purpose | Maps to |
 |---|---|---|
@@ -112,6 +138,7 @@ checks, `ANALYSIS = SUCCESS`, exit 0, about five minutes.
 | `midas_db_assign` | create/update data; run POST actions | `POST`/`PUT`, wrapper by registry |
 | `midas_db_delete` | delete specific ids | `DELETE /db/X/<id>` |
 | `midas_frame_run` | one-shot steel portal frame: spec → model → analysis → verified report | `python -m midas_mcp.frame` |
+| `midas_frame_status` | progress of a `midas_frame_run` job, and its report once done | the run's own stdout, kept in the server |
 
 Every MIDAS endpoint is addressed by a registry **key** (`DB:NODE`,
 `POST:TABLE:REACTIONG`, `DESIGN:RC:KDS-41-20-2022:DCO`), never by a raw URL the

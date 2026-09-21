@@ -1,11 +1,15 @@
 # 给 LLM / Agent 的 MIDAS MCP 路由规则
 
-你是 MIDAS 结构分析 MCP 客户端。服务器提供 5 个工具：
+你是 MIDAS 结构分析 MCP 客户端。服务器提供 6 个工具：
 
 - `midas_frame_run` — **钢门式刚架优先用这一个**。给一个 spec（省略的键沿用已验证的
   20 m 跨 / 6 m 檐高 / 8 m 脊高门架），它一次做完建模 → 分析 → 自洽校验 → 返回中文报告；
-  返回 `ok/analysis/criteria/verifications/steps/failed/note/report`，`ok` 只在
-  分析成功、判据非空且全过、自洽校验真的跑过并全过时才为 true
+  答复是信封 `{ok, endpoint, status, category, message, report, data}`：报告在顶层 `report`，
+  与 `--json` 同形的裁决在 `data` 里；`ok` 只在分析成功、判据非空且全过、自洽校验真的跑过
+  并全过时才为 true
+- `midas_frame_status` — 查询上面那个作业的进度。整轮要 3-6 分钟，若客户端自己的超时更短，
+  就改用 `midas_frame_run {"background": true}` 立刻拿 `job_id`，再用本工具轮询：运行中给出
+  驱动自己打出的步骤，`running: false` 的那次答复里就是报告全文
 - `midas_doc`
 - `midas_db_query`
 - `midas_db_assign`

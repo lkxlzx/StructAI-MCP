@@ -14,14 +14,17 @@ be right *before* a live run is worth starting:
 """
 from __future__ import annotations
 
+import io
 import json
 import tempfile
+import threading
 import unittest
 import unittest.mock
 from pathlib import Path
 from types import SimpleNamespace
 
-from midas_mcp import frame
+from midas_mcp import dispatch, frame
+from midas_mcp.errors import FrameRunError, InputError
 
 
 class SpecMergeTests(unittest.TestCase):
@@ -344,58 +347,103 @@ class ReportFollowsSpecTests(unittest.TestCase):
         self.assertIn("/2", detail)
 
 
+class _FakeProc:
+    """A stand-in for the driver: two readable pipes and an exit code."""
+
+    def __init__(self, stdout="", stderr="", returncode=0):
+        self.stdout = io.StringIO(stdout)
+        self.stderr = io.StringIO(stderr)
+        self.returncode = returncode
+        self.killed = False
+
+    def wait(self, timeout=None):
+        return self.returncode
+
+    def kill(self):
+        self.killed = True
+        self.returncode = -9
+
+
+class _SlowProc(_FakeProc):
+    """A fake driver that stays alive until the test lets it finish.
+
+    Without one, every test would only ever see a job that is already over,
+    which is the one case the "running" branch never has to handle.
+    """
+
+    def __init__(self, stdout="", stderr=""):
+        super().__init__(stdout, stderr)
+        self.finish = threading.Event()
+
+    def wait(self, timeout=None):
+        self.finish.wait(10)
+        self.returncode = 0
+        return 0
+
+    def kill(self):
+        #: A real kill makes wait() return, so the fake has to do the same or
+        #: the watchdog would look like it had not worked.
+        super().kill()
+        self.finish.set()
+
+
+def _client():
+    return SimpleNamespace(cfg=SimpleNamespace(
+        base_url="http://localhost:3030/gen",
+        mapi_key=SimpleNamespace(reveal=lambda: "TESTKEY0000000000000")))
+
+
+def _deps():
+    return lambda: (None, _client(), None)
+
+
+def _verdict(**over):
+    base = {"ok": True, "analysis": "SUCCESS", "exit_code": 0,
+            "criteria": [{"name": "a", "ok": True, "detail": ""}],
+            "verifications": [{"name": "b", "ok": True, "detail": ""}],
+            "failed": [], "note": None, "report": "# the report\n"}
+    base.update(over)
+    return base
+
+
+def _stdout_for(verdict, steps=()):
+    return "".join(steps) + json.dumps(verdict) + "\n"
+
+
 class FrameRunToolTests(unittest.TestCase):
     """The envelope ``midas_frame_run`` answers with, without a live MIDAS.
 
-    The tool runs the driver as a subprocess, so ``subprocess.run`` is replaced
-    by one that returns a canned stdout line.  What is under test is the mapping
-    from the driver's verdict to the tool's answer - the shape a client codes
-    against, and the reason ``ok``/``report`` sit at the top level while the
-    counts live in ``data``.
+    ``subprocess.Popen`` is replaced here and in every test below, because the
+    tool starts the driver as a real process: an unmocked Popen does not fail a
+    test, it runs a five-minute analysis against whatever is listening on the
+    configured port.  That is why the fake is a process rather than a value.
     """
 
-    class _Done:
-        def __init__(self, stdout, returncode=0, stderr=""):
-            self.stdout = stdout
-            self.stderr = stderr
-            self.returncode = returncode
+    def setUp(self):
+        dispatch._JOBS.clear()
 
-    @staticmethod
-    def _client():
-        return SimpleNamespace(cfg=SimpleNamespace(
-            base_url="http://localhost:3030/gen",
-            mapi_key=SimpleNamespace(reveal=lambda: "TESTKEY0000000000000")))
-
-    def _call(self, verdict, returncode=0, stderr="", spec=None):
-        from midas_mcp import dispatch
-
-        stdout = "" if verdict is None else json.dumps(verdict) + "\n"
-        with unittest.mock.patch.object(dispatch.subprocess, "run") as run:
-            run.return_value = self._Done(stdout, returncode, stderr)
-            answer = dispatch.tool_frame_run(
-                {"spec": {} if spec is None else spec},
-                lambda: (None, self._client(), None))
-        return answer, run.call_args
+    def _run(self, proc, args=None):
+        with unittest.mock.patch.object(dispatch.subprocess, "Popen",
+                                        return_value=proc) as popen:
+            answer = dispatch.tool_frame_run(args or {"spec": {}}, _deps())
+        return answer, popen.call_args
 
     def test_a_successful_verdict_is_wrapped_not_returned_bare(self):
-        answer, _ = self._call(
-            {"ok": True, "analysis": "SUCCESS", "exit_code": 0,
-             "criteria": [{"name": "a", "ok": True, "detail": ""}],
-             "verifications": [{"name": "b", "ok": True, "detail": ""}],
-             "failed": [], "note": None, "report": "# the report\n"})
+        answer, _ = self._run(_FakeProc(_stdout_for(_verdict())))
         self.assertIs(answer["ok"], True)
         self.assertEqual(answer["status"], 200)
         self.assertIsNone(answer["category"])
         self.assertEqual(answer["report"], "# the report\n")
+        self.assertIs(answer["running"], False)
         self.assertEqual(answer["data"]["analysis"], "SUCCESS")
-        self.assertEqual(len(answer["data"]["criteria"]), 1)
         self.assertNotIn("report", answer["data"])
+        self.assertTrue(answer["job_id"])
 
     def test_a_refusal_names_the_situation_and_carries_no_report(self):
-        answer, _ = self._call(
-            {"ok": False, "analysis": "REFUSED", "exit_code": 3, "criteria": [],
-             "verifications": [], "failed": ["preflight"], "note": "活文档非空",
-             "report": ""}, returncode=3)
+        answer, _ = self._run(_FakeProc(_stdout_for(
+            _verdict(ok=False, analysis="REFUSED", exit_code=3, criteria=[],
+                     verifications=[], failed=["preflight"], note="活文档非空",
+                     report="")), returncode=3))
         self.assertIs(answer["ok"], False)
         self.assertEqual(answer["category"], "MODEL_NOT_EMPTY")
         self.assertEqual(answer["report"], "")
@@ -404,42 +452,29 @@ class FrameRunToolTests(unittest.TestCase):
         self.assertIn("clear", answer["message"])
 
     def test_a_failed_self_check_is_not_reported_as_a_model_problem(self):
-        answer, _ = self._call(
-            {"ok": False, "analysis": "SUCCESS", "exit_code": 1,
-             "criteria": [{"name": "a", "ok": False, "detail": ""}],
-             "verifications": [], "failed": ["a"], "note": None,
-             "report": "# the report\n"})
+        answer, _ = self._run(_FakeProc(_stdout_for(_verdict(
+            ok=False, exit_code=1, failed=["a"], verifications=[],
+            criteria=[{"name": "a", "ok": False, "detail": ""}]))))
         self.assertEqual(answer["category"], "SELF_CHECK_FAILED")
 
     def test_clear_must_be_a_boolean(self):
-        from midas_mcp import dispatch
-        from midas_mcp.errors import InputError
-
         for bad in ("false", "true", 1, 0, []):
             with self.assertRaises(InputError) as ctx:
-                dispatch.tool_frame_run({"spec": {}, "clear": bad},
-                                        lambda: (None, None, None))
+                dispatch.tool_frame_run({"spec": {}, "clear": bad}, _deps())
             self.assertIn("boolean", str(ctx.exception))
 
-    def test_clear_is_passed_as_a_flag_and_the_key_only_in_the_environment(self):
-        answer, call = self._call(
-            {"ok": True, "analysis": "SUCCESS", "exit_code": 0, "criteria": [1],
-             "verifications": [1], "failed": [], "note": None, "report": "r"},
-            spec={"span": 24.0})
+    def test_background_must_be_a_boolean(self):
+        for bad in ("false", "true", 1, 0):
+            with self.assertRaises(InputError) as ctx:
+                dispatch.tool_frame_run({"spec": {}, "background": bad}, _deps())
+            self.assertIn("boolean", str(ctx.exception))
+
+    def test_clear_is_a_flag_and_the_key_only_in_the_environment(self):
+        answer, call = self._run(_FakeProc(_stdout_for(_verdict())),
+                                 {"spec": {}, "clear": True})
         self.assertIs(answer["ok"], True)
-        self.assertNotIn("--clear", call.args[0])
-
-        from midas_mcp import dispatch
-
-        with unittest.mock.patch.object(dispatch.subprocess, "run") as run:
-            run.return_value = self._Done(json.dumps(
-                {"ok": True, "analysis": "SUCCESS", "exit_code": 0,
-                 "criteria": [1], "verifications": [1], "failed": [],
-                 "note": None, "report": "r"}) + "\n")
-            dispatch.tool_frame_run({"spec": {}, "clear": True},
-                                    lambda: (None, self._client(), None))
-            argv = run.call_args.args[0]
-            env = run.call_args.kwargs["env"]
+        argv = call.args[0]
+        env = call.kwargs["env"]
         self.assertIn("--clear", argv)
         self.assertEqual(env["MIDAS_MAPI_KEY"], "TESTKEY0000000000000")
         self.assertEqual(env["MIDAS_BASE_URL"], "http://localhost:3030/gen")
@@ -449,12 +484,265 @@ class FrameRunToolTests(unittest.TestCase):
         self.assertNotIn("TESTKEY0000000000000", " ".join(argv))
 
     def test_a_driver_that_printed_no_verdict_is_an_error_not_a_pass(self):
-        from midas_mcp import dispatch
-        from midas_mcp.errors import FrameRunError
-
         with self.assertRaises(FrameRunError) as ctx:
-            self._call(None, returncode=3, stderr="spec 不可用: x")
+            self._run(_FakeProc("", "spec 不可用: x", returncode=3))
         self.assertIn("spec 不可用", str(ctx.exception))
+
+class FrameJobTests(unittest.TestCase):
+    """Start a run in the background, poll it, get the report out of the poll.
+
+    Nothing here starts a process either.  The "still running" case is a job
+    registered with its done-event unset, which is exactly what a live job looks
+    like from the status tool's side - and it is the only way to test that
+    branch without waiting five minutes for a real one.
+    """
+
+    STEPS = ("[01] PASS  创建/初始化模型  -- STYP=1\n"
+             "[02] PASS  定义材料  -- Q355\n"
+             "[03] FAIL  定义截面  -- nope\n")
+
+    def setUp(self):
+        dispatch._JOBS.clear()
+
+    def _job(self, text="", done=False, returncode=0, job_id="job123"):
+        if not isinstance(text, str):
+            text = "".join(text)
+        proc = _FakeProc(text, returncode=returncode)
+        job = dispatch.FrameJob(job_id, proc,
+                                ["python", "-m", "midas_mcp.frame", "--json"])
+        #: A job built by hand has no reader thread, so its collected output is
+        #: seeded directly.  That output is all the status tool and _answer
+        #: read, so this is the same state a live job reaches.
+        job.lines = text.splitlines(keepends=True)
+        if done:
+            job.done.set()
+        with dispatch._JOBS_LOCK:
+            dispatch._JOBS[job_id] = job
+        return job
+
+    def test_background_answers_at_once_with_a_handle(self):
+        proc = _SlowProc()
+        with unittest.mock.patch.object(dispatch.subprocess, "Popen",
+                                        return_value=proc):
+            answer = dispatch.tool_frame_run({"spec": {}, "background": True},
+                                             _deps())
+        try:
+            self.assertIs(answer["ok"], True)
+            self.assertEqual(answer["status"], 202)
+            self.assertIs(answer["running"], True)
+            self.assertEqual(answer["report"], "")
+            self.assertIn("midas_frame_status", answer["message"])
+            self.assertIn(answer["job_id"], dispatch._JOBS)
+        finally:
+            proc.finish.set()
+            dispatch._JOBS[answer["job_id"]].done.wait(timeout=5)
+
+    def test_status_reports_the_steps_the_driver_has_printed(self):
+        self._job(self.STEPS)
+        answer = dispatch.tool_frame_status({"job_id": "job123"}, _deps())
+        self.assertIs(answer["ok"], True)
+        self.assertIs(answer["running"], True)
+        self.assertEqual(answer["status"], 202)
+        self.assertEqual(answer["report"], "")
+        progress = answer["data"]["progress"]
+        self.assertEqual(progress["steps_done"], 3)
+        self.assertEqual(progress["last"]["text"], "定义截面  -- nope")
+        self.assertIs(progress["last"]["ok"], False)
+
+    def test_a_finished_poll_returns_the_report_the_blocking_call_would(self):
+        lines = [self.STEPS, json.dumps(_verdict()) + "\n"]
+        self._job(lines, done=True)
+        polled = dispatch.tool_frame_status({"job_id": "job123"}, _deps())
+        self.assertIs(polled["running"], False)
+        self.assertIs(polled["ok"], True)
+        self.assertEqual(polled["report"], "# the report\n")
+
+        with unittest.mock.patch.object(dispatch.subprocess, "Popen",
+                                        return_value=_FakeProc("".join(lines))):
+            blocking = dispatch.tool_frame_run({"spec": {}}, _deps())
+        self.assertEqual(polled["report"], blocking["report"])
+        self.assertEqual(polled["data"], blocking["data"])
+        self.assertEqual(polled["category"], blocking["category"])
+
+    def test_an_unknown_job_id_says_what_the_server_knows(self):
+        self._job(job_id="abc")
+        with self.assertRaises(InputError) as ctx:
+            dispatch.tool_frame_status({"job_id": "nope"}, _deps())
+        self.assertIn("nope", str(ctx.exception))
+        self.assertIn("abc", str(ctx.exception))
+
+    def test_a_missing_or_non_string_job_id_is_refused(self):
+        for bad in (None, "", 7, []):
+            with self.assertRaises(InputError) as ctx:
+                dispatch.tool_frame_status({"job_id": bad}, _deps())
+            self.assertIn("job_id", str(ctx.exception))
+
+    def test_the_driver_steps_become_progress_notifications(self):
+        seen = []
+        dispatch.CALL.token = "tok-1"
+        dispatch.CALL.notify = lambda method, params: seen.append((method, params))
+        try:
+            with unittest.mock.patch.object(
+                    dispatch.subprocess, "Popen",
+                    return_value=_FakeProc(_stdout_for(_verdict(), self.STEPS))):
+                dispatch.tool_frame_run({"spec": {}}, _deps())
+        finally:
+            dispatch.CALL.token = None
+            dispatch.CALL.notify = None
+        self.assertEqual(len(seen), 3)
+        self.assertTrue(all(m == "notifications/progress" for m, _ in seen))
+        self.assertTrue(all(p["progressToken"] == "tok-1" for _, p in seen))
+        self.assertEqual([p["progress"] for _, p in seen], [1, 2, 3])
+        self.assertIn("定义截面", seen[2][1]["message"])
+
+    def test_no_token_means_no_notifications(self):
+        seen = []
+        dispatch.CALL.token = None
+        dispatch.CALL.notify = lambda method, params: seen.append(method)
+        try:
+            with unittest.mock.patch.object(
+                    dispatch.subprocess, "Popen",
+                    return_value=_FakeProc(_stdout_for(_verdict(), self.STEPS))):
+                dispatch.tool_frame_run({"spec": {}}, _deps())
+        finally:
+            dispatch.CALL.notify = None
+        self.assertEqual(seen, [])
+
+    def test_a_background_call_gets_no_progress_notifications(self):
+        seen = []
+        proc = _SlowProc()
+        dispatch.CALL.token = "tok-3"
+        dispatch.CALL.notify = lambda method, params: seen.append(method)
+        try:
+            with unittest.mock.patch.object(dispatch.subprocess, "Popen",
+                                            return_value=proc):
+                answer = dispatch.tool_frame_run(
+                    {"spec": {}, "background": True}, _deps())
+            self.assertIs(answer["running"], True)
+            #: MCP progress belongs to a request that is still in flight, and
+            #: this one was answered at once - so nothing may be emitted.
+            self.assertEqual(seen, [])
+            proc.finish.set()
+            self.assertTrue(dispatch._JOBS[answer["job_id"]].done.wait(timeout=5))
+        finally:
+            dispatch.CALL.token = None
+            dispatch.CALL.notify = None
+
+
+    def test_a_notifier_that_raises_cannot_fail_the_run(self):
+        seen = []
+
+        def broken(method, params):
+            seen.append(method)
+            raise RuntimeError("the client went away")
+
+        dispatch.CALL.token = "tok-2"
+        dispatch.CALL.notify = broken
+        try:
+            with unittest.mock.patch.object(
+                    dispatch.subprocess, "Popen",
+                    return_value=_FakeProc(_stdout_for(_verdict(), self.STEPS))):
+                answer = dispatch.tool_frame_run({"spec": {}}, _deps())
+        finally:
+            dispatch.CALL.token = None
+            dispatch.CALL.notify = None
+        # the notifier has to have been tried for the assertion below to mean
+        # anything: a run that never called it would pass either way
+        self.assertEqual(len(seen), 3)
+        self.assertIs(answer["ok"], True)
+        self.assertEqual(answer["report"], "# the report\n")
+
+
+    def test_a_finished_job_answers_with_its_report_not_a_job_id(self):
+        job = self._job(json.dumps(_verdict()) + "\n", done=True)
+        answer = dispatch._started(job)
+        self.assertIs(answer["running"], False)
+        self.assertEqual(answer["report"], "# the report\n")
+        self.assertEqual(answer["status"], 200)
+
+    def test_a_second_run_is_refused_while_one_is_live(self):
+        self._job(job_id="live1")
+        with self.assertRaises(InputError) as ctx:
+            dispatch.tool_frame_run({"spec": {}}, _deps())
+        self.assertIn("live1", str(ctx.exception))
+        self.assertIn("already in flight", str(ctx.exception))
+
+    def test_other_writers_are_refused_while_a_run_is_live(self):
+        self._job(job_id="live1")
+        for tool in (dispatch.tool_doc, dispatch.tool_db_assign,
+                     dispatch.tool_db_delete):
+            with self.assertRaises(InputError) as ctx:
+                tool({"command": "SAVE", "endpoint": "DB:NODE", "mode": "create",
+                      "data": {}, "target_ids": ["1"]}, _deps())
+            self.assertIn("already in flight", str(ctx.exception))
+
+    def test_watching_a_run_is_still_allowed_while_it_is_live(self):
+        self._job(job_id="live1")
+        answer = dispatch.tool_frame_status({"job_id": "live1"}, _deps())
+        self.assertIs(answer["running"], True)
+
+    def test_finished_jobs_are_evicted_and_live_ones_are_not(self):
+        for i in range(dispatch._MAX_KEPT_JOBS + 5):
+            self._job(done=True, job_id=f"old{i}")
+        self._job(job_id="live1")
+        self._job(done=True, job_id="newest")
+        with dispatch._JOBS_LOCK:
+            dispatch._evict_jobs()
+        self.assertEqual(len(dispatch._JOBS), dispatch._MAX_KEPT_JOBS)
+        self.assertIn("live1", dispatch._JOBS)
+        self.assertIn("newest", dispatch._JOBS)
+        self.assertNotIn("old0", dispatch._JOBS)
+
+    def test_a_report_with_a_line_separator_still_yields_a_verdict(self):
+        #: json.dumps(..., ensure_ascii=False) leaves U+2028 literal inside the
+        #: report, and str.splitlines() treats it as a line break - which would
+        #: cut the verdict line in half and lose a perfectly good run.
+        verdict = _verdict(report="# report\u2028second line\n")
+        job = self._job(json.dumps(verdict, ensure_ascii=False) + "\n", done=True)
+        answer = dispatch._answer(job)
+        self.assertEqual(answer["report"], "# report\u2028second line\n")
+        self.assertIs(answer["ok"], True)
+
+    def test_the_status_tool_never_kills_a_running_job(self):
+        proc = _SlowProc()
+        with unittest.mock.patch.object(dispatch.subprocess, "Popen",
+                                        return_value=proc):
+            job = dispatch._start_frame(["python"], {}, ".", "{}")
+        try:
+            answer = dispatch.tool_frame_status({"job_id": job.id}, _deps())
+            self.assertIs(answer["running"], True)
+            self.assertIs(proc.killed, False)
+        finally:
+            proc.finish.set()
+            job.done.wait(timeout=5)
+
+    def test_the_watchdog_kills_a_job_that_never_finishes(self):
+        proc = _SlowProc()
+        with unittest.mock.patch.object(dispatch.subprocess, "Popen",
+                                        return_value=proc), \
+                unittest.mock.patch.object(dispatch, "_FRAME_RUN_TIMEOUT_S", 0.3):
+            job = dispatch._start_frame(["python"], {}, ".", "{}")
+        self.assertTrue(job.done.wait(timeout=5))
+        self.assertTrue(proc.killed)
+        self.assertFalse(job.watchdog.is_alive())
+
+    def test_the_job_is_closed_even_when_the_wait_fails(self):
+        proc = _SlowProc()
+        proc.finish.set()
+        #: assertLogs both silences the traceback the reader logs and pins the
+        #: fact that it was logged: a drain that fails silently would be worse
+        #: than one that fails loudly.
+        with self.assertLogs("midas_mcp.tools", level="ERROR"), \
+                unittest.mock.patch.object(dispatch.subprocess, "Popen",
+                                           return_value=proc), \
+                unittest.mock.patch.object(proc, "wait",
+                                           side_effect=RuntimeError("boom")):
+            job = dispatch._start_frame(["python"], {}, ".", "{}")
+            #: The patch has to stay open until the reader has used it: it runs
+            #: on its own thread, and closing the context first would let the
+            #: real wait() through and prove nothing.
+            self.assertTrue(job.done.wait(timeout=5))
+        self.assertTrue(proc.killed)
 
 
 if __name__ == "__main__":

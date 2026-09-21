@@ -10,6 +10,8 @@ Two layers:
 from __future__ import annotations
 
 import json
+import io
+import unittest.mock
 import os
 import subprocess
 import sys
@@ -194,6 +196,87 @@ StdioTransport(srv.handle).run()
         ])
         lines = proc.stdout.decode("utf-8").splitlines()
         self.assertEqual(len(lines), 1)  # only the ping reply, no notification reply
+
+
+class ProgressNotificationTests(unittest.TestCase):
+    """The progress channel: token in, notifications out, nothing else changed.
+
+    The tool called here is a probe rather than a real one.  What is under test
+    is the wiring between a client's ``progressToken``, the notifier the handler
+    sees on its own thread, and the line the transport writes.
+    """
+
+    def setUp(self):
+        from midas_mcp import dispatch
+        self.dispatch = dispatch
+        self.srv = _fresh_server()
+        self.sent = []
+        self.srv.notify = lambda method, params: self.sent.append((method, params))
+        self.seen = {}
+        self._original = mcp_server.TOOL_DISPATCH["midas_frame_run"]
+
+        def probe(args, deps):
+            self.seen["token"] = dispatch.CALL.token
+            self.seen["has_notify"] = dispatch.CALL.notify is not None
+            if dispatch.CALL.notify is not None:
+                dispatch.CALL.notify(
+                    "notifications/progress",
+                    {"progressToken": dispatch.CALL.token, "progress": 1,
+                     "message": "step"})
+            return {"ok": True, "endpoint": "FRAME:RUN", "method": "RUN"}
+
+        mcp_server.TOOL_DISPATCH["midas_frame_run"] = probe
+
+    def tearDown(self):
+        mcp_server.TOOL_DISPATCH["midas_frame_run"] = self._original
+        self.dispatch.CALL.token = None
+        self.dispatch.CALL.notify = None
+
+    def _call(self, params):
+        return self.srv.handle({"jsonrpc": "2.0", "id": 1,
+                                "method": "tools/call", "params": params})
+
+    def test_the_progress_token_reaches_the_tool_and_comes_back(self):
+        answer = self._call({"name": "midas_frame_run", "arguments": {},
+                             "_meta": {"progressToken": "tok-7"}})
+        self.assertEqual(self.seen["token"], "tok-7")
+        self.assertIs(self.seen["has_notify"], True)
+        self.assertEqual(self.sent[0][0], "notifications/progress")
+        self.assertEqual(self.sent[0][1]["progressToken"], "tok-7")
+        self.assertIs(answer["result"]["structuredContent"]["ok"], True)
+
+    def test_without_a_token_the_tool_gets_no_notifier(self):
+        self._call({"name": "midas_frame_run", "arguments": {}})
+        self.assertIsNone(self.seen["token"])
+        self.assertIs(self.seen["has_notify"], False)
+        self.assertEqual(self.sent, [])
+
+    def test_the_channel_is_cleared_once_the_call_is_over(self):
+        self._call({"name": "midas_frame_run", "arguments": {},
+                    "_meta": {"progressToken": "tok-8"}})
+        self.assertIsNone(self.dispatch.CALL.token)
+        self.assertIsNone(self.dispatch.CALL.notify)
+
+    def test_a_notification_is_one_ndjson_line_without_an_id(self):
+        from midas_mcp.stdio_transport import StdioTransport
+
+        class FakeStdout:
+            def __init__(self):
+                self.buffer = io.BytesIO()
+
+        fake = FakeStdout()
+        transport = StdioTransport(lambda msg: None)
+        with unittest.mock.patch.object(sys, "stdout", fake):
+            transport.notify("notifications/progress",
+                             {"progressToken": "t", "progress": 1,
+                              "message": "s"})
+        lines = fake.buffer.getvalue().decode("utf-8").splitlines()
+        self.assertEqual(len(lines), 1)
+        msg = json.loads(lines[0])
+        self.assertEqual(msg["jsonrpc"], "2.0")
+        self.assertEqual(msg["method"], "notifications/progress")
+        # a notification carries no id: a client must not answer it
+        self.assertNotIn("id", msg)
 
 
 if __name__ == "__main__":

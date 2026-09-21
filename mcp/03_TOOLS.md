@@ -280,7 +280,9 @@ delete_all = true
       "out_dir": {"type": "string",
                   "description": "report.md / state.json / 审计轨迹的目录"},
       "clear": {"type": "boolean", "default": false,
-                "description": "先删除本驱动自己使用的 DB 集合"}
+                "description": "先删除本驱动自己使用的 DB 集合"},
+      "background": {"type": "boolean", "default": false,
+                     "description": "立即返回 job_id 而不是等整轮跑完; 用 midas_frame_status 轮询"}
     }
   }
 }
@@ -300,15 +302,74 @@ delete_all = true
 `analysis == "REFUSED"` 表示活文档非空、本次拒绝建模，此时**不返回任何报告**，
 `category` 为 `MODEL_NOT_EMPTY`。
 
+工具答复是一个**信封**，不是裁决本身：`{ok, endpoint, method, status, category, message,
+report, data}` —— `report` 在顶层，与 `--json` 同形的裁决嵌在 `data` 里。只看顶层的调用方
+也读得到 `ok` 和 `report`；要判据计数就从 `data` 读。
+
 ### 实现
 
 不是第二份实现，而是 `python -m midas_mcp.frame --json` 的包装：驱动把报告打到 stdout，
 而服务器进程的 stdout 是 JSON-RPC 流，所以必须是子进程。凭据经环境变量传给子进程，
 从不上命令行。报告里描述本次运行的内容（工具清单、工件目录）都从运行本身读回，不写死。
 
-实测 (Gen NX 2027): 18/18 步, 13/13 判据, 4/4 自洽校验, `ANALYSIS = SUCCESS`, 约 5 分钟。
+实测 (Gen NX 2027): 18/18 步, 13/13 判据, 4/4 自洽校验, `ANALYSIS = SUCCESS`, 约 3-6 分钟。
+长时间运行请用 `background=true` + `midas_frame_status`（见下节），或带 `progressToken` 收进度通知。
 
-## 6. Tool annotations
+## 6. `midas_frame_status`
+
+### Purpose
+
+查询一次 `midas_frame_run {"background": true}` 启动的作业：运行中返回驱动**自己打出的**
+步骤（不是估算的百分比），跑完后返回与阻塞调用**完全相同**的信封，含报告全文。
+
+### JSON Schema
+
+```json
+{
+  "name": "midas_frame_status",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "job_id": {"type": "string", "description": "来自 midas_frame_run 的答复"}
+    },
+    "required": ["job_id"]
+  }
+}
+```
+
+### 返回值
+
+运行中：
+
+```json
+{"ok": true, "endpoint": "FRAME:STATUS", "status": 202, "running": true,
+ "job_id": "2e8e8f521b22", "report": "",
+ "data": {"job_id": "2e8e8f521b22", "elapsed_s": 140.0,
+          "progress": {"steps_done": 7,
+                       "last": {"step": 7, "ok": true, "text": "定义恒载..."},
+                       "steps": []}}}
+```
+
+跑完：与 `midas_frame_run` 的阻塞答复同形，`running: false`，`report` 为报告全文。
+
+### 为什么需要它
+
+`midas_frame_run` 要 3-6 分钟才返回，而客户端自己的超时常常只有 60 秒 —— 服务端 7200 秒的
+预算保护不了客户端。`background: true` 立即返回 `job_id`，之后由本工具轮询。
+
+作业只活在服务器进程里：重启后 id 不再有效，本工具会明说这一点，而不是假装 id 从未存在过。
+
+实测 (Gen NX 2027): job id 0.0 秒返回；轮询看到 `steps_done` 0 → 5 → 7 → 11 → 12；运行中第二次
+`midas_frame_run` 与任何写操作都被拒（读放行）；最后一次轮询带回 9541 字报告、13/13 判据、4/4 自校验。
+
+进度通知属于**阻塞**调用：带 `progressToken` 的阻塞调用实测收到 18 条 `notifications/progress`
+（`progress` 1..18、token 正确），全部在答复之前到达。`background: true` 的那次调用**不**发通知 ——
+MCP 的 progress 属于仍在进行中的请求，而它已经被答复了。
+
+注: `steps_done` 长时间为 0 不代表卡住 —— 驱动的 `clear:` 阶段在活文档上实测耗时 166 秒与 222 秒，
+步骤行在它之后才开始。判断"慢"还是"死"要看 `elapsed_s`。
+
+## 7. Tool annotations
 
 建议：
 
@@ -334,9 +395,14 @@ midas_frame_run
   destructive_hint = true
   read_only_hint = false
   idempotent_hint = false
+
+midas_frame_status
+  destructive_hint = false
+  read_only_hint = true
+  idempotent_hint = true
 ```
 
-## 7. 为什么不拆成更多 Tool
+## 8. 为什么不拆成更多 Tool
 
 不要创建：
 
@@ -358,10 +424,13 @@ capture_view
 整条流程（建模 → 分析 → 自洽校验 → 报告）固化成一个入口，让同类提示词一次跑通。
 它内部仍然只用上面那 4 个泛化工具能表达的东西。
 
+`midas_frame_status` 是第二个有意加上的专用工具，理由不同：它不碰 MIDAS 的任何端点，
+只是把上面那个作业的 stdout 读给调用方看 —— 否则一个 3-6 分钟的运行没有任何进度可查。
+
 正确方式：
 
 ```text
-tool selection = 5 (4 个泛化 + 1 个一次性流程)
+tool selection = 6 (4 个泛化 + 1 个一次性流程 + 1 个进度查询)
 endpoint selection = registry
 schema validation = server
 ```

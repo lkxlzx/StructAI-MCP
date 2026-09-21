@@ -8,8 +8,12 @@ Two error shapes are kept strictly separate (mcp/01_PROTOCOL.md & 9):
 - protocol errors -> JSON-RPC ``error``
 - MIDAS/guard failures -> ``result.isError`` (built by the tool handlers)
 
-Long-running tool calls run on a worker thread so ``ping``/``cancelled`` remain
-responsive while an analysis is in flight.
+A tool call is handled on the thread that reads the transport, so a long
+analysis does hold up the next request.  A caller that needs to keep working
+while a frame run is in flight asks for it in the background
+(``{"background": true}``) and polls ``midas_frame_status``.  What a client
+does get during a blocking run is ``notifications/progress`` - one per driver
+step - provided it supplied a ``progressToken``.
 """
 from __future__ import annotations
 
@@ -20,8 +24,10 @@ from typing import Any
 
 from . import knowledge
 from .config import Config, Secret
+from . import dispatch
 from .dispatch import (build_tools, tool_db_assign, tool_db_delete,
-                       tool_db_query, tool_doc, tool_frame_run)
+                       tool_db_query, tool_doc, tool_frame_run,
+                       tool_frame_status)
 from .errors import RpcError, ToolError
 from .jsonrpc import ok
 from .registry import Registry
@@ -37,6 +43,7 @@ TOOL_DISPATCH = {
     "midas_db_assign": tool_db_assign,
     "midas_db_delete": tool_db_delete,
     "midas_frame_run": tool_frame_run,
+    "midas_frame_status": tool_frame_status,
 }
 
 _RESOURCE_NAMES = {
@@ -66,6 +73,9 @@ class McpServer:
         self._ctx: dict[Any, RequestContext] = {}
         self._tools = build_tools()
         self._deps = deps or (lambda: (None, None, registry))
+        #: Where a notification reaches the client.  None until a transport
+        #: attaches itself, so a server driven directly still answers.
+        self.notify = None
 
     # -- request entry ----------------------------------------------------
     def handle(self, msg: dict):
@@ -105,6 +115,22 @@ class McpServer:
     def _initialize(self, params: dict) -> dict:
         requested = params.get("protocolVersion", "")
         version = requested if requested in SUPPORTED_VERSIONS else NEWEST
+        #: Progress is advertised only where it exists.  The stdio transport
+        #: wires a channel; the HTTP one answers a whole request at a time and
+        #: has nowhere to put a notification, and promising it there would be
+        #: the kind of claim this server is not allowed to make.
+        progress = (
+            "Progress: midas_frame_run takes three to six minutes and answers "
+            "only when it is done. "
+            + ("Supplying params._meta.progressToken gets one "
+               "notifications/progress per driver step while the call is open. "
+               if self.notify is not None else
+               "This transport has no progress channel. ")
+            + "Either way {\"background\": true} returns a job_id at once and "
+            "midas_frame_status polls it; the poll that finds running false "
+            "returns the report itself. One frame run at a time - a second run, "
+            "or any other write, is refused while one is in flight. "
+        )
         instructions = (
             knowledge.routing_markdown()
             + "One-shot path: midas_frame_run builds a steel portal frame from a "
@@ -112,6 +138,7 @@ class McpServer:
             "equilibrium and returns the finished report. Prefer it over driving "
             "midas_db_assign step by step, and read midas://recipes/steel-frame "
             "before building a frame by hand. "
+            + progress
             + "Guard rails in force: the crash guard refuses to assign a "
             "boundary/load record to a missing node/element id (that crashes "
             "MIDAS). EIGV.Type is forced to LANCZOS. Deleting requires explicit "
@@ -164,6 +191,13 @@ class McpServer:
         if not isinstance(arguments, dict):
             raise RpcError("INVALID_PARAMS", "tool arguments must be an object")
         ctx = RequestContext(msg_id)
+        #: The progress channel for this call.  The handler runs on this thread,
+        #: and the notifications a reader thread inside it emits are written by
+        #: the transport under its own lock, so they can go out while the handler
+        #: is still waiting for the run to finish.
+        token = (params.get("_meta") or {}).get("progressToken")
+        dispatch.CALL.token = token
+        dispatch.CALL.notify = self._emit if token is not None else None
         self._ctx[msg_id] = ctx
 
         try:
@@ -183,12 +217,27 @@ class McpServer:
                       "message": f"internal error: {type(exc).__name__}: {exc}"}
         finally:
             self._ctx.pop(msg_id, None)
+            dispatch.CALL.token = None
+            dispatch.CALL.notify = None
 
         return ok(msg_id, {"content": [{"type": "text",
                                         "text": _text_of(result)}],
                            "structuredContent": result,
                            "isError": result.get("ok") is not True})
 
+    def _emit(self, method: str, params: dict) -> None:
+        """Send one notification, if a transport has attached itself.
+
+        Notifications are best effort: losing progress must never fail the run
+        that is producing it, so a transport that raises is logged and dropped.
+        """
+        sender = self.notify
+        if sender is None:
+            return
+        try:
+            sender(method, params)
+        except Exception:  # noqa: BLE001 - see the docstring
+            log.debug("notification %s dropped", method, exc_info=True)
     def _deps_conf(self):
         # guards/client are cheap to construct; registry is shared
         from .guards import Guards

@@ -11,11 +11,14 @@ import json
 import logging
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
 import threading
+import time
 from typing import Any, Callable
+import uuid
 
 from .errors import FrameRunError, InputError, ToolError
 from .guards import Guards
@@ -137,11 +140,36 @@ def build_tools() -> list[dict]:
                         "description": "Delete this driver's own DB collections first; "
                                        "only needed after an interrupted run.",
                     },
+                    "background": {
+                        "type": "boolean",
+                        "default": False,
+                        "description": "Return a job id straight away instead of "
+                                       "waiting for the whole run (~5 min); poll "
+                                       "midas_frame_status. Use this when the "
+                                       "client's own timeout is shorter than a run.",
+                    },
                 },
             },
             "outputSchema": {"type": "object"},
             "annotations": {"readOnlyHint": False, "destructiveHint": True,
                             "idempotentHint": False},
+        },
+        {
+            "name": "midas_frame_status",
+            "description": "Progress of a midas_frame_run job: the driver steps "
+                           "reported so far while it runs, and the finished report "
+                           "once it is done.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "job_id": {"type": "string",
+                               "description": "from the midas_frame_run answer"},
+                },
+                "required": ["job_id"],
+            },
+            "outputSchema": {"type": "object"},
+            "annotations": {"readOnlyHint": True, "destructiveHint": False,
+                            "idempotentHint": True},
         },
     ]
 
@@ -201,6 +229,7 @@ def _drop_id_snapshot(ep: Endpoint) -> None:
 
 
 def tool_doc(args: dict, deps: Deps) -> dict:
+    _require_no_live_run()
     command = str(args.get("command", "")).upper()
     if command not in {"NEW", "OPEN", "CLOSE", "SAVE", "SAVEAS", "STAGAS",
                        "IMPORT", "IMPORTMXT", "EXPORT", "EXPORTMXT", "ANAL"}:
@@ -383,6 +412,7 @@ def modal_question(text: str) -> str | None:
 
 
 def tool_db_assign(args: dict, deps: Deps) -> dict:
+    _require_no_live_run()
     guards, client, reg = deps()
     ep = guards.validate_endpoint(str(args.get("endpoint", "")))
     mode = str(args.get("mode", "create")).lower()
@@ -429,6 +459,7 @@ def tool_db_assign(args: dict, deps: Deps) -> dict:
 
 
 def tool_db_delete(args: dict, deps: Deps) -> dict:
+    _require_no_live_run()
     guards, client, reg = deps()
     ep = guards.validate_endpoint(str(args.get("endpoint", "")))
     if "DELETE" not in ep.methods:
@@ -623,6 +654,152 @@ def tool_frame_run(args: dict, deps: Deps) -> dict:
     in-process run would corrupt the protocol.
     """
     _guards, client, _registry = deps()
+    #: A non-boolean has to be refused rather than read as truthy, for the same
+    #: reason ``clear`` is: {"background": "false"} means "wait for it".  It is
+    #: checked before the command is assembled, so a refused argument costs
+    #: nothing - not even a temporary directory.
+    background = args.get("background")
+    if background is not None and not isinstance(background, bool):
+        raise InputError("background must be a boolean.")
+    _require_no_live_run()
+    argv, env, cwd, spec_text = _frame_command(args, client)
+    if background:
+        #: No progress channel here on purpose: an MCP progress notification
+        #: belongs to a request that is still in flight, and this one is
+        #: answered at once.  The caller polls instead.
+        return _started(_start_frame(argv, env, cwd, spec_text))
+    #: The notifier and the progress token are read HERE, on the thread that
+    #: owns the call: the reader thread that emits the notifications is a
+    #: different thread, and a thread-local would not follow it there.
+    job = _start_frame(argv, env, cwd, spec_text, notify=_call_notify(),
+                       token=_call_token())
+    if not job.done.wait(timeout=_FRAME_RUN_TIMEOUT_S):
+        job.kill()
+        raise FrameRunError(
+            f"the frame run exceeded {_FRAME_RUN_TIMEOUT_S:.0f} s and was killed; "
+            "check whether MIDAS is still busy or wedged")
+    return _answer(job)
+
+# --------------------------------------------------------------------------
+# the frame run as a job
+# --------------------------------------------------------------------------
+#: Per-call channel back to the client.  A tool handler runs on the thread that
+#: owns the request, so a thread-local is the right scope for it.  The notifier
+#: and the token are read on that thread and handed to the reader thread
+#: explicitly, because a thread-local does not follow them there.
+CALL = threading.local()
+
+#: ``[NN] PASS  name  -- detail``: one line per prompt step, flushed by the
+#: driver as it happens.  This is what makes both progress channels work
+#: without the driver knowing anything about them.
+_STEP_RE = re.compile(r"^\[(\d{2})\]\s+(PASS|FAIL)\s+(.*)$")
+
+#: Jobs live for the life of the server process: a background run has to
+#: outlive the ``tools/call`` that started it, and there is nowhere else to put
+#: it.  A server restart therefore forgets its jobs, which the status tool says
+#: plainly rather than pretending the id was never valid.
+_JOBS: dict[str, "FrameJob"] = {}
+_JOBS_LOCK = threading.Lock()
+
+#: Finished jobs are kept so a late poll can still read the report, but only the
+#: most recent few: each holds the child's whole stdout, report included, and a
+#: server runs for days.
+_MAX_KEPT_JOBS = 20
+
+
+def _live_jobs() -> list[str]:
+    with _JOBS_LOCK:
+        return sorted(j.id for j in _JOBS.values() if not j.done.is_set())
+
+
+def _evict_jobs():
+    """Drop the oldest finished jobs.  Call with ``_JOBS_LOCK`` held."""
+    if len(_JOBS) <= _MAX_KEPT_JOBS:
+        return
+    finished = sorted((j for j in _JOBS.values() if j.done.is_set()),
+                      key=lambda j: j.started)
+    for job in finished[:len(_JOBS) - _MAX_KEPT_JOBS]:
+        _JOBS.pop(job.id, None)
+
+
+def _require_no_live_run():
+    """Refuse a second writer while a frame run is building in the document.
+
+    The driver clears collections and builds over them in the LIVE MIDAS
+    document, so a run interleaved with another run - or with any other write -
+    leaves both models half-built and the report describing neither.  Before
+    background jobs existed the transport's single thread enforced this by
+    accident; now it has to be said out loud.  Reads stay allowed, which is how
+    a caller watches a run instead of colliding with it.
+    """
+    live = _live_jobs()
+    if live:
+        raise InputError(
+            f"a frame run is already in flight ({', '.join(live)}) and it writes "
+            "to the live MIDAS document. Poll midas_frame_status until it "
+            "finishes, then retry - two writers at once build over each other.")
+
+
+def _call_token():
+    return getattr(CALL, "token", None)
+
+
+def _call_notify():
+    return getattr(CALL, "notify", None)
+
+
+class FrameJob:
+    """One driver subprocess, and everything it has said so far."""
+
+    def __init__(self, job_id, proc, command):
+        self.id = job_id
+        self.proc = proc
+        self.command = command
+        self.started = time.monotonic()
+        self.lines: list[str] = []
+        self.stderr: list[str] = []
+        self.done = threading.Event()
+        self.holder = None
+        self.watchdog = None
+
+    def kill(self):
+        try:
+            self.proc.kill()
+        except OSError:
+            pass
+
+    def elapsed(self) -> float:
+        return round(time.monotonic() - self.started, 1)
+
+    def steps(self) -> list[dict]:
+        """The driver's own step lines, in the order it printed them.
+
+        No total is claimed: the driver prints one line per step and never
+        announces how many it will print, so the number of lines seen is the
+        only honest count.  (The validated run prints 18.)
+        """
+        out = []
+        for line in list(self.lines):
+            match = _STEP_RE.match(line.strip())
+            if match:
+                out.append({"step": int(match.group(1)),
+                            "ok": match.group(2) == "PASS",
+                            "text": match.group(3).strip()})
+        return out
+
+    def progress(self) -> dict:
+        steps = self.steps()
+        return {"steps_done": len(steps),
+                "last": steps[-1] if steps else None,
+                "steps": steps}
+
+
+def _frame_command(args: dict, client) -> tuple[list[str], dict, str, str]:
+    """The driver's argv, environment, cwd and spec JSON for one call.
+
+    The target and the key travel in the environment, never argv: a key on a
+    command line is readable from the process table.
+    """
     inline = args.get("spec") or {}
     if not isinstance(inline, dict):
         raise InputError("spec must be an object of model keys.")
@@ -656,9 +833,7 @@ def tool_frame_run(args: dict, deps: Deps) -> dict:
     env = dict(os.environ)
     #: The session's own target and key, so the child talks to the same MIDAS
     #: this server is bound to - otherwise a config profile the child does not
-    #: rediscover from its own cwd silently retargets the run.  Both go through
-    #: the environment, never argv: a key on a command line is readable from
-    #: the process table.
+    #: rediscover from its own cwd silently retargets the run.
     env["MIDAS_MAPI_KEY"] = client.cfg.mapi_key.reveal()
     env["MIDAS_BASE_URL"] = client.cfg.base_url
     env["PYTHONIOENCODING"] = "utf-8"
@@ -668,25 +843,156 @@ def tool_frame_run(args: dict, deps: Deps) -> dict:
     env["PYTHONPATH"] = os.pathsep.join(
         [src] + ([env["PYTHONPATH"]] if env.get("PYTHONPATH") else []))
 
-    with tempfile.TemporaryDirectory(prefix="midas-frame-") as tmp:
-        path = Path(tmp) / "spec.json"
-        path.write_text(json.dumps(merged, ensure_ascii=False), encoding="utf-8")
-        argv += ["--spec", str(path)]
-        try:
-            done = subprocess.run(
-                argv, env=env, cwd=str(Path(__file__).resolve().parents[2]),
-                capture_output=True, text=True, encoding="utf-8",
-                errors="replace", timeout=_FRAME_RUN_TIMEOUT_S)
-        except subprocess.TimeoutExpired as exc:
-            raise FrameRunError(
-                f"the frame run exceeded {_FRAME_RUN_TIMEOUT_S:.0f} s and was "
-                "killed; check whether MIDAS is still busy or wedged"
-            ) from exc
-        except OSError as exc:
-            raise FrameRunError(f"could not start the driver: {exc}") from exc
+    #: The spec travels as text rather than as a file: the file is written only
+    #: when a run is actually about to start, so nothing exists to clean up if
+    #: the call is refused first.
+    spec_text = json.dumps(merged, ensure_ascii=False)
+    return argv, env, str(Path(__file__).resolve().parents[2]), spec_text
 
+
+def _start_frame(argv, env, cwd, spec_text, notify=None, token=None) -> FrameJob:
+    """Write the spec, start the driver, hand back its job.
+
+    The spec file is created here rather than where the command was assembled:
+    an argument that gets refused must not leave a temporary directory behind,
+    and neither must a run that never starts.
+    """
+    holder = tempfile.TemporaryDirectory(prefix="midas-frame-")
+    try:
+        path = Path(holder.name) / "spec.json"
+        path.write_text(spec_text, encoding="utf-8")
+        argv = argv + ["--spec", str(path)]
+        proc = subprocess.Popen(
+            argv, env=env, cwd=cwd, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE, text=True, encoding="utf-8",
+            errors="replace", bufsize=1)
+    except OSError as exc:
+        #: Writing the spec is as much a part of starting as spawning is: either
+        #: way there is nothing to run, so nothing should be left on disk.
+        holder.cleanup()
+        raise FrameRunError(f"could not start the driver: {exc}") from exc
+    job = FrameJob(uuid.uuid4().hex[:12], proc, argv)
+    job.holder = holder
+    #: The wall-clock backstop belongs to the job rather than to whoever polls
+    #: it, or a background run nobody polls would never be bounded at all.
+    job.watchdog = threading.Timer(_FRAME_RUN_TIMEOUT_S, job.kill)
+    job.watchdog.daemon = True
+    job.watchdog.start()
+    with _JOBS_LOCK:
+        _JOBS[job.id] = job
+        _evict_jobs()
+    threading.Thread(target=_reader, args=(job, notify, token), daemon=True,
+                     name=f"frame-{job.id}").start()
+    return job
+
+
+def _reader(job, notify, token):
+    """Drain both pipes, forward the step lines, then close the job.
+
+    Each pipe needs its own reader: the driver writes little to stderr, but a
+    traceback there is exactly the case where nobody is watching, and a full
+    pipe buffer blocks the child instead of failing it.
+
+    ``done`` is set in a ``finally`` deliberately.  The child is already running
+    by the time this starts, so any way out of here that skipped it - a thread
+    that cannot be created, a wait that raises - would leave a live process
+    nobody is draining, blocked on a full pipe, reported as running forever.
+    """
+    try:
+        out = threading.Thread(target=_drain,
+                               args=(job, job.proc.stdout, job.lines, notify,
+                                     token), daemon=True)
+        err = threading.Thread(target=_drain,
+                               args=(job, job.proc.stderr, job.stderr, None,
+                                     None), daemon=True)
+        out.start()
+        err.start()
+        out.join()
+        err.join()
+        job.proc.wait()
+    except Exception:  # noqa: BLE001 - the job has to be closed either way
+        log.exception("frame job %s could not be drained", job.id)
+        job.kill()
+    finally:
+        if job.watchdog is not None:
+            job.watchdog.cancel()
+        if job.holder is not None:
+            try:
+                job.holder.cleanup()
+            except OSError:
+                pass
+        job.done.set()
+
+
+def _drain(job, stream, sink, notify, token):
+    try:
+        for line in stream:
+            sink.append(line)
+            if notify is not None and token is not None:
+                match = _STEP_RE.match(line.strip())
+                if match:
+                    _emit_progress(notify, token, job, match)
+    except (OSError, ValueError):
+        pass
+    finally:
+        try:
+            stream.close()
+        except OSError:
+            pass
+
+
+def _emit_progress(notify, token, job, match):
+    """Forward one driver step to the client as an MCP progress notification.
+
+    Best effort by design: progress is a courtesy, and a client that has gone
+    away must not be able to fail a five-minute analysis.
+    """
+    try:
+        notify("notifications/progress",
+               {"progressToken": token,
+                "progress": len(job.steps()),
+                "message": f"[{match.group(1)}] {match.group(2)}  "
+                           f"{match.group(3).strip()}"})
+    except Exception:  # noqa: BLE001 - see the docstring
+        log.debug("progress notification dropped", exc_info=True)
+
+
+def _started(job) -> dict:
+    """The answer to a ``background: true`` call: a handle, or the result.
+
+    A child that dies at once - an unusable spec exits in about 100 ms - is
+    already finished by the time this is built.  Handing back a job id and
+    "poll until running is false" would send the caller looking for a report it
+    already has, so a finished job answers with its real envelope instead.
+    """
+    if job.done.is_set():
+        return _answer(job)
+    return {
+        "ok": True,
+        "endpoint": "FRAME:RUN",
+        "method": "RUN",
+        "status": 202,
+        "category": None,
+        "message": (f"started job {job.id}; poll midas_frame_status with this "
+                    "job_id until running is false, then read report"),
+        "job_id": job.id,
+        "running": True,
+        "report": "",
+        "data": {"job_id": job.id, "progress": job.progress()},
+    }
+
+
+def _answer(job) -> dict:
+    """The tool's answer for a finished job.
+
+    One place, used by the blocking call and by the status poll alike, so the
+    two cannot end up describing the same run differently.
+    """
     verdict = None
-    for line in reversed((done.stdout or "").splitlines()):
+    #: split("\n") rather than splitlines(): a report can legitimately contain
+    #: U+2028/U+2029, which json.dumps leaves literal, and splitlines() would
+    #: cut the verdict line in two and report a good run as having no verdict.
+    for line in reversed("".join(job.lines).split("\n")):
         line = line.strip()
         if line.startswith("{"):
             try:
@@ -698,9 +1004,9 @@ def tool_frame_run(args: dict, deps: Deps) -> dict:
         # 2 = missing credentials or an unusable spec, 3 = the preflight refused
         # a non-empty MIDAS document; neither prints a verdict.  The tail of the
         # child's own message is what makes this actionable.
-        detail = (done.stderr or done.stdout or "").strip()[-600:]
+        detail = ("".join(job.stderr) or "".join(job.lines)).strip()[-600:]
         raise FrameRunError(
-            f"the driver exited {done.returncode} without a verdict: {detail}")
+            f"the driver exited {job.proc.returncode} without a verdict: {detail}")
 
     report = verdict.pop("report", "")
     good = bool(verdict.get("ok"))
@@ -738,5 +1044,45 @@ def tool_frame_run(args: dict, deps: Deps) -> dict:
         "category": category,
         "message": message,
         "report": report,
+        "job_id": job.id,
+        "running": False,
         "data": verdict,
     }
+
+
+def tool_frame_status(args: dict, deps: Deps) -> dict:
+    """Progress of a job started with ``midas_frame_run {"background": true}``.
+
+    While the run is in flight this reports the steps the driver has printed so
+    far - the driver's own lines, not an estimate of how far along it is.  Once
+    it is done the answer is the same envelope the blocking call returns, report
+    and all, so a caller that polled gets exactly what it would have waited for.
+    """
+    job_id = args.get("job_id")
+    if not isinstance(job_id, str) or not job_id:
+        raise InputError("job_id must be a non-empty string.")
+    with _JOBS_LOCK:
+        job = _JOBS.get(job_id)
+        known = sorted(_JOBS)
+    if job is None:
+        raise InputError(
+            f"unknown job_id {job_id!r}. This server has started "
+            f"{len(known)} job(s): {known or 'none'}. Jobs do not survive a "
+            "server restart, and every midas_frame_run call makes a new one.")
+    if not job.done.is_set():
+        #: No kill here any more: the job carries its own watchdog, so a
+        #: background run nobody polls is still bounded, and this stays a read.
+        return {
+            "ok": True,
+            "endpoint": "FRAME:STATUS",
+            "method": "STATUS",
+            "status": 202,
+            "category": None,
+            "message": f"{job.id} is still running ({job.elapsed():.0f} s)",
+            "job_id": job.id,
+            "running": True,
+            "report": "",
+            "data": {"job_id": job.id, "progress": job.progress(),
+                     "elapsed_s": job.elapsed()},
+        }
+    return _answer(job)
