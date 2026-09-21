@@ -1,0 +1,220 @@
+"""Validated MIDAS knowledge surfaced to the model as MCP resources.
+
+Every entry here was confirmed against a live Gen NX instance (the crash guard,
+the (ST)/(CB) suffix rule, P-Delta location, rebar grade spaces, …).  They are
+exposed as ``midas://knowledge/*`` resources and distilled into the tool result
+text so the model is told the rule *at the moment it is relevant*, not only in
+a doc it must remember to read.
+"""
+from __future__ import annotations
+
+PITFALLS: list[dict] = [
+    {"area": "boundary", "trap": "boundary/load records keyed on node/element ids",
+     "symptom": "MIDAS crashes (every later request 502s) when a missing id is referenced",
+     "fix": "the connector refuses the write unless the referenced id exists (crash guard)"},
+    {"area": "analysis", "trap": "EIGV.TYPE=EIGEN with a rigid diaphragm",
+     "symptom": "'Analysis is not allowed.' and all analysis is blocked until the record is deleted",
+     "fix": "TYPE must be LANCZOS"},
+    {"area": "load", "trap": "MATL PARAM.P_TYPE=1",
+     "symptom": "accepted but POISN/THERMAL/DEN/MASS silently zero",
+     "fix": "P_TYPE must be 2, and POISN/THERMAL/DEN/MASS supplied"},
+    {"area": "result", "trap": "LOAD_CASE_NAMES without (ST)/(CB) suffix",
+     "symptom": "POST/TABLE returns 0 rows, no error",
+     "fix": "load cases need '(ST)', combinations '(CB)'"},
+    {"area": "analysis", "trap": "P-Delta requested in ACTL",
+     "symptom": "ACTL has no second-order fields",
+     "fix": "P-Delta lives in DB:PDEL (ITER/TOL/PDEL_CASES)"},
+    {"area": "result", "trap": "reading storey results without (ST) suffix",
+     "symptom": "0 rows",
+     "fix": "append '(ST)'"},
+    {"area": "design", "trap": "rebar grade without a space (ClassB)",
+     "symptom": "'Rebar grade lookup failed'",
+     "fix": "use 'Class A'/'Class B'/'Class C' (space), or GB grades HRB400/HRB335"},
+    {"area": "design", "trap": "switching design code without deleting DCON",
+     "symptom": "'Key Already Exist' and old checks reused",
+     "fix": "DELETE /db/DCON/1 before changing DGNCODE"},
+    {"area": "geometry", "trap": "rectangular section SHAPE='SR'",
+     "symptom": "interpreted as a solid round/other shape",
+     "fix": "rect uses 'SB', pipe uses 'P', solid round 'SR'"},
+    {"area": "geometry", "trap": "H-section SHAPE='DB'/'H2'/'I'",
+     "symptom": "'cross-section size input error'",
+     "fix": "use SHAPE='H' with vSIZE [H,B,tw,tf]"},
+    {"area": "result", "trap": "'Unknown Error' when reading result tables",
+     "symptom": "bare Unknown Error, not 'no analysis result'",
+     "fix": "any model change invalidates results; re-run /doc/ANAL before reading"},
+    {"area": "geometry", "trap": "space/planar truss",
+     "symptom": "mechanism/I divergent analysis (10^18 displacements)",
+     "fix": "use BEAM elements"},
+    {"area": "delete", "trap": "sending DELETE with a body on /db/LCOM-GEN",
+     "symptom": "200 returned and the ENTIRE combination collection is wiped, whatever id the body named",
+     "fix": "never send a body-form delete; the connector only uses DELETE <uri>/<id> and verifies by read-back"},
+    {"area": "delete", "trap": "expecting DELETE <uri>/<id> to work everywhere",
+     "symptom": "LCOM-GEN answers 'Unknown Error' for the path form",
+     "fix": "that endpoint has no per-id delete; the connector reports the failure rather than falling back to a collection-wide delete"},
+    {"area": "geometry", "trap": "typo in a field name on /db/NODE",
+     "symptom": "201 and an EMPTY node is created; the same typo gives 'Wrong Field' elsewhere",
+     "fix": "read the record back after creating it; node creation is the most forgiving endpoint"},
+    {"area": "result", "trap": "trusting the DELETE status code",
+     "symptom": "HTTP 200 for an id that never existed, so a no-op delete looks successful",
+     "fix": "the connector reads the id back after DELETE and only reports success when it is gone"},
+    {"area": "file", "trap": "passing an object argument to /doc/EXPORT (or IMPORT/OPEN)",
+     "symptom": "200 with 'MIDAS GEN NX path is wrong (the file can't open)'",
+     "fix": "these commands take a bare string path; the connector unwraps EXPORT_PATH/FILE_PATH for you"},
+    {"area": "load", "trap": "CNLD item written with a CMD/FV vector",
+     "symptom": "HTTP 400 '[错误] 荷载值输入有错误。' (load value input error)",
+     "fix": "CNLD items use explicit components FX/FY/FZ/MX/MY/MZ; key must equal the node number"},
+    {"area": "load", "trap": "BMLD items reusing the same per-element ID",
+     "symptom": "later load silently overwrites earlier for that element",
+     "fix": "ID is the load number within the element (1,2,3…), not the element number"},
+    {"area": "file", "trap": "EXPORT_PATH using forward slashes",
+     "symptom": "'second query is wrong' or read timeout",
+     "fix": "use Windows backslashes"},
+    {"area": "file", "trap": "/doc/SAVEAS and repeated NEW",
+     "symptom": "modal dialog that blocks the whole API channel",
+     "fix": "use /doc/SAVE; clear the model in place instead of NEW"},
+    {"area": "units", "trap": "kg as point load",
+     "symptom": "wrong scale",
+     "fix": "default units kN-m; 1000 kg -> FZ = -9.81 kN"},
+    {"area": "units", "trap": "reading result numbers without checking /db/UNIT first",
+     "symptom": "moments and deflections off by powers of 1000 (mm vs m models)",
+     "fix": "read DB:UNIT before interpreting any result; a mm model scales moment by 1e3"},
+    {"area": "storey", "trap": "confusing /db/STOR with /ope/STORYPROP",
+     "symptom": "old docs spelled it STORPROP; /db/STOR needs all 15 fields or answers a bare 'Wrong Field'",
+     "fix": "the storey property endpoint is OPE:STORYPROP (POST); it answers 'no valid story information' when stores are absent. /db/STOR is the storey definition and is not a stub - a partial record is what fails"},
+    {"area": "load", "trap": "posting a /db collection with an 'Argument' wrapper",
+     "symptom": "HTTP 400 'Wrong Field' on DB:LCOM-GEN (and LCOM-CONC/LCOM-STEEL/LCOM-SRC, STOR, EDMP, SSPS)",
+     "fix": "every /db endpoint takes 'Assign'; verified live - Assign -> 201, Argument -> 400. The registry wrapper is authoritative; the connector strips any wrapper the model supplies"},
+    {"area": "analysis", "trap": "treating a DOC:ANAL HTTP 400 that carries [警告] as a failed analysis",
+     "symptom": "HTTP 400 '[警告] 强制位移在 反应谱分析中设为零。' yet POST/TABLE still returns real DEAD(ST) and EQ_X(RS) rows",
+     "fix": "a [警告] body is a WARNING, not a rejection: the analysis runs and the results are readable. The connector reports it as ok with a 'warning' field. Confirm by reading a result table before believing any failure"},
+    {"area": "write", "trap": "re-POSTing a key that already exists",
+     "symptom": "HTTP 400 'Key Already Exist' - the record is NOT overwritten and the old value silently survives; a setting you believed you changed (e.g. EIGV.iFREQ) stays stale and every later result reflects the old value",
+     "fix": "treat a create as write-once: read the record back after every write and assert the value you asked for. To change an existing record use mode='update' (PUT). The connector reports this as category ALREADY_EXISTS rather than a generic rejection, so it is never mistaken for success"},
+    {"area": "analysis", "trap": "trusting an eigenvalue request without checking the readback",
+     "symptom": "POST /post/TABLE EIGENVALUEMODE returns only 3 modes although 20 were requested; the EIGENVALUE ANALYSIS sub-table has 3 rows and the modal participation tables have 3 rows",
+     "fix": "the computed mode count is DB:EIGV.iFREQ, not the MODES list in the table request. Read DB:EIGV back and confirm iFREQ before running /doc/ANAL; widening MODES alone changes nothing"},
+    {"area": "result", "trap": "reading an eigenvalue table by a guessed response key",
+     "symptom": "KeyError on the table name: the response root key follows the request's TABLE_NAME, so {\"TABLE_NAME\":\"EigenvalueMode\"} answers under 'EigenvalueMode', not 'EIGENVALUEMODE'",
+     "fix": "use the first key of the response object, or send TABLE_NAME equal to TABLE_TYPE. The mode summary (frequencies, periods, participation masses/factors, direction factors) is not in the top-level DATA but in the response's SUB_TABLES array; each entry is a single-key object whose inner HEAD/DATA hold the rows"},
+    {"area": "result", "trap": "concluding 'this build has no modal/eigenvalue summary' from the top-level table",
+     "symptom": "POST:TABLE:EIGENVALUEMODE answers 200 with HEAD ['Index','Node','Mode','UX','UY','UZ','RX','RY','RZ'] and 1960 per-node mode-shape rows; nothing in DATA looks like a frequency or a period, so a caller that reads only DATA reports the summary as unavailable - and a caller that then searches for a separate MODAL/FREQUENCY/EIGENVALUE endpoint gets 'unknown MIDAS endpoint' and treats that as confirmation",
+     "fix": "the summary is in the SAME reply, under SUB_TABLES: 'EIGENVALUE ANALYSIS' (ModeNo, Frequency(rad/sec), Frequency(cycle/sec), Period(sec), Tolerance), 'MODAL PARTICIPATION MASSES PRINTOUT (1)'/'(2)', 'MODAL PARTICIPATION FACTOR PRINTOUT' and 'MODAL DIRECTION FACTOR PRINTOUT'. Verified live on Gen NX 2027: 20 modes, mode 1 = 2.6350 Hz / 0.3795 s, cumulative participation 99.48 % X / 97.50 % Y / 92.34 % Z. Never decide a result is absent because the primary table is empty or does not look like it - SUB_TABLES is a first-class result source, and the connector parses it into result_summary.modal_result automatically"},
+    {"area": "result", "trap": "reading only the top-level table and dropping the SUB_TABLES that came with it",
+     "symptom": "the summary tables MIDAS appends (eigenvalue, participation, direction factor, buckling) are silently ignored, so a report can claim 'no modal results' while they were returned in the same response",
+     "fix": "a POST/TABLE reply's SUB_TABLES is a list of single-key {name: {HEAD, DATA}} objects, read from the endpoint that was already asked - never by searching for a second endpoint. The connector attaches result_summary.sub_tables / modal_result / buckling_result to every POST:TABLE result, and a midas_db_query search for modal wording returns a 'route' pointing at POST:TABLE:EIGENVALUEMODE"},
+    {"area": "analysis", "trap": "setting SPLC.aUSEMODE with bMODE left false",
+     "symptom": "the write returns HTTP 200 but aUSEMODE comes back empty, so the response-spectrum case has no modes to combine",
+     "fix": "bMODE must be true for aUSEMODE to be stored; set bMODE=true and read the mode list back before running ANAL"},
+    {"area": "analysis", "trap": "running eigenvalue, response-spectrum and buckling analyses in one /doc/ANAL",
+     "symptom": "HTTP 400 '[错误] 不能同时执行 特征值分析和 屈曲分析。' / '[错误] 不能同时执行 反应谱分析和 屈曲分析。' / '[错误] 不能同时执行 P-Delta分析和 屈曲分析。' - the analysis does not run at all",
+     "fix": "buckling is mutually exclusive with eigenvalue, response-spectrum AND P-Delta on Gen NX 2027. Delete DB:BUCK before a run that needs the others, and delete DB:EIGV/DB:SPLC/DB:PDEL before the buckling run; re-create and re-run afterwards. P-Delta coexists with eigenvalue and response spectrum (it only emits a [警告] about the forced-displacement DOFs)"},
+    {"area": "analysis", "trap": "asking for P-Delta in ACTL",
+     "symptom": "ACTL has no second-order field",
+     "fix": "P-Delta lives in DB:PDEL (ITER/TOL/PDEL_CASES)"},
+    {"area": "design", "trap": "expecting the steel code check to run off DB:MATL alone",
+     "symptom": "CODE-ANAL answers HTTP 400 'failed:SectionType, LoadCombination' however complete the model looks; DB:LCOM-STEEL (the design module's own combination set) is empty while DB:LCOM-GEN is full, and SMODI reports FY 0.0",
+     "fix": "the KDS steel module keeps its own inputs: DSTL selects the code, SMODI holds Fy/Fu (DB:MATL.PARAM carries only E/nu/alpha/density - there is no yield field there at all), DCTL defines the frame, SRDF the reduction factors, LENG the unbraced lengths, and DB:LCOM-STEEL the design combinations. Set all of them and read each back. If CODE-ANAL still reports 'SectionType, LoadCombination' the module's section-classification input has no exposed endpoint on this build: record UNSUPPORTED with the verbatim response rather than reporting a ratio"},
+    {"area": "design", "trap": "registering design members by name of element type",
+     "symptom": "MEMB answers 'Please Select the connected element.' or '所选单元中没有单元被指定为构件.(特性不同)' (member properties differ) for some element lists but HTTP 200 for others",
+     "fix": "MEMB accepts TRUSS and BEAM elements alike - one member per element always works. What it rejects is an element list that is not a connected path, or one whose members differ in section/type. Register members in connected runs of a single section, or one member per element"},
+    {"area": "design", "trap": "mixing the DSTL code and the route code",
+     "symptom": "404 when a GB code is used as a route path segment",
+     "fix": "DSTL: GB50017-17 etc.; route codes JAPAN-ROAD-II-H14 etc."},
+    {"area": "stage", "trap": "STAG ACT_LOAD naming a load CASE",
+     "symptom": "HTTP 400 with a bare 'Unknown Error' (no detail at all), even though every field name matches /info/db/STAG",
+     "fix": "ACT_LOAD.LOAD_NAME names a LOAD GROUP (DB:LDGR), not a load case. Create DB:LDGR records with the same names as the load cases the stages activate, then reference those. Verified live: LOAD_NAME='LG1' -> 201, LOAD_NAME='DEAD' (a load case) -> 400 'Unknown Error'"},
+    {"area": "stage", "trap": "STAG ACT_LOAD.DAY given as a JSON number",
+     "symptom": "HTTP 400 '[错误] 施工阶段 荷载组输入错误(项目:加载时间)' (load group input error, item: load time)",
+     "fix": "DAY is a STRING: 'FIRST', 'LAST', or a numeric string of days. DAY=1 (number) -> 400; DAY='1' is the same rejected case only because the referenced group was invalid; DAY='FIRST'/'LAST' -> 201. The manual's example '5.000000' shows the numeric-string form"},
+    {"area": "stage", "trap": "STAG ACT_BNGR.POS given a boolean or 'FIRST'",
+     "symptom": "HTTP 400 'Wrong Field' on an otherwise valid stage",
+     "fix": "POS is a string enum 'DEFORMED' / 'ORIGINAL' (manual ch10). 'FIRST'/'0'/'1'/true all give 'Wrong Field'; 'DEFORMED' -> 201"},
+    {"area": "stage", "trap": "defining DB:STAG but never activating a boundary group",
+     "symptom": "every later /doc/ANAL answers HTTP 400 '[错误] 边界条件 没有定义。' (boundary conditions are not defined) although DB:CONS is fully populated, and the message names no endpoint or id",
+     "fix": "the mere PRESENCE of DB:STAG switches /doc/ANAL into construction-stage mode. The stage analysis needs the supports addressed as a boundary GROUP, not just as DB:CONS records: create DB:BNGR (NAME/AUTOTYPE), set GROUP_NAME on each DB:CONS item to that group, and list it in the first stage's ACT_BNGR. Delete DB:STAG (and DB:STCT) to leave construction-stage mode again"},
+    {"area": "stage", "trap": "defining DB:STAG without DB:STCT",
+     "symptom": "the stages are stored but /doc/ANAL runs no stage analysis",
+     "fix": "DB:STCT is the stage-analysis control record; set it (FINAL_STAGE names the last stage, or bLAST_FINAL=true) together with the stages"},
+    {"area": "stage", "trap": "a support whose node is not in the FIRST stage's activated structure group",
+     "symptom": "the construction-stage analysis DELETES that support's DB:CONS record, and the reaction comes back from only the remaining supports (a global moment residual appears where the linear run balanced exactly)",
+     "fix": "the stage analysis activates boundary conditions only at nodes belonging to the structure groups activated in that stage, and it rewrites DB:CONS to match. Either include every support node in the first stage's DB:GRUP N_LIST, or expect the later supports to be inactive until their stage. Verified live: 8 supports in DB:CONS -> 4 after ANAL, and the 4 that survived were exactly the nodes in the first stage's group; adding all 98 nodes to that group made all 8 survive"},
+    {"area": "stage", "trap": "expecting DB:GRUP N_LIST / E_LIST to be assignable like other records",
+     "symptom": "PUT /db/GRUP returns 200 but the list only ever grows - a shorter list does not remove members, and DELETE /db/GRUP answers 'does not support DELETE'",
+     "fix": "the GRUP node/element lists are merge-only; there is no way to shrink one through the API, and re-POSTing the key answers 'Key Already Exist'. Build the lists correctly the first time. Consequence: once a node is added to a group it stays, so a group used for a stage partition cannot be re-partitioned"},
+    {"area": "post", "trap": "asking a POST/TABLE for a combination by its bare name",
+     "symptom": "HTTP 200, and the table comes back with the load cases only - the combination rows are SILENTLY absent, so a report can claim 'no combination results' when the combination was solved all along",
+     "fix": "a combination must be requested as '<NAME>(CB)' and a load case as '<NAME>(ST)'. Verified live on POST/TABLE:TRUSSFORCE: ['ULS-01','SLS-01'] -> 0 rows; ['ULS-01(CB)','SLS-01(CB)'] -> 914 rows. MIDAS answers each combination as three envelopes whose row labels carry the bare name plus '(all)'/'(max)'/'(min)', so match returned labels on their base name"},
+    {"area": "post", "trap": "reading the self-weight contribution to a load balance from the nodal loads only",
+     "symptom": "the DEAD case shows a large residual moment (thousands of kN.m) although the force sum is exact",
+     "fix": "the MIDAS native self-weight is a BODY load: it acts at each element's centre of gravity, so it contributes its own moment about the origin. Add that couple, derived from POST/TABLE:ELEMENTWEIGHT (per-element 'Total Weight' x element midpoint, M = sum(-cy*w, cx*w, 0)), to the applied six-vector. Verified live: residual MX/MY 5586/-6994 kN.m -> 0.0075/-0.0094"},
+    {"area": "post", "trap": "assuming the supports can always react a load's torque",
+     "symptom": "a case with a net moment about the vertical axis leaves a residual MZ equal to the applied torque, looking like a modelling error",
+     "fix": "check DB:CONS first. When every constraint ends in 0000 for RX/RY/RZ, no support restrains rotation directly; a pin-jointed grid then resists torque only through the lever arm of its in-plane forces, and a pure torque couple applied at a single node has no such arm. Report it as a property of the support system, not as a numerical failure"},
+]
+
+RECIPES: dict[str, dict] = {
+    "modal-rs": {
+        "title": "Eigen + response-spectrum workflow",
+        "steps": [
+            "set EIGV.TYPE=LANCZOS and an explicit mode count",
+            "define SPLC with one aUSEMODE entry per mode",
+            "add the spectrum function (SPFC, aFUNC as g multiples)",
+            "run /doc/ANAL once to produce static + modal + RS results together",
+            "read periods from POST:TABLE:EIGENVALUEMODE and its SUB_TABLES",
+        ],
+        "note": "EIGV and SPLC must coexist or ANAL answers 'Analysis is not allowed.'",
+    },
+    "steel-frame": {
+        "title": "steel frame modeling to design-force read-back",
+        "steps": [
+            "use BEAM elements and H-section (SHAPE='H', vSIZE [H,B,tw,tf])",
+            "assign boundary/loads on existing ids (crash guard)",
+            "read result tables with (ST)/(CB) suffixed LOAD_CASE_NAMES",
+            "for steel check use DESIGN:STEEL:*:CODE-ANAL then *:CODE-TABLE; "
+            "the /post/TABLE design-force endpoints return empty on this build",
+        ],
+        "note": "any model edit invalidates results; re-run /doc/ANAL before reading.",
+    },
+    "rc-section": {
+        "title": "RC member + rebar",
+        "steps": [
+            "rect sections use SHAPE='SB' with SECT_I.vSIZE [H,B] in meters",
+            "concrete PARAM.STANDARD 'GB(RC)' + DB 'C30' for Chinese code",
+            "MATD rebar grades carry a space ('Class A'), set MAINREBAR_B_FY (N/m^2)",
+            "DCON key '1'; DELETE /db/DCON/1 before switching DGNCODE",
+        ],
+        "note": "accepted DGNCODE set is narrow (ACI318, KCI-USD, GB50010-02, BS8110-97).",
+    },
+}
+
+
+def pitfalls_markdown() -> str:
+    lines = ["# MIDAS knowledge: validated pitfalls\n"]
+    for i, p in enumerate(PITFALLS, 1):
+        lines.append(f"## {i}. {p['area']} — {p['trap']}\n")
+        lines.append(f"- symptom: {p['symptom']}\n- fix: {p['fix']}\n")
+    return "\n".join(lines)
+
+
+def recipe_markdown(name: str) -> str:
+    r = RECIPES[name]
+    lines = [f"# MIDAS recipe: {r['title']}\n"]
+    for i, s in enumerate(r["steps"], 1):
+        lines.append(f"{i}. {s}")
+    if r.get("note"):
+        lines.append(f"\n> note: {r['note']}")
+    return "\n".join(lines)
+
+
+def routing_markdown() -> str:
+    return (
+        "# MIDAS routing rules\n"
+        "- use midas_db_query for reads and to discover endpoints (search)\n"
+        "- use midas_db_assign for writes/actions; mode create=POST, update=PUT\n"
+        "- use midas_db_delete with explicit target_ids; never 'delete all' implicitly\n"
+        "- use midas_doc for NEW/SAVE/ANAL; CALL /doc/ANAL only after the model is ready and never auto-retry it\n"
+        "- read results only after a successful ANAL; re-run ANAL after any model change\n"
+        "- modal/eigen questions (frequency, period, participation mass, mode shape) are answered by POST:TABLE:EIGENVALUEMODE; buckling by POST:TABLE:BUCKLINGMODE. Their summaries are in the reply's SUB_TABLES, parsed into result_summary.modal_result / .buckling_result\n"
+        "- never conclude a result is absent because the primary table is empty; check SUB_TABLES first\n"
+        "- the MAPI-Key is server-side only; it never appears in tool results\n"
+    )

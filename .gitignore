@@ -1,0 +1,36 @@
+# never commit credentials
+config.json
+.env
+*.pem
+*.key
+
+# python
+__pycache__/
+*.pyc
+
+# packaging output -- do NOT ignore build/ itself: that directory holds the
+# project's own scripts (build_registry.py, verify_live.py, verify_api.py,
+# fuzz_error_shapes.py). Only setuptools' generated subdirectories are noise.
+build/lib/
+build/bdist.*/
+build/temp.*/
+build/scripts-*/
+dist/
+*.egg-info/
+
+# connector runtime
+registry/live_probe.json
+logs/
+
+# live-run output: per-model result extracts + audit logs (hundreds of MB).
+# artifacts/spec_original.txt is the only copy of the original spec, so this
+# pattern targets subdirectories only.
+artifacts/*/
+
+# archive snapshots of the tree itself (the 2026-09-19 .rar is a 21 MB backup
+# that also contains a .venv full of third-party packages). The two small
+# Development_Pack zips are upstream source material and stay tracked.
+*.rar
+*.7z
+.pytest_cache/
+.venv/

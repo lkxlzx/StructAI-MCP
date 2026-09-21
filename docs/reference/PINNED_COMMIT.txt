@@ -1,0 +1,4 @@
+e64a682570fbd0a424f27435c01e079cd1ac5797
+e64a682570fbd0a424f27435c01e079cd1ac5797
+Fri Sep 18 22:28:52 2026 +0900
+docs(manual): 라이브 검증 결과 반영 — RADIUS·MATD 3필드·SPLC ALONG 근거 확정

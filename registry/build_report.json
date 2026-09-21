@@ -1,0 +1,811 @@
+{
+ "local": {
+  "rows": 463,
+  "notes": [],
+  "matched": 455
+ },
+ "chapters": [
+  {
+   "chapter": "01_DOC",
+   "declared": 11,
+   "methods_from_toc": 0,
+   "methods_missing": [],
+   "post_types": 0,
+   "expected": 11,
+   "matches": true
+  },
+  {
+   "chapter": "02_DB_Project_Structure",
+   "declared": 15,
+   "methods_from_toc": 0,
+   "methods_missing": [],
+   "post_types": 0,
+   "expected": 15,
+   "matches": true
+  },
+  {
+   "chapter": "03_DB_Node_Element",
+   "declared": 6,
+   "methods_from_toc": 0,
+   "methods_missing": [],
+   "post_types": 0,
+   "expected": 6,
+   "matches": true
+  },
+  {
+   "chapter": "04_DB_Properties",
+   "declared": 32,
+   "methods_from_toc": 0,
+   "methods_missing": [],
+   "post_types": 0,
+   "expected": 32,
+   "matches": true
+  },
+  {
+   "chapter": "05_DB_Boundary",
+   "declared": 24,
+   "methods_from_toc": 0,
+   "methods_missing": [],
+   "post_types": 0,
+   "expected": 24,
+   "matches": true
+  },
+  {
+   "chapter": "06_DB_Static_Loads",
+   "declared": 21,
+   "methods_from_toc": 0,
+   "methods_missing": [],
+   "post_types": 0,
+   "expected": 21,
+   "matches": true
+  },
+  {
+   "chapter": "07_DB_Temperature_Prestress",
+   "declared": 12,
+   "methods_from_toc": 0,
+   "methods_missing": [],
+   "post_types": 0,
+   "expected": 12,
+   "matches": true
+  },
+  {
+   "chapter": "08_DB_Moving_Loads",
+   "declared": 28,
+   "methods_from_toc": 0,
+   "methods_missing": [],
+   "post_types": 0,
+   "expected": 28,
+   "matches": true
+  },
+  {
+   "chapter": "09_DB_Dynamic_Loads",
+   "declared": 12,
+   "methods_from_toc": 0,
+   "methods_missing": [],
+   "post_types": 0,
+   "expected": 12,
+   "matches": true
+  },
+  {
+   "chapter": "10_DB_Construction_Stage",
+   "declared": 14,
+   "methods_from_toc": 0,
+   "methods_missing": [],
+   "post_types": 0,
+   "expected": 14,
+   "matches": true
+  },
+  {
+   "chapter": "11_DB_Settlement_Misc_Loads",
+   "declared": 9,
+   "methods_from_toc": 0,
+   "methods_missing": [],
+   "post_types": 0,
+   "expected": 9,
+   "matches": true
+  },
+  {
+   "chapter": "12_DB_Analysis_Control",
+   "declared": 21,
+   "methods_from_toc": 0,
+   "methods_missing": [],
+   "post_types": 0,
+   "expected": 21,
+   "matches": true
+  },
+  {
+   "chapter": "13_DB_Load_Combinations",
+   "declared": 8,
+   "methods_from_toc": 0,
+   "methods_missing": [],
+   "post_types": 0,
+   "expected": 8,
+   "matches": true
+  },
+  {
+   "chapter": "14_DB_Pushover",
+   "declared": 6,
+   "methods_from_toc": 0,
+   "methods_missing": [],
+   "post_types": 0,
+   "expected": 6,
+   "matches": true
+  },
+  {
+   "chapter": "15_OPE",
+   "declared": 19,
+   "methods_from_toc": 0,
+   "methods_missing": [],
+   "post_types": 0,
+   "expected": 19,
+   "matches": true
+  },
+  {
+   "chapter": "16_VIEW",
+   "declared": 7,
+   "methods_from_toc": 0,
+   "methods_missing": [],
+   "post_types": 0,
+   "expected": 7,
+   "matches": true
+  },
+  {
+   "chapter": "17_DB_Bridge",
+   "declared": 5,
+   "methods_from_toc": 0,
+   "methods_missing": [],
+   "post_types": 0,
+   "expected": 5,
+   "matches": true
+  },
+  {
+   "chapter": "18_POST_PreProcess",
+   "declared": 10,
+   "methods_from_toc": 0,
+   "methods_missing": [
+    "18_POST_PreProcess#1 Element Weight Table",
+    "18_POST_PreProcess#2 Nodal Body Force Table",
+    "18_POST_PreProcess#3 Mass Summary Table",
+    "18_POST_PreProcess#4 Load Summary Table",
+    "18_POST_PreProcess#5 Material Table",
+    "18_POST_PreProcess#6 Section Table",
+    "18_POST_PreProcess#7 Restraint Supports Table",
+    "18_POST_PreProcess#8 Story Mass Summary Table",
+    "18_POST_PreProcess#9 Story Load Summary Table",
+    "18_POST_PreProcess#10 Story Weight Table"
+   ],
+   "post_types": 20,
+   "expected": 10,
+   "matches": true
+  },
+  {
+   "chapter": "19_POST_AnalysisResult_1",
+   "declared": 13,
+   "methods_from_toc": 0,
+   "methods_missing": [
+    "19_POST_AnalysisResult_1#1 Reaction",
+    "19_POST_AnalysisResult_1#2 Displacements",
+    "19_POST_AnalysisResult_1#3 Truss Force",
+    "19_POST_AnalysisResult_1#4 Truss Stress",
+    "19_POST_AnalysisResult_1#5 Cable Force",
+    "19_POST_AnalysisResult_1#6 Cable Configuration",
+    "19_POST_AnalysisResult_1#7 Cable Efficiency",
+    "19_POST_AnalysisResult_1#8 Beam Force",
+    "19_POST_AnalysisResult_1#9 Beam Force (Static Prestress)",
+    "19_POST_AnalysisResult_1#10 Beam Stress",
+    "19_POST_AnalysisResult_1#11 Beam Stress (Equivalent)",
+    "19_POST_AnalysisResult_1#12 Beam Stress (PSC)",
+    "19_POST_AnalysisResult_1#13 Concurrent Joint Force"
+   ],
+   "post_types": 22,
+   "expected": 13,
+   "matches": true
+  },
+  {
+   "chapter": "20_POST_AnalysisResult_2",
+   "declared": 39,
+   "methods_from_toc": 0,
+   "methods_missing": [
+    "20_POST_AnalysisResult_2#1 Plate Force (Local)",
+    "20_POST_AnalysisResult_2#2 Plate Force (Global)",
+    "20_POST_AnalysisResult_2#3 Plate Force (Unit Length)",
+    "20_POST_AnalysisResult_2#4 Plate Stress (Local)",
+    "20_POST_AnalysisResult_2#5 Plate Stress (Global)",
+    "20_POST_AnalysisResult_2#6 Plate Strain (Local)",
+    "20_POST_AnalysisResult_2#7 Plate Strain (Global)",
+    "20_POST_AnalysisResult_2#8 Plane Stress Force (Local)",
+    "20_POST_AnalysisResult_2#9 Plane Stress Force (Global)",
+    "20_POST_AnalysisResult_2#10 Plane Stress (Local)",
+    "20_POST_AnalysisResult_2#11 Plane Stress (Global)",
+    "20_POST_AnalysisResult_2#12 Plane Strain Force (Local)",
+    "20_POST_AnalysisResult_2#13 Plane Strain Force (Global)",
+    "20_POST_AnalysisResult_2#14 Plane Strain Stress (Local)",
+    "20_POST_AnalysisResult_2#15 Plane Strain Stress (Global)",
+    "20_POST_AnalysisResult_2#16 Axisymmetric Force (Local)",
+    "20_POST_AnalysisResult_2#17 Axisymmetric Force (Global)",
+    "20_POST_AnalysisResult_2#18 Axisymmetric Stress (Local)",
+    "20_POST_AnalysisResult_2#19 Axisymmetric Stress (Global)",
+    "20_POST_AnalysisResult_2#20 Solid Force (Local)",
+    "20_POST_AnalysisResult_2#21 Solid Force (Global)",
+    "20_POST_AnalysisResult_2#22 Solid Stress (Local)",
+    "20_POST_AnalysisResult_2#23 Solid Stress (Global)",
+    "20_POST_AnalysisResult_2#24 Solid Strain (Local)",
+    "20_POST_AnalysisResult_2#25 Solid Strain (Global)",
+    "20_POST_AnalysisResult_2#26 Elastic Link",
+    "20_POST_AnalysisResult_2#27 General Link",
+    "20_POST_AnalysisResult_2#28 Vibration Mode Shape",
+    "20_POST_AnalysisResult_2#29 Buckling Mode Shape",
+    "20_POST_AnalysisResult_2#30 Tendon Coordinates",
+    "20_POST_AnalysisResult_2#31 Tendon Elongation",
+    "20_POST_AnalysisResult_2#32 Tendon Arrangement",
+    "20_POST_AnalysisResult_2#33 Tendon Loss",
+    "20_POST_AnalysisResult_2#34 Tendon Weight",
+    "20_POST_AnalysisResult_2#35 Tendon Stress Limit Check",
+    "20_POST_AnalysisResult_2#36 Tendon Approximate Loss",
+    "20_POST_AnalysisResult_2#37 Composite Section for C.S. (Force and Stress)",
+    "20_POST_AnalysisResult_2#38 Composite Section for C.S. (Self-Constraint Force and Stress)",
+    "20_POST_AnalysisResult_2#39 Wall Force"
+   ],
+   "post_types": 57,
+   "expected": 39,
+   "matches": true
+  },
+  {
+   "chapter": "21_POST_StoryTables",
+   "declared": 17,
+   "methods_from_toc": 0,
+   "methods_missing": [
+    "21_POST_StoryTables#1 Story Drift",
+    "21_POST_StoryTables#2 Story Displacement",
+    "21_POST_StoryTables#3 Story Shear Force (R.S. Analysis)",
+    "21_POST_StoryTables#4 Story Shear Force Coefficient (R.S. Analysis)",
+    "21_POST_StoryTables#5 Story Mode Shape",
+    "21_POST_StoryTables#6 Story Shear Force Ratio",
+    "21_POST_StoryTables#7 Story Eccentricity",
+    "21_POST_StoryTables#8 Overturning Moment",
+    "21_POST_StoryTables#9 Story Axial Force Sum",
+    "21_POST_StoryTables#10 Story Stability Coefficient",
+    "21_POST_StoryTables#11 Torsional Irregularity Check",
+    "21_POST_StoryTables#12 Torsional Amplification Factor",
+    "21_POST_StoryTables#13 Stiffness Irregularity Check (Soft Story)",
+    "21_POST_StoryTables#14 Capacity Irregularity Check (Weak Story)",
+    "21_POST_StoryTables#15 Criteria for Regularity in Plan",
+    "21_POST_StoryTables#16 Ultimate Story Shear For Check",
+    "21_POST_StoryTables#17 Weight Irregularity Check"
+   ],
+   "post_types": 26,
+   "expected": 17,
+   "matches": true
+  },
+  {
+   "chapter": "22_POST_TH_HY_Pushover",
+   "declared": 28,
+   "methods_from_toc": 0,
+   "methods_missing": [],
+   "post_types": 68,
+   "expected": 28,
+   "matches": true
+  },
+  {
+   "chapter": "23_POST_Design",
+   "declared": 10,
+   "methods_from_toc": 0,
+   "methods_missing": [
+    "23_POST_Design#3 Concrete Design – Beam Design Forces",
+    "23_POST_Design#4 Concrete Design – Column Design Forces",
+    "23_POST_Design#5 Concrete Design – Brace Design Forces",
+    "23_POST_Design#6 Concrete Design – Wall Design Forces",
+    "23_POST_Design#7 Steel Design – Steel Member Design Forces",
+    "23_POST_Design#8 SRC Design – SRC Beam Design Forces",
+    "23_POST_Design#9 SRC Design – SRC Column Design Forces",
+    "23_POST_Design#10 Cold Formed Design – Cold Formed Steel Member Design Forces"
+   ],
+   "post_types": 8,
+   "expected": 10,
+   "matches": true
+  },
+  {
+   "chapter": "24_DB_Design",
+   "declared": 13,
+   "methods_from_toc": 0,
+   "methods_missing": [],
+   "post_types": 0,
+   "expected": 13,
+   "matches": true
+  },
+  {
+   "chapter": "25_Design_Steel_KDS41302022",
+   "declared": 28,
+   "methods_from_toc": 0,
+   "methods_missing": [],
+   "post_types": 0,
+   "expected": 28,
+   "matches": true
+  },
+  {
+   "chapter": "26_Design_RC_KDS41202022",
+   "declared": 70,
+   "methods_from_toc": 0,
+   "methods_missing": [],
+   "post_types": 0,
+   "expected": 70,
+   "matches": true
+  },
+  {
+   "chapter": "27_Design_SRC_AIKSRC2K",
+   "declared": 27,
+   "methods_from_toc": 0,
+   "methods_missing": [],
+   "post_types": 0,
+   "expected": 27,
+   "matches": true
+  }
+ ],
+ "drift": [
+  {
+   "key": "DB:GRUP",
+   "local": [
+    "POST",
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "upstream": [
+    "POST",
+    "GET",
+    "PUT"
+   ],
+   "source": "02_DB_Project_Structure:34"
+  },
+  {
+   "key": "DB:BNGR",
+   "local": [
+    "POST",
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "upstream": [
+    "POST",
+    "GET",
+    "PUT"
+   ],
+   "source": "02_DB_Project_Structure:35"
+  },
+  {
+   "key": "DB:CO_M",
+   "local": [
+    "POST",
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "upstream": [
+    "GET",
+    "PUT"
+   ],
+   "source": "02_DB_Project_Structure:39"
+  },
+  {
+   "key": "DB:CO_S",
+   "local": [
+    "POST",
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "upstream": [
+    "GET",
+    "PUT"
+   ],
+   "source": "02_DB_Project_Structure:40"
+  },
+  {
+   "key": "DB:CO_T",
+   "local": [
+    "POST",
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "upstream": [
+    "GET",
+    "PUT"
+   ],
+   "source": "02_DB_Project_Structure:41"
+  },
+  {
+   "key": "DB:CO_F",
+   "local": [
+    "POST",
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "upstream": [
+    "GET",
+    "PUT"
+   ],
+   "source": "02_DB_Project_Structure:42"
+  },
+  {
+   "key": "DB:MATD",
+   "local": [
+    "POST",
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "upstream": [
+    "GET",
+    "PUT"
+   ],
+   "source": "04_DB_Properties:61"
+  },
+  {
+   "key": "DB:PZEF",
+   "local": [
+    "POST",
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "upstream": [
+    "POST",
+    "GET",
+    "PUT"
+   ],
+   "source": "05_DB_Boundary:51"
+  },
+  {
+   "key": "DB:CLDR",
+   "local": [
+    "POST",
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "upstream": [
+    "POST",
+    "GET",
+    "PUT"
+   ],
+   "source": "05_DB_Boundary:52"
+  },
+  {
+   "key": "DB:THGC-M1",
+   "local": [
+    "POST",
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "upstream": [
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "source": "09_DB_Dynamic_Loads:33"
+  },
+  {
+   "key": "DB:THOO-M1",
+   "local": [
+    "POST",
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "upstream": [
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "source": "09_DB_Dynamic_Loads:34"
+  },
+  {
+   "key": "DB:EIGV-M1",
+   "local": [
+    "POST",
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "upstream": [
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "source": "12_DB_Analysis_Control:35"
+  },
+  {
+   "key": "DB:HHCT-M1",
+   "local": [
+    "POST",
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "upstream": [
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "source": "12_DB_Analysis_Control:37"
+  },
+  {
+   "key": "DB:NLCT-M1",
+   "local": [
+    "POST",
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "upstream": [
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "source": "12_DB_Analysis_Control:45"
+  },
+  {
+   "key": "DB:STCT-M1",
+   "local": [
+    "POST",
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "upstream": [
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "source": "12_DB_Analysis_Control:47"
+  },
+  {
+   "key": "DB:POGD-M1",
+   "local": [
+    "POST",
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "upstream": [
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "source": "14_DB_Pushover:31"
+  },
+  {
+   "key": "DB:POLC-M1",
+   "local": [
+    "POST",
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "upstream": [
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "source": "14_DB_Pushover:35"
+  },
+  {
+   "key": "OPE:SECTPROP",
+   "local": [
+    "POST"
+   ],
+   "upstream": [
+    "GET"
+   ],
+   "source": "15_OPE:32"
+  },
+  {
+   "key": "OPE:STORY_PARAM",
+   "local": [
+    "POST"
+   ],
+   "upstream": [
+    "POST",
+    "GET"
+   ],
+   "source": "15_OPE:39"
+  },
+  {
+   "key": "OPE:STORY_IRR_PARAM",
+   "local": [
+    "POST"
+   ],
+   "upstream": [
+    "POST",
+    "GET"
+   ],
+   "source": "15_OPE:40"
+  },
+  {
+   "key": "VIEW:SELECT",
+   "local": [
+    "POST"
+   ],
+   "upstream": [
+    "GET"
+   ],
+   "source": "16_VIEW:30"
+  },
+  {
+   "key": "DB:REBC",
+   "local": [
+    "POST",
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "upstream": [
+    "POST"
+   ],
+   "source": "24_DB_Design:40"
+  },
+  {
+   "key": "DB:DCTL",
+   "local": [
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "upstream": [
+    "POST",
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "source": "25_Design_Steel_KDS41302022:32"
+  },
+  {
+   "key": "OPE:MEMB",
+   "local": [
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "upstream": [
+    "POST"
+   ],
+   "source": "25_Design_Steel_KDS41302022:51"
+  },
+  {
+   "key": "DB:DCTL",
+   "local": [
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "upstream": [
+    "POST",
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "source": "26_Design_RC_KDS41202022:32"
+  },
+  {
+   "key": "OPE:MEMB",
+   "local": [
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "upstream": [
+    "POST"
+   ],
+   "source": "26_Design_RC_KDS41202022:42"
+  },
+  {
+   "key": "DB:MATD",
+   "local": [
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "upstream": [
+    "GET",
+    "PUT"
+   ],
+   "source": "26_Design_RC_KDS41202022:43"
+  },
+  {
+   "key": "DB:REBC",
+   "local": [
+    "POST",
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "upstream": [
+    "POST"
+   ],
+   "source": "26_Design_RC_KDS41202022:63"
+  },
+  {
+   "key": "DB:DCTL",
+   "local": [
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "upstream": [
+    "POST",
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "source": "27_Design_SRC_AIKSRC2K:32"
+  },
+  {
+   "key": "DB:MATD",
+   "local": [
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "upstream": [
+    "GET",
+    "PUT"
+   ],
+   "source": "27_Design_SRC_AIKSRC2K:53"
+  },
+  {
+   "key": "OPE:MEMB",
+   "local": [
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "upstream": [
+    "POST"
+   ],
+   "source": "27_Design_SRC_AIKSRC2K:55"
+  }
+ ],
+ "notes": [
+  "shared URI OPE:GSBG: '/ope/GSBG — Bridge Girder Diagram Image Generation' + '/ope/GSBG — Bridge Girder Diagram Image Generation' (17_DB_Bridge)",
+  "shared URI POST:TEXT: 'Time History Text – Node Results' + 'Time History Text – Element Result(Truss, Beam, Plane Stress/Strain, Solid)' (22_POST_TH_HY_Pushover)",
+  "shared URI POST:TEXT: 'Time History Text – Node Results' + 'Time History Text – Element Result(Plate)' (22_POST_TH_HY_Pushover)",
+  "shared URI POST:TEXT: 'Time History Text – Node Results' + 'Time History Text – Element Result(Wall)' (22_POST_TH_HY_Pushover)",
+  "shared URI POST:TEXT: 'Time History Text – Node Results' + 'Time History Text – General Link Result' (22_POST_TH_HY_Pushover)",
+  "shared URI POST:TEXT: 'Time History Text – Node Results' + 'Pushover Text – Displacement' (22_POST_TH_HY_Pushover)",
+  "shared URI POST:TEXT: 'Time History Text – Node Results' + 'Pushover Text – Element Result(Beam, Truss)' (22_POST_TH_HY_Pushover)",
+  "shared URI POST:TEXT: 'Time History Text – Node Results' + 'Pushover Text – Element Result(Wall)' (22_POST_TH_HY_Pushover)",
+  "shared URI POST:TEXT: 'Time History Text – Node Results' + 'Pushover Text – General Link' (22_POST_TH_HY_Pushover)",
+  "shared URI POST:TEXT: 'Time History Text – Node Results' + 'Pushover Text – Elastic Link' (22_POST_TH_HY_Pushover)",
+  "shared URI POST:TABLE: 'Inelastic Hinge Event Time' + 'Inelastic Hinge Beam Summary' (22_POST_TH_HY_Pushover)",
+  "shared URI POST:TABLE: 'Inelastic Hinge Event Time' + 'Inelastic Hinge Truss Summary' (22_POST_TH_HY_Pushover)",
+  "shared URI POST:TABLE: 'Inelastic Hinge Event Time' + 'Inelastic Hinge General Link Summary' (22_POST_TH_HY_Pushover)",
+  "shared URI POST:TABLE: 'Inelastic Hinge Event Time' + 'Inelastic Hinge Force' (22_POST_TH_HY_Pushover)",
+  "shared URI POST:TABLE: 'Inelastic Hinge Event Time' + 'Inelastic Hinge Deformation' (22_POST_TH_HY_Pushover)",
+  "shared URI POST:TABLE: 'Inelastic Hinge Event Time' + 'Inelastic Hinge Element Rotation' (22_POST_TH_HY_Pushover)",
+  "shared URI POST:TABLE: 'Inelastic Hinge Event Time' + 'Inelastic Hinge Ductility Factor(D/D1)' (22_POST_TH_HY_Pushover)",
+  "shared URI POST:TABLE: 'Inelastic Hinge Event Time' + 'Inelastic Hinge Ductility Factor(D/D2)' (22_POST_TH_HY_Pushover)",
+  "shared URI VIEW:RESULTGRAPHIC: '/view/RESULTGRAPHIC — Result Graphic' + 'Stress – Heat of Hydration' (22_POST_TH_HY_Pushover)",
+  "shared URI VIEW:RESULTGRAPHIC: '/view/RESULTGRAPHIC — Result Graphic' + 'Temperature – Heat of Hydration' (22_POST_TH_HY_Pushover)",
+  "shared URI VIEW:RESULTGRAPHIC: '/view/RESULTGRAPHIC — Result Graphic' + 'Displacements – Heat of Hydration' (22_POST_TH_HY_Pushover)",
+  "shared URI VIEW:RESULTGRAPHIC: '/view/RESULTGRAPHIC — Result Graphic' + 'Allowable Tensile Stress – Heat of Hydration' (22_POST_TH_HY_Pushover)",
+  "shared URI VIEW:RESULTGRAPHIC: '/view/RESULTGRAPHIC — Result Graphic' + 'Crack Ratio – Heat of Hydration' (22_POST_TH_HY_Pushover)",
+  "shared URI DESIGN:RC:KDS-41-20-2022:TABLE: 'DESIGN/RC/KDS-41-20-2022/TABLE — Column Design Forces (기둥 설계력)' + 'DESIGN/RC/KDS-41-20-2022/TABLE — Brace Design Forces (가새 설계력)' (26_Design_RC_KDS41202022)",
+  "shared URI DESIGN:RC:KDS-41-20-2022:TABLE: 'DESIGN/RC/KDS-41-20-2022/TABLE — Column Design Forces (기둥 설계력)' + 'DESIGN/RC/KDS-41-20-2022/TABLE — Beam Design Forces (보 설계력)' (26_Design_RC_KDS41202022)",
+  "shared URI DESIGN:SRC:AIK-SRC2K:TABLE: 'DESIGN/SRC/AIK-SRC2K/TABLE — SRC Beam Design Forces (SRC 보 설계력)' + 'DESIGN/SRC/AIK-SRC2K/TABLE — SRC Column Design Forces (SRC 기둥 설계력)' (27_Design_SRC_AIKSRC2K)"
+ ],
+ "unavailable": [
+  "POST:TABLE:BEAMDESIGNFORCES",
+  "POST:TABLE:COLUMNDESIGNFORCES",
+  "POST:TABLE:STEELMEMBERDESIGNFORCES",
+  "DB:RCHK"
+ ],
+ "totals": {
+  "upstream_sections": 505,
+  "expected_sections": 505,
+  "registry_entries": 595,
+  "local_rows": 463
+ }
+}

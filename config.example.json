@@ -1,0 +1,31 @@
+{
+  "_comment": "Copy to config.json (same folder) and fill in your keys. config.json is gitignored. Select a product with --profile, MIDAS_MCP_PROFILE, or 'active_profile' below.",
+
+  "active_profile": "MIDAS GEN NX",
+
+  "profiles": {
+    "MIDAS GEN NX": {
+      "base_url": "http://localhost:3030/gen",
+      "mapi_key": "<your MAPI-Key>"
+    },
+    "MIDAS CIVIL NX": {
+      "base_url": "http://localhost:3030/civil",
+      "mapi_key": "<your MAPI-Key>"
+    },
+    "MIDAS GEN NX (cloud)": {
+      "base_url": "https://moa-engineers.midasit.com:443/gen",
+      "mapi_key": "<your MAPI-Key>",
+      "timeouts": { "analysis": 3600 }
+    }
+  },
+
+  "timeouts": {
+    "query": 30,
+    "assign": 60,
+    "analysis": 1800,
+    "table": 180
+  },
+  "allow_bulk_delete": false,
+  "log_level": "warning",
+  "max_workers": 8
+}

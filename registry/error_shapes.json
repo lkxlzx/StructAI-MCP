@@ -1,0 +1,725 @@
+{
+ "observed": {
+  "DB:PJCF|bogus_field": {
+   "uri": "/db/PJCF",
+   "status": 400,
+   "message": "Key Already Exist",
+   "body": "{\"error\":{\"message\":\"Key Already Exist\"}}"
+  },
+  "DB:PJCF|wrong_type": {
+   "uri": "/db/PJCF",
+   "status": 400,
+   "message": "Key Already Exist",
+   "body": "{\"error\":{\"message\":\"Key Already Exist\"}}"
+  },
+  "DB:STYP-M1|bogus_field": {
+   "uri": "/db/STYP-M1",
+   "status": 404,
+   "message": null,
+   "body": ""
+  },
+  "DB:STYP-M1|wrong_type": {
+   "uri": "/db/STYP-M1",
+   "status": 404,
+   "message": null,
+   "body": ""
+  },
+  "DB:GRUP|bogus_field": {
+   "uri": "/db/GRUP",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:GRUP|wrong_type": {
+   "uri": "/db/GRUP",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:BNGR|bogus_field": {
+   "uri": "/db/BNGR",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:BNGR|wrong_type": {
+   "uri": "/db/BNGR",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:LDGR|bogus_field": {
+   "uri": "/db/LDGR",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:LDGR|wrong_type": {
+   "uri": "/db/LDGR",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:TDGR|bogus_field": {
+   "uri": "/db/TDGR",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:TDGR|wrong_type": {
+   "uri": "/db/TDGR",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:NPLN|bogus_field": {
+   "uri": "/db/NPLN",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:NPLN|wrong_type": {
+   "uri": "/db/NPLN",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:SPAN|bogus_field": {
+   "uri": "/db/SPAN",
+   "status": 404,
+   "message": null,
+   "body": ""
+  },
+  "DB:SPAN|wrong_type": {
+   "uri": "/db/SPAN",
+   "status": 404,
+   "message": null,
+   "body": ""
+  },
+  "DB:STOR|bogus_field": {
+   "uri": "/db/STOR",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:STOR|wrong_type": {
+   "uri": "/db/STOR",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:NODE|bogus_field": {
+   "uri": "/db/NODE",
+   "status": 201,
+   "message": null,
+   "body": "{\"NODE\":{\"995001\":{}}}"
+  },
+  "DB:NODE|wrong_type": {
+   "uri": "/db/NODE",
+   "status": 400,
+   "message": "Key Already Exist",
+   "body": "{\"error\":{\"message\":\"Key Already Exist\"}}"
+  },
+  "DB:ELEM|bogus_field": {
+   "uri": "/db/ELEM",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:ELEM|wrong_type": {
+   "uri": "/db/ELEM",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:SKEW|bogus_field": {
+   "uri": "/db/SKEW",
+   "status": 400,
+   "message": "[错误] 节点局部坐标轴使用于没有定义的单元号 995001。",
+   "body": "{\"error\":{\"message\":\"[错误] 节点局部坐标轴使用于没有定义的单元号 995001。\"}}"
+  },
+  "DB:SKEW|wrong_type": {
+   "uri": "/db/SKEW",
+   "status": 400,
+   "message": "[错误] 节点局部坐标轴使用于没有定义的单元号 995001。",
+   "body": "{\"error\":{\"message\":\"[错误] 节点局部坐标轴使用于没有定义的单元号 995001。\"}}"
+  },
+  "DB:MADO|bogus_field": {
+   "uri": "/db/MADO",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:MADO|wrong_type": {
+   "uri": "/db/MADO",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:SBDO|bogus_field": {
+   "uri": "/db/SBDO",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:SBDO|wrong_type": {
+   "uri": "/db/SBDO",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:DOEL|bogus_field": {
+   "uri": "/db/DOEL",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:DOEL|wrong_type": {
+   "uri": "/db/DOEL",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:MATL|bogus_field": {
+   "uri": "/db/MATL",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:MATL|wrong_type": {
+   "uri": "/db/MATL",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:MATL-M1|bogus_field": {
+   "uri": "/db/MATL-M1",
+   "status": 404,
+   "message": null,
+   "body": ""
+  },
+  "DB:MATL-M1|wrong_type": {
+   "uri": "/db/MATL-M1",
+   "status": 404,
+   "message": null,
+   "body": ""
+  },
+  "DB:IMFM|bogus_field": {
+   "uri": "/db/IMFM",
+   "status": 400,
+   "message": "[错误] 材料 995001 不存在。",
+   "body": "{\"error\":{\"message\":\"[错误] 材料 995001 不存在。\"}}"
+  },
+  "DB:IMFM|wrong_type": {
+   "uri": "/db/IMFM",
+   "status": 400,
+   "message": "[错误] 材料 995001 不存在。",
+   "body": "{\"error\":{\"message\":\"[错误] 材料 995001 不存在。\"}}"
+  },
+  "DB:IMFM-M1|bogus_field": {
+   "uri": "/db/IMFM-M1",
+   "status": 404,
+   "message": null,
+   "body": ""
+  },
+  "DB:IMFM-M1|wrong_type": {
+   "uri": "/db/IMFM-M1",
+   "status": 404,
+   "message": null,
+   "body": ""
+  },
+  "DB:TDMF|bogus_field": {
+   "uri": "/db/TDMF",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:TDMF|wrong_type": {
+   "uri": "/db/TDMF",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:TDMT|bogus_field": {
+   "uri": "/db/TDMT",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:TDMT|wrong_type": {
+   "uri": "/db/TDMT",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:TDME|bogus_field": {
+   "uri": "/db/TDME",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:TDME|wrong_type": {
+   "uri": "/db/TDME",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:EDMP|bogus_field": {
+   "uri": "/db/EDMP",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:EDMP|wrong_type": {
+   "uri": "/db/EDMP",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:TMAT|bogus_field": {
+   "uri": "/db/TMAT",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:TMAT|wrong_type": {
+   "uri": "/db/TMAT",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:EPMT|bogus_field": {
+   "uri": "/db/EPMT",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:EPMT|wrong_type": {
+   "uri": "/db/EPMT",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:EPMT-M1|bogus_field": {
+   "uri": "/db/EPMT-M1",
+   "status": 404,
+   "message": null,
+   "body": ""
+  },
+  "DB:EPMT-M1|wrong_type": {
+   "uri": "/db/EPMT-M1",
+   "status": 404,
+   "message": null,
+   "body": ""
+  },
+  "DB:SECT|bogus_field": {
+   "uri": "/db/SECT",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:SECT|wrong_type": {
+   "uri": "/db/SECT",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:THIK|bogus_field": {
+   "uri": "/db/THIK",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:THIK|wrong_type": {
+   "uri": "/db/THIK",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:TSGR|bogus_field": {
+   "uri": "/db/TSGR",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:TSGR|wrong_type": {
+   "uri": "/db/TSGR",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:SECF|bogus_field": {
+   "uri": "/db/SECF",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:SECF|wrong_type": {
+   "uri": "/db/SECF",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:RPSC|bogus_field": {
+   "uri": "/db/RPSC",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:RPSC|wrong_type": {
+   "uri": "/db/RPSC",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:STRPSSM|bogus_field": {
+   "uri": "/db/STRPSSM",
+   "status": 404,
+   "message": null,
+   "body": ""
+  },
+  "DB:STRPSSM|wrong_type": {
+   "uri": "/db/STRPSSM",
+   "status": 404,
+   "message": null,
+   "body": ""
+  },
+  "DB:PSSF|bogus_field": {
+   "uri": "/db/PSSF",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:PSSF|wrong_type": {
+   "uri": "/db/PSSF",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:VBEM|bogus_field": {
+   "uri": "/db/VBEM",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:VBEM|wrong_type": {
+   "uri": "/db/VBEM",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:VSEC|bogus_field": {
+   "uri": "/db/VSEC",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:VSEC|wrong_type": {
+   "uri": "/db/VSEC",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:EWSF|bogus_field": {
+   "uri": "/db/EWSF",
+   "status": 404,
+   "message": null,
+   "body": ""
+  },
+  "DB:EWSF|wrong_type": {
+   "uri": "/db/EWSF",
+   "status": 404,
+   "message": null,
+   "body": ""
+  },
+  "DB:IEHC|bogus_field": {
+   "uri": "/db/IEHC",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:IEHC|wrong_type": {
+   "uri": "/db/IEHC",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:IEHG|bogus_field": {
+   "uri": "/db/IEHG",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:IEHG|wrong_type": {
+   "uri": "/db/IEHG",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:IEHG-BEAM-M1|bogus_field": {
+   "uri": "/db/IEHG-BEAM-M1",
+   "status": 404,
+   "message": null,
+   "body": ""
+  },
+  "DB:IEHG-BEAM-M1|wrong_type": {
+   "uri": "/db/IEHG-BEAM-M1",
+   "status": 404,
+   "message": null,
+   "body": ""
+  },
+  "DB:IEHG-TRUSS-M1|bogus_field": {
+   "uri": "/db/IEHG-TRUSS-M1",
+   "status": 404,
+   "message": null,
+   "body": ""
+  },
+  "DB:IEHG-TRUSS-M1|wrong_type": {
+   "uri": "/db/IEHG-TRUSS-M1",
+   "status": 404,
+   "message": null,
+   "body": ""
+  },
+  "DB:IEHG-GL-M1|bogus_field": {
+   "uri": "/db/IEHG-GL-M1",
+   "status": 404,
+   "message": null,
+   "body": ""
+  },
+  "DB:IEHG-GL-M1|wrong_type": {
+   "uri": "/db/IEHG-GL-M1",
+   "status": 404,
+   "message": null,
+   "body": ""
+  },
+  "DB:IEHG-PSS-M1|bogus_field": {
+   "uri": "/db/IEHG-PSS-M1",
+   "status": 404,
+   "message": null,
+   "body": ""
+  },
+  "DB:IEHG-PSS-M1|wrong_type": {
+   "uri": "/db/IEHG-PSS-M1",
+   "status": 404,
+   "message": null,
+   "body": ""
+  },
+  "DB:FIMP|bogus_field": {
+   "uri": "/db/FIMP",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:FIMP|wrong_type": {
+   "uri": "/db/FIMP",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:FIBR|bogus_field": {
+   "uri": "/db/FIBR",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:FIBR|wrong_type": {
+   "uri": "/db/FIBR",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:GRDP|bogus_field": {
+   "uri": "/db/GRDP",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:GRDP|wrong_type": {
+   "uri": "/db/GRDP",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:ESSF|bogus_field": {
+   "uri": "/db/ESSF",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:ESSF|wrong_type": {
+   "uri": "/db/ESSF",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:CONS|bogus_field": {
+   "uri": "/db/CONS",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:CONS|wrong_type": {
+   "uri": "/db/CONS",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:NSPR|bogus_field": {
+   "uri": "/db/NSPR",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:NSPR|wrong_type": {
+   "uri": "/db/NSPR",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:GSTP|bogus_field": {
+   "uri": "/db/GSTP",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:GSTP|wrong_type": {
+   "uri": "/db/GSTP",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:GSPR|bogus_field": {
+   "uri": "/db/GSPR",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:GSPR|wrong_type": {
+   "uri": "/db/GSPR",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:SSPS|bogus_field": {
+   "uri": "/db/SSPS",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:SSPS|wrong_type": {
+   "uri": "/db/SSPS",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:ELNK|bogus_field": {
+   "uri": "/db/ELNK",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:ELNK|wrong_type": {
+   "uri": "/db/ELNK",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:RIGD|bogus_field": {
+   "uri": "/db/RIGD",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:RIGD|wrong_type": {
+   "uri": "/db/RIGD",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:NLLP|bogus_field": {
+   "uri": "/db/NLLP",
+   "status": 400,
+   "message": "Unknown Error",
+   "body": "{\"error\":{\"message\":\"Unknown Error\"}}"
+  },
+  "DB:NLLP|wrong_type": {
+   "uri": "/db/NLLP",
+   "status": 400,
+   "message": "Unknown Error",
+   "body": "{\"error\":{\"message\":\"Unknown Error\"}}"
+  },
+  "DB:NLNK|bogus_field": {
+   "uri": "/db/NLNK",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:NLNK|wrong_type": {
+   "uri": "/db/NLNK",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:NLNK-M1|bogus_field": {
+   "uri": "/db/NLNK-M1",
+   "status": 404,
+   "message": null,
+   "body": ""
+  },
+  "DB:NLNK-M1|wrong_type": {
+   "uri": "/db/NLNK-M1",
+   "status": 404,
+   "message": null,
+   "body": ""
+  },
+  "DB:CGLP|bogus_field": {
+   "uri": "/db/CGLP",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:CGLP|wrong_type": {
+   "uri": "/db/CGLP",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:FRLS|bogus_field": {
+   "uri": "/db/FRLS",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:FRLS|wrong_type": {
+   "uri": "/db/FRLS",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:OFFS|bogus_field": {
+   "uri": "/db/OFFS",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:OFFS|wrong_type": {
+   "uri": "/db/OFFS",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:PRLS|bogus_field": {
+   "uri": "/db/PRLS",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  },
+  "DB:PRLS|wrong_type": {
+   "uri": "/db/PRLS",
+   "status": 400,
+   "message": "Wrong Field",
+   "body": "{\"error\":{\"message\":\"Wrong Field\"}}"
+  }
+ },
+ "misses": []
+}

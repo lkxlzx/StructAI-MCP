@@ -1,0 +1,17 @@
+# Normalise text to LF inside the repository so a Windows checkout (where
+# core.autocrlf=true) and a Linux/macOS checkout produce identical blobs.
+* text=auto
+
+# Binary payloads: never touch these.
+*.rar   binary
+*.7z    binary
+*.zip   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.ico   binary
+*.pdf   binary
+*.mgbx  binary
+
+# Machine-written audit trails: keep them byte-exact, no eol rewriting.
+*.jsonl -text
