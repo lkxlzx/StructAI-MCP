@@ -694,6 +694,20 @@ CALL = threading.local()
 #: without the driver knowing anything about them.
 _STEP_RE = re.compile(r"^\[(\d{2})\]\s+(PASS|FAIL)\s+(.*)$")
 
+#: The driver separates a step's name from its detail with this.  The name is
+#: what a progress line shows; the detail is for the finished report.
+_STEP_SEP = "  -- "
+
+
+def _step_line(match) -> str:
+    """``name----PASS`` - the one line a watcher wants per completed step."""
+    name, _, _detail = match.group(3).partition(_STEP_SEP)
+    return f"{name.strip()}----{match.group(2)}"
+
+
+def _step_line_from(name, ok) -> str:
+    return f"{name}----{'PASS' if ok else 'FAIL'}"
+
 #: Jobs live for the life of the server process: a background run has to
 #: outlive the ``tools/call`` that started it, and there is nowhere else to put
 #: it.  A server restart therefore forgets its jobs, which the status tool says
@@ -782,8 +796,12 @@ class FrameJob:
         for line in list(self.lines):
             match = _STEP_RE.match(line.strip())
             if match:
+                name, _, detail = match.group(3).partition(_STEP_SEP)
                 out.append({"step": int(match.group(1)),
                             "ok": match.group(2) == "PASS",
+                            "name": name.strip(),
+                            "line": _step_line(match),
+                            "detail": detail.strip(),
                             "text": match.group(3).strip()})
         return out
 
@@ -951,8 +969,11 @@ def _emit_progress(notify, token, job, match):
         notify("notifications/progress",
                {"progressToken": token,
                 "progress": len(job.steps()),
-                "message": f"[{match.group(1)}] {match.group(2)}  "
-                           f"{match.group(3).strip()}"})
+                #: The compact line, not the driver's whole line: a progress
+                #: feed is read at a glance while the run is still going, and
+                #: "定义材料----PASS" says what happened.  The detail is in the
+                #: finished answer, which is where anyone reads it carefully.
+                "message": _step_line(match)})
     except Exception:  # noqa: BLE001 - see the docstring
         log.debug("progress notification dropped", exc_info=True)
 
@@ -1009,6 +1030,18 @@ def _answer(job) -> dict:
             f"the driver exited {job.proc.returncode} without a verdict: {detail}")
 
     report = verdict.pop("report", "")
+    #: The same one-line form the live progress uses, so a caller can print the
+    #: finished run's steps exactly as it printed them while they arrived.
+    for record in verdict.get("steps") or []:
+        if isinstance(record, dict) and "name" in record:
+            record.setdefault("line", _step_line_from(record["name"],
+                                                      record.get("ok")))
+    #: A client that has been printing step lines while the run was in flight
+    #: must not have to change shape the moment it ends: the finished answer
+    #: carries the same progress block, so the last steps print exactly like the
+    #: first ones.  Without this the final step - the one that says the report
+    #: was written - is the one step nobody ever sees.
+    verdict["progress"] = job.progress()
     good = bool(verdict.get("ok"))
     analysis = verdict.get("analysis")
     note = verdict.get("note")

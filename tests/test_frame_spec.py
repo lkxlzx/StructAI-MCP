@@ -546,8 +546,13 @@ class FrameJobTests(unittest.TestCase):
         self.assertEqual(answer["report"], "")
         progress = answer["data"]["progress"]
         self.assertEqual(progress["steps_done"], 3)
+        #: The driver's own line is kept, and the compact form a watcher prints
+        #: is derived from the same parse rather than left to each client.
         self.assertEqual(progress["last"]["text"], "定义截面  -- nope")
+        self.assertEqual(progress["last"]["name"], "定义截面")
+        self.assertEqual(progress["last"]["line"], "定义截面----FAIL")
         self.assertIs(progress["last"]["ok"], False)
+        self.assertEqual(progress["steps"][0]["line"], "创建/初始化模型----PASS")
 
     def test_a_finished_poll_returns_the_report_the_blocking_call_would(self):
         lines = [self.STEPS, json.dumps(_verdict()) + "\n"]
@@ -556,6 +561,12 @@ class FrameJobTests(unittest.TestCase):
         self.assertIs(polled["running"], False)
         self.assertIs(polled["ok"], True)
         self.assertEqual(polled["report"], "# the report\n")
+        #: The finished answer carries the same progress block as a running
+        #: poll, so a client that has been printing step lines prints the last
+        #: one the same way instead of losing it at the moment it matters.
+        self.assertEqual([s["line"] for s in polled["data"]["progress"]["steps"]],
+                         ["创建/初始化模型----PASS", "定义材料----PASS",
+                          "定义截面----FAIL"])
 
         with unittest.mock.patch.object(dispatch.subprocess, "Popen",
                                         return_value=_FakeProc("".join(lines))):
@@ -593,7 +604,11 @@ class FrameJobTests(unittest.TestCase):
         self.assertTrue(all(m == "notifications/progress" for m, _ in seen))
         self.assertTrue(all(p["progressToken"] == "tok-1" for _, p in seen))
         self.assertEqual([p["progress"] for _, p in seen], [1, 2, 3])
-        self.assertIn("定义截面", seen[2][1]["message"])
+        #: One compact line per step, in the form a watcher can print straight
+        #: out: 定义材料----PASS.  Not the driver's whole line - that is what
+        #: the finished answer is for.
+        self.assertEqual(seen[2][1]["message"], "定义截面----FAIL")
+        self.assertEqual(seen[0][1]["message"], "创建/初始化模型----PASS")
 
     def test_no_token_means_no_notifications(self):
         seen = []
