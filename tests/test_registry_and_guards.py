@@ -371,6 +371,28 @@ class DispatchTests(unittest.TestCase):
         self.assertTrue(result["ok"])
         self.assertIn("POST:TABLE", result["note"])
 
+    def test_the_anal_body_is_the_documented_empty_object(self):
+        """``/doc/ANAL`` documents the ordinary analysis as a bare ``{}``.
+
+        Sending ``{"Argument": {}}`` instead is tolerated by Gen NX 2027 but
+        crashed CIVIL NX 2026, so the documented shape is the one that goes out.
+        Every other doc command keeps the Argument wrapper its registry entry
+        declares - NEW is checked here because that is the wrapper CIVIL NX
+        accepted on the same run.
+        """
+        from midas_mcp import dispatch
+        client = _FakeClient(responses={
+            ("POST", "/doc/ANAL"): (200, '{"message":""}'),
+            ("POST", "/doc/NEW"): (200, '{"message":""}'),
+        })
+        dispatch.tool_doc({"command": "ANAL", "argument": {}}, self._deps(client))
+        self.assertEqual(client.calls[-1][2], {})
+        dispatch.tool_doc({"command": "ANAL", "argument": {"TYPE": "Pushover"}},
+                          self._deps(client))
+        self.assertEqual(client.calls[-1][2], {"Argument": {"TYPE": "Pushover"}})
+        dispatch.tool_doc({"command": "NEW", "argument": {}}, self._deps(client))
+        self.assertEqual(client.calls[-1][2], {"Argument": {}})
+
     def test_stag_write_carries_the_preflight_warning(self):
         """A successful DB:STAG write with no boundary group is reported ok but
         annotated, because the consequence (an unexplained analysis refusal)

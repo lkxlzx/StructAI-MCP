@@ -56,6 +56,8 @@ _RESOURCE_NAMES = {
     "midas://recipes/load-balance": ("text/markdown", lambda: knowledge.recipe_markdown("load-balance")),
     "midas://recipes/one-shot": ("text/markdown",
                                  lambda: knowledge.recipe_markdown("one-shot")),
+    "midas://recipes/bridge": ("text/markdown",
+                               lambda: knowledge.recipe_markdown("bridge")),
 }
 
 

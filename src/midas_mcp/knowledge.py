@@ -280,6 +280,51 @@ PITFALLS: list[dict] = [
      "accepted, and that took 166 s and 222 s on two live runs - the step lines start "
      "only after it. Watch elapsed_s, not the step count, to tell slow from "
      "wedged; a genuine stall ends in the 7200 s kill, not in silence"},
+    {"area": "write", "trap": "a payload carrying any non-ASCII character",
+     "symptom": "UnicodeEncodeError: 'latin-1' codec can't encode characters - "
+     "raised inside the connector, not by MIDAS, so it reads as an internal "
+     "error.  It hit the first Chinese load-case description on a CIVIL NX run "
+     "that had been ASCII-only on Gen until then",
+     "fix": "the JSON body is encoded to UTF-8 bytes before it is handed to "
+     "http.client, and Content-Length is the length of those bytes.  "
+     "http.client encodes a *str* body as latin-1 by default, which is what "
+     "raised - and it would have mislabelled the length too.  Fixed in "
+     "midas_http._one; keep it that way - MIDAS is a Korean product and "
+     "descriptions in Chinese or Korean are normal"},
+    {"area": "analysis", "trap": "wrapping the empty argument of /doc/ANAL",
+     "symptom": "CIVIL NX 2026 crashed outright when POST /doc/ANAL was sent as "
+     "{\"Argument\": {}}.  Gen NX 2027 accepts that same body and answers 200, "
+     "so the shape looked verified",
+     "fix": "the manual documents the ordinary analysis as a bare empty object "
+     "{} and only Pushover as {\"Argument\": {\"TYPE\": \"Pushover\"}}.  "
+     "dispatch.tool_doc now sends {} when the argument is empty and keeps the "
+     "Argument wrapper for every other doc command (NEW still carries it and "
+     "CIVIL NX accepts it).  Verified live: {} answers 200 / 'MIDAS GEN NX "
+     "command complete' on Gen NX"},
+    {"area": "load", "trap": "the sign of a beam load applied with DIRECTION GZ",
+     "symptom": "the superimposed dead, lane and pedestrian uniform loads were "
+     "written as +12.0 / +6.3 / +4.5 kN/m and MIDAS applied them UPWARD: the "
+     "reactions came back FZ = -123.8 kN (a downward reaction) because self "
+     "weight 112 kN down was outweighed by 360 kN applied up.  Every number in "
+     "the report was then wrong in a way that still looked plausible",
+     "fix": "DIRECTION takes a *signed* value along that global axis, so a "
+     "downward load is negative (-12.0 / -6.3 / -4.5).  The tell is the "
+     "reaction sign: a simply supported beam carrying gravity must show "
+     "positive (upward) FZ.  Check the sign of the sum before reading any "
+     "other result - the portal frame's -0.5 roof load was already the "
+     "negative convention"},
+    {"area": "post", "trap": "guessing CURRENT_MODE for /view/CAPTURE",
+     "symptom": "every plausible spelling of the displacement mode "
+     "('displacements', 'Displacement', 'Deformation', 'Deflection', "
+     "'Deformed Shape' is the right one) answers 'MIDAS GEN NX second query is "
+     "wrong', which names neither the field nor the expected value",
+     "fix": "the modes are MIDAS's own names: beam diagrams is 'beamdiagrams' "
+     "(the manual also shows 'beam diagrams'), reactions is "
+     "'reactionforces/moments', deformation is 'Deformed Shape'.  Components "
+     "are My / Mz / Fx / Fy / Fz for beam diagrams, DXYZ for deformation, "
+     "Fxyz for reactions.  EXPORT_PATH must use Windows backslashes and "
+     "SET_MODE must be 'post' with an analysis result present.  Verified live: "
+     "6 images captured in one run"},
 ]
 
 RECIPES: dict[str, dict] = {
@@ -396,6 +441,46 @@ RECIPES: dict[str, dict] = {
                 "refused a second run and any write while one was in flight. "
                 "Drive midas_db_assign by hand only when the model is not a "
                 "steel portal frame.",
+    },
+    "bridge": {
+        "title": "简支梁桥: 建模 -> 分析 -> 内力云图 -> 报告",
+        "steps": [
+            "doc: NEW (DOC:NEW), then STYP and UNIT.  Both are PUT endpoints "
+            "(mode='update'), not POST - a create is answered with 'DB:STYP "
+            "does not accept POST (methods: GET, PUT)'",
+            "material, section, nodes, elements, supports in that order.  A "
+            "simply supported span is CONSTRAINT 1110000 at one end and "
+            "0110000 at the other (DX released = roller); the string is read "
+            "in the API's own order (DX,DY,DZ,RX,RY,RZ,RW)",
+            "load cases (DB:STLD) BEFORE any load record: a load naming a case "
+            "that does not exist is accepted and then never solved, and BODF "
+            "answers '自重 使用于没有定义的静力荷载工况'",
+            "self weight is ONE DB:BODF record (FV=[0,0,-1]).  STYP "
+            "bSELFWEIGHT is the self-weight -> mass conversion, not a static "
+            "load; writing both applies the weight twice",
+            "uniform loads go to DB:BMLD keyed by element, with DIRECTION GZ "
+            "and a NEGATIVE P for downward - the value is signed along that "
+            "global axis.  Concentrated loads go to DB:CNLD keyed by node "
+            "(FZ negative = downward)",
+            "check the reaction sign before anything else: a gravity-loaded "
+            "simply supported beam must show POSITIVE (upward) FZ at both "
+            "ends.  FZ negative means the loads went the wrong way",
+            "analysis is DOC:ANAL with a bare {} body, then read results with "
+            "POST:TABLE and LOAD_CASE_NAMES suffixed (ST) for cases / (CB) for "
+            "combinations - an unsuffixed name answers 200 with zero rows.  "
+            "DISPLACEMENTG / BEAMFORCE / REACTIONG / BEAMSTRESS all work",
+            "result graphics come from VIEW:CAPTURE with SET_MODE='post' and a "
+            "RESULT_GRAPHIC block: 'beamdiagrams' + My/Fz/Fx, 'Deformed Shape' "
+            "+ DXYZ, 'reactionforces/moments' + Fxyz.  EXPORT_PATH needs "
+            "Windows backslashes",
+        ],
+        "note": "verified live on GEN NX 2027: a 30 m simply supported plate "
+                "girder (Q345, H1800x450x18x34) with 15/15 model steps PASS, "
+                "analysis SUCCESS, 6 captured images, and every check passing "
+                "(bending 158.80 of 295 MPa, shear 22.30 of 170 MPa, deflection "
+                "51.78 of 60 mm).  Save the model with DOC:SAVEAS before "
+                "DOC:ANAL - a bad analysis body crashed CIVIL NX 2026 and took "
+                "the unsaved model with it.",
     },
 }
 

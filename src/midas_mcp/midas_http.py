@@ -112,13 +112,20 @@ class MidasClient:
         started = time.time()
         payload = None
         if body is not None:
-            payload = json.dumps(body, ensure_ascii=False, separators=(",", ":"))
+            #: ``ensure_ascii=False`` keeps the payload readable, so it is a
+            #: ``str`` that can hold any character - a Chinese load-case
+            #: description, a Korean section name.  http.client encodes a
+            #: *str* body as latin-1, which raises on the first such character
+            #: (and would have mislabelled Content-Length anyway), so the body
+            #: is encoded here, once, and the length is the length of that.
+            payload = json.dumps(body, ensure_ascii=False,
+                                 separators=(",", ":")).encode("utf-8")
         headers = {
             "MAPI-Key": self.cfg.mapi_key.reveal(),
             "Content-Type": "application/json",
         }
         if payload is not None:
-            headers["Content-Length"] = str(len(payload.encode("utf-8")))
+            headers["Content-Length"] = str(len(payload))
 
         conn = _AbortableConnection(self.host, self.port, timeout, cancel)
         conn_key = f"{threading.get_ident()}:{path}"

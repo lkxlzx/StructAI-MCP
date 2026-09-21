@@ -261,7 +261,13 @@ def tool_doc(args: dict, deps: Deps) -> dict:
         if not isinstance(argument, str) or not argument.strip():
             raise InputError(f"DOC:{command} needs a non-empty file path string.")
         argument = argument.replace("/", "\\")
-    body = {"Argument": argument}
+    #: DOC:ANAL documents the ordinary analysis as a **bare empty object** -
+    #: ``{}`` - and only Pushover as ``{"Argument": {"TYPE": "Pushover"}}``.
+    #: Wrapping the empty argument anyway (``{"Argument": {}}``) is tolerated by
+    #: Gen NX 2027 but crashed CIVIL NX 2026, so the documented shape is the one
+    #: that goes out.  Every other doc command keeps the Argument wrapper its
+    #: registry entry declares.
+    body = {} if (command == "ANAL" and not argument) else {"Argument": argument}
     timeout = guards.cfg.timeouts.get("analysis" if command == "ANAL" else "assign", 60)
     resp = client.request(method, ep.uri, body, timeout_s=timeout, retryable=False)
     raw = resp.raw
