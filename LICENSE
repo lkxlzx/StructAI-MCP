@@ -1,0 +1,33 @@
+PROPRIETARY AND CONFIDENTIAL - INTERNAL USE ONLY
+Copyright (c) 2026 StructAI. All rights reserved.
+
+This repository and its contents (the "Software") are proprietary and
+confidential. No licence, express or implied, is granted to any person or
+organisation other than the copyright holder.
+
+Without prior written permission from the copyright holder you may not:
+  - copy, reproduce or redistribute the Software or any part of it;
+  - publish, sublicense, sell, rent or otherwise make it available to any
+    third party;
+  - create derivative works from it;
+  - use it in any product or service offered to third parties.
+
+Use by the copyright holder and its authorised personnel is permitted.
+
+THIRD-PARTY MATERIAL
+This repository contains API documentation and reference material for
+MIDAS GEN NX / MIDAS CIVIL NX (directories api_chapters/, docs/manual/,
+docs/reference/, mcp/ and the Development_Pack archives). That material is
+the property of its respective owner, MIDAS IT, and is included solely as
+engineering reference. It is NOT covered by the copyright notice above and
+may not be redistributed. If you are not authorised to hold that material,
+remove those directories before using this repository.
+
+NO WARRANTY
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
+IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

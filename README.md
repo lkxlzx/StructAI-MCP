@@ -243,3 +243,12 @@ never assume an endpoint is universal across Civil/Gen:
 - Hyper-S (`-M1`) endpoints are Gen-version-specific.
 - `accepts_analysis` results invalidate on any model change; run `/doc/ANAL`
   again before reading result tables.
+
+## License
+
+Proprietary and confidential - internal use only. See [LICENSE](LICENSE).
+No licence is granted for redistribution or third-party use.
+
+Note that this repository also carries MIDAS GEN NX / MIDAS CIVIL NX API
+documentation (`api_chapters/`, `docs/manual/`, `docs/reference/`, `mcp/`).
+That material belongs to MIDAS IT and is not covered by the notice above.
