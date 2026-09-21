@@ -723,6 +723,13 @@ def tool_frame_run(args: dict, deps: Deps) -> dict:
                f"exit={verdict.get('exit_code')}")
     if note:
         message += f" - {note}"
+    if category == "MODEL_NOT_EMPTY":
+        #: A client that reads only the category cannot tell a dead end from a
+        #: retry it can make itself, so the remedy belongs in the answer rather
+        #: than in a transcript.  Deleting a model the caller may still want is
+        #: not something to do silently, which is why this stays a refusal.
+        message += (" - retry with {\"clear\": true} to delete this driver's own "
+                    "collections first, or empty the MIDAS document by hand")
     return {
         "ok": good,
         "endpoint": "FRAME:RUN",

@@ -17,7 +17,9 @@ from __future__ import annotations
 import json
 import tempfile
 import unittest
+import unittest.mock
 from pathlib import Path
+from types import SimpleNamespace
 
 from midas_mcp import frame
 
@@ -340,6 +342,119 @@ class ReportFollowsSpecTests(unittest.TestCase):
         rows = frame.criteria({}, {"replies": {}}, {"a": 1, "b": None}, None, [])
         detail = {name: text for name, _ok, text in rows}["极值提取"]
         self.assertIn("/2", detail)
+
+
+class FrameRunToolTests(unittest.TestCase):
+    """The envelope ``midas_frame_run`` answers with, without a live MIDAS.
+
+    The tool runs the driver as a subprocess, so ``subprocess.run`` is replaced
+    by one that returns a canned stdout line.  What is under test is the mapping
+    from the driver's verdict to the tool's answer - the shape a client codes
+    against, and the reason ``ok``/``report`` sit at the top level while the
+    counts live in ``data``.
+    """
+
+    class _Done:
+        def __init__(self, stdout, returncode=0, stderr=""):
+            self.stdout = stdout
+            self.stderr = stderr
+            self.returncode = returncode
+
+    @staticmethod
+    def _client():
+        return SimpleNamespace(cfg=SimpleNamespace(
+            base_url="http://localhost:3030/gen",
+            mapi_key=SimpleNamespace(reveal=lambda: "TESTKEY0000000000000")))
+
+    def _call(self, verdict, returncode=0, stderr="", spec=None):
+        from midas_mcp import dispatch
+
+        stdout = "" if verdict is None else json.dumps(verdict) + "\n"
+        with unittest.mock.patch.object(dispatch.subprocess, "run") as run:
+            run.return_value = self._Done(stdout, returncode, stderr)
+            answer = dispatch.tool_frame_run(
+                {"spec": {} if spec is None else spec},
+                lambda: (None, self._client(), None))
+        return answer, run.call_args
+
+    def test_a_successful_verdict_is_wrapped_not_returned_bare(self):
+        answer, _ = self._call(
+            {"ok": True, "analysis": "SUCCESS", "exit_code": 0,
+             "criteria": [{"name": "a", "ok": True, "detail": ""}],
+             "verifications": [{"name": "b", "ok": True, "detail": ""}],
+             "failed": [], "note": None, "report": "# the report\n"})
+        self.assertIs(answer["ok"], True)
+        self.assertEqual(answer["status"], 200)
+        self.assertIsNone(answer["category"])
+        self.assertEqual(answer["report"], "# the report\n")
+        self.assertEqual(answer["data"]["analysis"], "SUCCESS")
+        self.assertEqual(len(answer["data"]["criteria"]), 1)
+        self.assertNotIn("report", answer["data"])
+
+    def test_a_refusal_names_the_situation_and_carries_no_report(self):
+        answer, _ = self._call(
+            {"ok": False, "analysis": "REFUSED", "exit_code": 3, "criteria": [],
+             "verifications": [], "failed": ["preflight"], "note": "活文档非空",
+             "report": ""}, returncode=3)
+        self.assertIs(answer["ok"], False)
+        self.assertEqual(answer["category"], "MODEL_NOT_EMPTY")
+        self.assertEqual(answer["report"], "")
+        self.assertEqual(answer["data"]["analysis"], "REFUSED")
+        # the caller has to be able to see the way out of the refusal
+        self.assertIn("clear", answer["message"])
+
+    def test_a_failed_self_check_is_not_reported_as_a_model_problem(self):
+        answer, _ = self._call(
+            {"ok": False, "analysis": "SUCCESS", "exit_code": 1,
+             "criteria": [{"name": "a", "ok": False, "detail": ""}],
+             "verifications": [], "failed": ["a"], "note": None,
+             "report": "# the report\n"})
+        self.assertEqual(answer["category"], "SELF_CHECK_FAILED")
+
+    def test_clear_must_be_a_boolean(self):
+        from midas_mcp import dispatch
+        from midas_mcp.errors import InputError
+
+        for bad in ("false", "true", 1, 0, []):
+            with self.assertRaises(InputError) as ctx:
+                dispatch.tool_frame_run({"spec": {}, "clear": bad},
+                                        lambda: (None, None, None))
+            self.assertIn("boolean", str(ctx.exception))
+
+    def test_clear_is_passed_as_a_flag_and_the_key_only_in_the_environment(self):
+        answer, call = self._call(
+            {"ok": True, "analysis": "SUCCESS", "exit_code": 0, "criteria": [1],
+             "verifications": [1], "failed": [], "note": None, "report": "r"},
+            spec={"span": 24.0})
+        self.assertIs(answer["ok"], True)
+        self.assertNotIn("--clear", call.args[0])
+
+        from midas_mcp import dispatch
+
+        with unittest.mock.patch.object(dispatch.subprocess, "run") as run:
+            run.return_value = self._Done(json.dumps(
+                {"ok": True, "analysis": "SUCCESS", "exit_code": 0,
+                 "criteria": [1], "verifications": [1], "failed": [],
+                 "note": None, "report": "r"}) + "\n")
+            dispatch.tool_frame_run({"spec": {}, "clear": True},
+                                    lambda: (None, self._client(), None))
+            argv = run.call_args.args[0]
+            env = run.call_args.kwargs["env"]
+        self.assertIn("--clear", argv)
+        self.assertEqual(env["MIDAS_MAPI_KEY"], "TESTKEY0000000000000")
+        self.assertEqual(env["MIDAS_BASE_URL"], "http://localhost:3030/gen")
+        # the child has to import the package, so src travels in the environment
+        self.assertIn(str(Path(frame.__file__).resolve().parents[1]),
+                      env["PYTHONPATH"])
+        self.assertNotIn("TESTKEY0000000000000", " ".join(argv))
+
+    def test_a_driver_that_printed_no_verdict_is_an_error_not_a_pass(self):
+        from midas_mcp import dispatch
+        from midas_mcp.errors import FrameRunError
+
+        with self.assertRaises(FrameRunError) as ctx:
+            self._call(None, returncode=3, stderr="spec 不可用: x")
+        self.assertIn("spec 不可用", str(ctx.exception))
 
 
 if __name__ == "__main__":
