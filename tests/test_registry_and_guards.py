@@ -435,6 +435,295 @@ class DispatchTests(unittest.TestCase):
         self.assertNotIn("no rows", " ".join(result["hints"]))
 
 
+class _Clock:
+    """Stand-in for the ``time`` module so the id-snapshot TTL can be moved by
+    hand instead of slept through.  Only ``midas_http.time`` is replaced."""
+
+    def __init__(self):
+        self.now = 1000.0
+
+    def monotonic(self):
+        return self.now
+
+    def advance(self, seconds):
+        self.now += seconds
+
+    def time(self):
+        return self.now
+
+    def sleep(self, _seconds):
+        pass
+
+
+class IdCacheTests(unittest.TestCase):
+    """The id snapshot the crash guard reads must expire, and a write to a
+    collection must drop that collection's snapshot.
+
+    Without this, a NODE created after an earlier snapshot is invisible to
+    ``guards.require_existing_refs``, which then refuses a ref-keyed write with
+    "keys records on NODE ids that do not exist" for a node that does exist - a
+    bogus refusal that reads like a modelling error and cannot be explained
+    from the message.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.reg = registry.Registry.load(ROOT / "registry")
+        cls.cfg = config.load_config([])
+
+    def setUp(self):
+        from midas_mcp import midas_http
+        self.http = midas_http
+        self._orig_client = midas_http.MidasClient
+        self._orig_time = midas_http.time
+        self.clock = _Clock()
+        midas_http.time = self.clock
+        midas_http.invalidate_id_cache()
+        # ``midas_get_ids`` builds a module-level client; give it a recording
+        # fake whose NODE collection is empty.
+        self.client = _FakeClient(responses={
+            ("GET", "/db/NODE"): (200, '{"NODE":{}}'),
+        })
+        midas_http.MidasClient = lambda cfg: self.client
+
+    def tearDown(self):
+        self.http.MidasClient = self._orig_client
+        self.http.time = self._orig_time
+        self.http.invalidate_id_cache()
+
+    # -- helpers ----------------------------------------------------------
+    def _deps(self, client):
+        g = guards.Guards(self.reg, self.cfg)
+        return lambda: (g, client, self.reg)
+
+    def _reads(self, path="/db/NODE"):
+        return [c for c in self.client.calls if c[0] == "GET" and c[1] == path]
+
+    def _snapshot_present(self, family="NODE"):
+        return family in self.http._id_cache
+
+    #: Fallback for the window when the module defines none - which is the
+    #: defect under test.  The window assertions below must fail on behaviour,
+    #: not on a missing name.
+    _DEFAULT_TTL_S = 5.0
+
+    def _ttl(self):
+        return getattr(self.http, "_ID_CACHE_TTL_S", self._DEFAULT_TTL_S)
+
+    # -- the window -------------------------------------------------------
+    def test_the_window_is_finite_and_short(self):
+        """A snapshot that never expires is the defect: it must have a window,
+        and the window must stay short (the GUI can edit the model too)."""
+        ttl = self.http._ID_CACHE_TTL_S
+        self.assertGreater(ttl, 0)
+        self.assertLessEqual(ttl, 30)
+
+    def test_snapshot_is_reused_within_the_ttl(self):
+        """The cache must still exist: a guarded write cannot re-read NODE on
+        every call."""
+        self.assertEqual(self.http.midas_get_ids(self.cfg, "NODE"), [])
+        self.clock.advance(self._ttl() / 2)
+        self.assertEqual(self.http.midas_get_ids(self.cfg, "NODE"), [])
+        self.assertEqual(len(self._reads()), 1,
+                         "a snapshot inside the TTL was re-read instead of reused")
+
+    def test_snapshot_is_not_reused_after_the_ttl(self):
+        self.assertEqual(self.http.midas_get_ids(self.cfg, "NODE"), [])
+        self.client.responses[("GET", "/db/NODE")] = (
+            200, '{"NODE":{"1":{"X":0,"Y":0,"Z":0}}}')
+        self.clock.advance(self._ttl() + 0.1)
+        self.assertEqual(self.http.midas_get_ids(self.cfg, "NODE"), ["1"],
+                         "an expired snapshot was served from the cache")
+        self.assertEqual(len(self._reads()), 2)
+
+    # -- invalidation on write --------------------------------------------
+    def test_assign_drops_that_familys_snapshot(self):
+        from midas_mcp import dispatch
+        self.http.midas_get_ids(self.cfg, "NODE")
+        self.assertTrue(self._snapshot_present())
+        client = _FakeClient(responses={
+            ("POST", "/db/NODE"): (201, '{"NODE":{"1":{"X":0,"Y":0,"Z":0}}}'),
+        })
+        result = dispatch.tool_db_assign(
+            {"endpoint": "DB:NODE", "mode": "create",
+             "data": {"1": {"X": 0, "Y": 0, "Z": 0}}}, self._deps(client))
+        self.assertTrue(result["ok"], result)
+        self.assertFalse(self._snapshot_present(),
+                         "a successful DB:NODE write kept the stale NODE snapshot")
+
+    def test_delete_drops_that_familys_snapshot(self):
+        from midas_mcp import dispatch
+        self.http.midas_get_ids(self.cfg, "NODE")
+        self.assertTrue(self._snapshot_present())
+        client = _FakeClient(responses={
+            ("DELETE", "/db/NODE/710001"): (200, '{"message":""}'),
+            ("GET", "/db/NODE/710001"): (400, '{"error":{"message":"Not Found Key"}}'),
+        })
+        result = dispatch.tool_db_delete(
+            {"endpoint": "DB:NODE", "target_ids": ["710001"]}, self._deps(client))
+        self.assertTrue(result["ok"], result)
+        self.assertFalse(self._snapshot_present(),
+                         "a successful delete kept the stale NODE snapshot")
+
+    def test_a_partially_failed_delete_still_drops_the_snapshot(self):
+        """One id deleted, one refused: the deleted id must not survive in the
+        snapshot, or the guard later *permits* a write keyed on it."""
+        from midas_mcp import dispatch
+        self.http.midas_get_ids(self.cfg, "NODE")
+        self.assertTrue(self._snapshot_present())
+        client = _FakeClient(responses={
+            ("DELETE", "/db/NODE/1"): (200, '{"message":""}'),
+            ("GET", "/db/NODE/1"): (400, '{"error":{"message":"Not Found Key"}}'),
+            ("DELETE", "/db/NODE/2"): (400, '{"error":{"message":"Wrong Field"}}'),
+        })
+        result = dispatch.tool_db_delete(
+            {"endpoint": "DB:NODE", "target_ids": ["1", "2"]}, self._deps(client))
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["category"], "MIDAS_REJECTED")
+        self.assertEqual(result["deleted"], ["1"])
+        self.assertFalse(self._snapshot_present(),
+                         "a partial delete kept the just-deleted id in the snapshot")
+
+    def test_model_replacing_doc_command_drops_every_snapshot(self):
+        from midas_mcp import dispatch
+        for command in ("NEW", "OPEN", "IMPORT", "IMPORTMXT", "CLOSE"):
+            with self.subTest(command=command):
+                self.http.midas_get_ids(self.cfg, "NODE")
+                self.http.midas_get_ids(self.cfg, "ELEM")
+                self.assertEqual(sorted(self.http._id_cache), ["ELEM", "NODE"])
+                argument = ({"FILE_PATH": "C:/tmp/model.mxt"}
+                            if command in ("OPEN", "IMPORT", "IMPORTMXT") else {})
+                client = _FakeClient(responses={
+                    ("POST", f"/doc/{command}"): (200, '{"message":""}'),
+                })
+                result = dispatch.tool_doc({"command": command, "argument": argument},
+                                           self._deps(client))
+                self.assertTrue(result["ok"], result)
+                self.assertEqual(self.http._id_cache, {},
+                                 f"DOC:{command} replaced the model but kept the "
+                                 f"id snapshots")
+
+    def test_ope_actions_that_mint_ids_drop_both_families(self):
+        """``OPE:AUTOMESH``/``OPE:DIVIDEELEM`` are not ``DB:`` endpoints, but
+        they create nodes/elements: a pre-mesh ELEM snapshot would otherwise
+        refuse a valid write keyed on a freshly meshed element."""
+        from midas_mcp import dispatch
+        for key in ("OPE:AUTOMESH", "OPE:DIVIDEELEM"):
+            with self.subTest(endpoint=key):
+                self.http.midas_get_ids(self.cfg, "NODE")
+                self.http.midas_get_ids(self.cfg, "ELEM")
+                self.assertEqual(sorted(self.http._id_cache), ["ELEM", "NODE"])
+                client = _FakeClient(responses={
+                    ("POST", "/ope/" + key.split(":", 1)[1]): (200, '{"message":""}'),
+                })
+                result = dispatch.tool_db_assign(
+                    {"endpoint": key, "mode": "create",
+                     "data": {"1": {"NAME": "A1"}}}, self._deps(client))
+                self.assertTrue(result["ok"], result)
+                self.assertEqual(self.http._id_cache, {},
+                                 f"{key} mints ids but kept the NODE/ELEM snapshots")
+
+    def test_a_failed_read_is_not_cached(self):
+        """A transport error or a 404 is not evidence that a collection is
+        empty; caching the [] refuses every guarded write for a whole TTL."""
+        for status, raw in ((0, "transport error: connection refused"),
+                            (404, '{"error":{"message":"Not Found Key"}}')):
+            with self.subTest(status=status):
+                self.http.invalidate_id_cache()
+                self.client.calls.clear()
+                self.client.responses[("GET", "/db/NODE")] = (status, raw)
+                self.assertEqual(self.http.midas_get_ids(self.cfg, "NODE"), [])
+                self.assertFalse(self._snapshot_present(),
+                                 "a failed read was cached as an empty collection")
+                self.assertEqual(self.http.midas_get_ids(self.cfg, "NODE"), [])
+                self.assertEqual(len(self._reads()), 2,
+                                 "the second call reused the failed read")
+
+    def test_a_read_racing_an_invalidate_does_not_store(self):
+        """A fetch that began before a write must not store its list after the
+        write dropped it - that would undo the invalidation for a whole TTL."""
+        from midas_mcp import midas_http
+        racing = _FakeClient(responses={
+            ("GET", "/db/NODE"): (200, '{"NODE":{"1":{"X":0}}}')})
+
+        class _Racing:
+            def request(self, method, path, body=None, **kw):
+                resp = racing.request(method, path, body, **kw)
+                midas_http.invalidate_id_cache("NODE")  # a concurrent write
+                return resp
+
+        self.http.MidasClient = lambda cfg: _Racing()
+        self.assertEqual(self.http.midas_get_ids(self.cfg, "NODE"), ["1"])
+        self.assertFalse(self._snapshot_present(),
+                         "a read that raced an invalidation resurrected the snapshot")
+        self.assertEqual(self.http.midas_get_ids(self.cfg, "NODE"), ["1"])
+        self.assertEqual(len(racing.calls), 2, "the raced read was reused")
+
+    def test_a_plain_doc_command_keeps_the_snapshots(self):
+        """Only the model-replacing commands drop everything; SAVE does not
+        touch the ids."""
+        from midas_mcp import dispatch
+        self.http.midas_get_ids(self.cfg, "NODE")
+        client = _FakeClient(responses={("POST", "/doc/SAVE"): (200, '{"message":""}')})
+        result = dispatch.tool_doc({"command": "SAVE", "argument": {}},
+                                   self._deps(client))
+        self.assertTrue(result["ok"], result)
+        self.assertTrue(self._snapshot_present())
+
+    # -- the symptom this all exists for -----------------------------------
+    def test_a_node_created_by_assign_is_visible_to_the_crash_guard(self):
+        """Snapshot an empty NODE, create node 1, then write a node-keyed
+        record: the guard must not claim node 1 does not exist."""
+        from midas_mcp import dispatch
+        g = guards.Guards(self.reg, self.cfg)
+        cons = g.validate_endpoint("DB:CONS")
+        self.assertEqual(cons.ref_family, "NODE")
+        # the snapshot is taken while NODE is empty
+        self.assertEqual(self.http.midas_get_ids(self.cfg, "NODE"), [])
+        with self.assertRaises(errors.GuardError):
+            g.require_existing_refs(cons, {"1": {"ITEMS": []}})
+        # ... the node is created ...
+        client = _FakeClient(responses={
+            ("POST", "/db/NODE"): (201, '{"NODE":{"1":{"X":0,"Y":0,"Z":0}}}'),
+        })
+        result = dispatch.tool_db_assign(
+            {"endpoint": "DB:NODE", "mode": "create",
+             "data": {"1": {"X": 0, "Y": 0, "Z": 0}}}, self._deps(client))
+        self.assertTrue(result["ok"], result)
+        # ... so NODE is no longer empty, and the guard must see it even though
+        # the TTL has not elapsed.
+        self.client.responses[("GET", "/db/NODE")] = (
+            200, '{"NODE":{"1":{"X":0,"Y":0,"Z":0}}}')
+        try:
+            g.require_existing_refs(cons, {"1": {"ITEMS": []}})
+        except errors.GuardError as exc:
+            self.fail(f"bogus refusal after the node was created: {exc}")
+
+    def test_a_deleted_node_is_not_permitted_by_a_stale_snapshot(self):
+        """The mirror of the create case: after a delete the guard must consult
+        fresh ids, or it lets through a constraint keyed on a node MIDAS no
+        longer has - the crash this guard exists to prevent."""
+        from midas_mcp import dispatch
+        g = guards.Guards(self.reg, self.cfg)
+        cons = g.validate_endpoint("DB:CONS")
+        self.client.responses[("GET", "/db/NODE")] = (
+            200, '{"NODE":{"1":{"X":0,"Y":0,"Z":0}}}')
+        self.assertEqual(self.http.midas_get_ids(self.cfg, "NODE"), ["1"])
+        # the snapshot says node 1 exists, so the guard lets the write through
+        g.require_existing_refs(cons, {"1": {"ITEMS": []}})
+        # node 1 is deleted, and MIDAS no longer has it
+        client = _FakeClient(responses={
+            ("DELETE", "/db/NODE/1"): (200, '{"message":""}'),
+            ("GET", "/db/NODE/1"): (400, '{"error":{"message":"Not Found Key"}}'),
+        })
+        result = dispatch.tool_db_delete(
+            {"endpoint": "DB:NODE", "target_ids": ["1"]}, self._deps(client))
+        self.assertTrue(result["ok"], result)
+        self.client.responses[("GET", "/db/NODE")] = (200, '{"NODE":{}}')
+        with self.assertRaises(errors.GuardError):
+            g.require_existing_refs(cons, {"1": {"ITEMS": []}})
+
+
 class ModalResultTests(unittest.TestCase):
     """The modal/eigen summary lives in SUB_TABLES, not in the top-level DATA.
 

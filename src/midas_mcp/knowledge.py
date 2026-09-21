@@ -173,7 +173,7 @@ PITFALLS: list[dict] = [
      "fix": "a numerical self-check is a gate, not a paragraph: it belongs in the same PASS/FAIL list as the endpoint checks and in the process exit code. The connector supplies the numbers (result_summary, ELEMENTWEIGHT, REACTIONG); the caller must assert them, and a check that cannot fail is not a check"},
     {"area": "write", "trap": "an id snapshot taken once and reused for the whole session",
      "symptom": "'<EP> keys records on NODE ids that do not exist' is raised for nodes created earlier in the same session, so a correct write looks like a modelling error",
-     "fix": "fixed in the connector: the per-family id snapshot now expires and is dropped after any successful write to that family and after DOC:NEW/IMPORT/OPEN. If the message still appears the id really is missing - re-read DB:NODE. The snapshot exists so the crash guard does not re-read NODE/ELEM on every write, and it expires because the model can also be edited by hand in the MIDAS GUI"},
+     "fix": "fixed in the connector: the per-family id snapshot now expires after a few seconds and is dropped by every write that changes it - DB: assign and delete (a partially failed delete included), DOC:NEW/OPEN/CLOSE/IMPORT/IMPORTMXT, and the OPE:AUTOMESH / OPE:DIVIDEELEM actions that mint nodes and elements. A failed read is no longer cached either. So if the message still appears, the id really is missing: re-read DB:NODE. The snapshot exists so the crash guard does not re-read NODE/ELEM on every write, and it expires because the model can also be edited by hand in the MIDAS GUI"},
 ]
 
 RECIPES: dict[str, dict] = {

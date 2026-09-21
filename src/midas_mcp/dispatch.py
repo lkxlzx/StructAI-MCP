@@ -108,6 +108,57 @@ def build_tools() -> list[dict]:
 # --------------------------------------------------------------------------
 # tool callbacks (return an MCP result dict / raise ToolError)
 # --------------------------------------------------------------------------
+#: Doc commands that replace or drop the whole model, so every cached id
+#: snapshot becomes wrong at once.  ``IMPORTMXT`` and ``CLOSE`` are symmetric
+#: with ``IMPORT``: the registry marks both ``destructive``
+#: (registry/registry.json) - an MXT import replaces the model and a close
+#: drops it.  Neither could be exercised against a live MIDAS, so the evidence
+#: is that flag plus the ``DOC:IMPORT`` symmetry.
+_MODEL_REPLACING_DOC_COMMANDS = frozenset({"NEW", "IMPORT", "IMPORTMXT",
+                                           "OPEN", "CLOSE"})
+
+#: Endpoints whose successful write changes the *id set* of a family, mapped to
+#: the families whose snapshot must then be dropped.  A ``DB:<X>`` endpoint
+#: writes the ``<X>`` collection itself, which the fallback below covers.  The
+#: two ``ope`` actions are the exception: they are not ``DB:`` endpoints yet
+#: they mint nodes/elements - ``OPE:AUTOMESH`` ("Auto-Mesh Planar Area") and
+#: ``OPE:DIVIDEELEM`` ("Divide Elements", both in registry/registry.json) - so
+#: a pre-mesh ELEM snapshot would otherwise refuse a perfectly valid
+#: "keys records on ELEM ids that do not exist: [...]" write.
+_ENDPOINT_DROPS: dict[str, tuple[str, ...]] = {
+    "OPE:AUTOMESH": ("NODE", "ELEM"),
+    "OPE:DIVIDEELEM": ("NODE", "ELEM"),
+}
+
+
+def _dropped_families(key: str) -> tuple[str, ...]:
+    """The families whose id snapshot a successful write to ``key`` drops."""
+    explicit = _ENDPOINT_DROPS.get(key)
+    if explicit is not None:
+        return explicit
+    if key.startswith("DB:"):
+        return (key.split(":", 1)[-1],)
+    return ()
+
+
+def _drop_id_snapshot(ep: Endpoint) -> None:
+    """Drop the cached id snapshots an endpoint's successful write invalidates.
+
+    The snapshot exists so the crash guard does not re-read NODE/ELEM on every
+    guarded write, but a write is exactly the moment it becomes wrong: the id
+    that was just created (or just removed) is not in it, so the next ref-keyed
+    write is refused with "keys records on NODE ids that do not exist" for a
+    node that does exist.  ``DB:NODE`` therefore drops the ``NODE`` family, and
+    the meshing actions drop both families.
+    """
+    families = _dropped_families(ep.key)
+    if not families:
+        return
+    from .midas_http import invalidate_id_cache
+    for family in families:
+        invalidate_id_cache(family)
+
+
 def tool_doc(args: dict, deps: Deps) -> dict:
     command = str(args.get("command", "")).upper()
     if command not in {"NEW", "OPEN", "CLOSE", "SAVE", "SAVEAS", "STAGAS",
@@ -145,6 +196,9 @@ def tool_doc(args: dict, deps: Deps) -> dict:
     resp = client.request(method, ep.uri, body, timeout_s=timeout, retryable=False)
     raw = resp.raw
     result = _finish(ep, method, resp.status, raw, resp.body)
+    if result.get("ok") and command in _MODEL_REPLACING_DOC_COMMANDS:
+        from .midas_http import invalidate_id_cache
+        invalidate_id_cache()  # the whole model was replaced
     if hint and result.get("ok"):
         result["hint"] = hint
     if command == "ANAL":
@@ -326,6 +380,7 @@ def tool_db_assign(args: dict, deps: Deps) -> dict:
     # failure only appears later, as an analysis error that names neither the
     # stage nor the missing boundary group.
     if result.get("ok"):
+        _drop_id_snapshot(ep)
         hint = guards.stage_preflight(ep, data)
         if hint:
             result["warning"] = hint
@@ -345,7 +400,10 @@ def tool_db_delete(args: dict, deps: Deps) -> dict:
     if delete_all:
         resp = client.request("DELETE", ep.uri, retryable=False,
                               timeout_s=guards.cfg.timeouts.get("assign", 60))
-        return _finish(ep, "DELETE", resp.status, resp.raw, resp.body)
+        result = _finish(ep, "DELETE", resp.status, resp.raw, resp.body)
+        if result.get("ok"):
+            _drop_id_snapshot(ep)
+        return result
 
     # MIDAS deletes one id per request; deleting only the first and reporting
     # success would silently leave the rest of the model in place.
@@ -369,6 +427,12 @@ def tool_db_delete(args: dict, deps: Deps) -> dict:
         else:
             unverified.append(one)  # endpoint cannot be read back; accept the 200
     if failed:
+        # A partial delete still removed ids, so the snapshot holding them must
+        # go: leaving them in makes the guard *permit* a later write keyed on a
+        # node/element MIDAS no longer has - the crash this cache exists to
+        # prevent.  The response shape is unchanged.
+        if deleted or unverified:
+            _drop_id_snapshot(ep)
         return {"ok": False, "category": "MIDAS_REJECTED", "endpoint": ep.key,
                 "http_status": failed[0]["status"],
                 "message": (f"{len(failed)} of {len(ids)} delete(s) failed; "
@@ -377,6 +441,7 @@ def tool_db_delete(args: dict, deps: Deps) -> dict:
     result = normalize_success(ep.key, "DELETE", 200, "", None,
                                data={"deleted": deleted,
                                      **({"unverified": unverified} if unverified else {})})
+    _drop_id_snapshot(ep)
     return result
 
 

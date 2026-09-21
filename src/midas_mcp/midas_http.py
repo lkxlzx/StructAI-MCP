@@ -23,9 +23,18 @@ from .guards import RETRYABLE_STATUS
 
 log = logging.getLogger("midas_mcp.http")
 
-#: A shared "namespace -> snapshot of existing ids" cache.  The crash guard
-#: reads these before keying on node/element Ids.  Refreshed per live query.
-_id_cache: dict[str, list[str]] = {}
+#: How long a "family -> existing ids" snapshot stays usable.  The cache exists
+#: to keep the crash guard from re-reading NODE/ELEM on every guarded write, but
+#: it must expire: the model can also be edited by a human in the MIDAS GUI, and
+#: an entry that lives for the whole process makes a freshly created id look
+#: missing (a bogus "keys records on NODE ids that do not exist" refusal).
+_ID_CACHE_TTL_S = 5.0
+#: family -> (ids, time.monotonic() at which they were read)
+_id_cache: dict[str, tuple[list[str], float]] = {}
+#: Bumped by every invalidation.  A read that started before a write must not
+#: store its now-stale list afterwards, or that one invalidation is undone for
+#: a whole TTL; the store therefore compares this epoch and drops the result.
+_id_epoch = 0
 _id_lock = threading.Lock()
 
 
@@ -150,12 +159,18 @@ _SESSION_ID = threading.local()
 def invalidate_id_cache(family: str | None = None) -> None:
     """Drop one family (or all) from the id snapshot cache.
 
-    The cache exists to keep the crash guard from re-reading NODE/ELEM on every
-    write.  A caller that is about to write the very collection it is inspecting
-    (the construction-stage preflight looks at DB:BNGR while writing DB:STAG)
-    must not read a stale snapshot, so it invalidates first.
+    Two kinds of caller need this.  A write path drops what it just changed:
+    ``dispatch.tool_db_assign`` / ``tool_db_delete`` drop their endpoint's
+    family (a partially failed delete included) and the model-replacing doc
+    commands clear everything.  A reader that is about to write the very
+    collection it is inspecting drops it up front (the construction-stage
+    preflight looks at DB:BNGR while writing DB:STAG).  ``_ID_CACHE_TTL_S`` is
+    the backstop for everything else, in particular a model edited by hand in
+    the GUI.
     """
+    global _id_epoch
     with _id_lock:
+        _id_epoch += 1
         if family is None:
             _id_cache.clear()
         else:
@@ -165,22 +180,35 @@ def invalidate_id_cache(family: str | None = None) -> None:
 def midas_get_ids(cfg: Config, family: str) -> list[str]:
     """Snapshot of the ids currently defined for a family (NODE/ELEM).
 
-    Caches per-family for a short window to avoid hammering the GUI for every
-    guarded write.  Relied on by the crash guard.
+    Cached per-family for ``_ID_CACHE_TTL_S`` seconds so the crash guard does
+    not re-read NODE/ELEM on every guarded write.  The window is short on
+    purpose: the model can be edited by a human in the MIDAS GUI as well, so a
+    snapshot may never be trusted indefinitely.  A failed read is never cached
+    (an empty list would refuse every ref-keyed write for a whole window) and a
+    read that races an invalidation does not store at all.  Relied on by the
+    crash guard.
     """
+    now = time.monotonic()
     with _id_lock:
         cached = _id_cache.get(family)
-        if cached is not None:
-            return cached
+        if cached is not None and now - cached[1] < _ID_CACHE_TTL_S:
+            return cached[0]
+        epoch = _id_epoch
     client = MidasClient(cfg)
     resp = client.request("GET", f"/db/{family.upper()}", retryable=True)
     ids: list[str] = []
     if resp.ok_by_status and isinstance(resp.body, dict):
-        # response shape: {"NODE": {"1": {...}, "2": {...}, ...}}
+        # response shape: {"NODE": {"1": {...}, "2": {...}}, ...}
         for outer in resp.body.values():
             if isinstance(outer, dict):
                 ids.extend(str(k) for k in outer)
                 break
+    if not resp.ok_by_status:
+        # A transport error or a 404 is not evidence that the collection is
+        # empty.  Caching the [] would make every ref-keyed write refuse for a
+        # whole TTL; one live read per guarded write is the cheaper mistake.
+        return ids
     with _id_lock:
-        _id_cache[family] = ids
+        if epoch == _id_epoch:
+            _id_cache[family] = (ids, time.monotonic())
     return ids

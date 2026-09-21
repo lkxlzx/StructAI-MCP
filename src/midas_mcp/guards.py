@@ -229,7 +229,11 @@ def _records(data: dict) -> list[dict]:
 
 
 def _existing_ids(reg: Registry, cfg: Config, family: str) -> list[str]:
-    """Best-effort list of live ids for a family, cached on the guards caller.
-    Returns a non-empty list or the empty list (a missing id is refused)."""
+    """Best-effort list of live ids for a family.
+
+    The snapshot is cached per family inside ``midas_http`` (for
+    ``_ID_CACHE_TTL_S``, a few seconds) and is dropped by every write to that
+    family, so it is not cached on this caller.  Returns a non-empty list or
+    the empty list (a missing id is refused)."""
     from .midas_http import midas_get_ids
     return midas_get_ids(cfg, family)
