@@ -112,6 +112,78 @@ COMBOS = (("COMB1", "1.2 DEAD + 1.4 LIVE", (("DEAD", 1.2), ("LIVE", 1.4))),
 
 COMBO_NAMES = tuple(c[0] for c in COMBOS)
 
+# ---------------------------------------------------------------------------
+# spec-derived text: every label below is read from the installed model
+# ---------------------------------------------------------------------------
+#: DOF order of ``CONS.ITEMS[].CONSTRAINT``, as the DB schema prints it.  The
+#: restraint is described from this string rather than from the prompt's DOF
+#: *names*, so a spec that changes the constraint changes the report with it.
+DOF_ORDER = ("DX", "DY", "DZ", "RX", "RY", "RZ", "RW")
+
+#: Chinese label per element role, for readability only.  A role a spec
+#: introduces falls back to its own key: an unfamiliar true name beats a
+#: familiar wrong one.
+ROLE_LABEL = {"COLUMN": "柱", "BEAM": "梁"}
+
+#: Structure-type codes whose plane this driver has verified against the live
+#: API.  Any other code is printed as its raw value rather than guessed.
+STYP_PLANE = {1: "X-Z 平面"}
+
+
+def support_nodes():
+    """Support node ids as the strings the DB replies are keyed by."""
+    return tuple(str(nid) for nid in SUPPORTS)
+
+
+def support_label():
+    """``N1/N5``, built from the spec instead of written into the text."""
+    return "/".join(f"N{nid}" for nid in SUPPORTS)
+
+
+def dof_split(constraint=None):
+    """``(fixed, free)`` DOF names, read out of the constraint string itself."""
+    text = SUPPORT_CONSTRAINT if constraint is None else str(constraint)
+    fixed = [d for d, c in zip(DOF_ORDER, text) if c == "1"]
+    free = [d for d, c in zip(DOF_ORDER, text) if c != "1"]
+    return fixed, free
+
+
+def support_kind(constraint=None):
+    """``铰支`` when the translations are held and every rotation is released.
+
+    Derived from the constraint string, so a spec that also fixes the rotations
+    is not described with the pinned-base wording this driver was built for.
+    """
+    fixed, free = dof_split(constraint)
+    held = set(fixed)
+    if {"DX", "DY", "DZ"} <= held:
+        if {"RX", "RY", "RZ"} <= set(free):
+            return "铰支"
+        if {"RX", "RY", "RZ"} <= held:
+            return "刚接"
+    return "部分约束"
+
+
+def struct_type_text():
+    """STYP plus the plane it selects, when this driver has verified the code."""
+    return STYP_PLANE.get(STYP, f"结构类型代码 {STYP}, 本驱动未验证其平面定义")
+
+
+def section_text(key):
+    """``柱 COLUMN_H400X200X8X12 (H400×200×8×12)`` from the installed section."""
+    sect = SECTIONS[key]
+    dims = "×".join(f"{float(sect['vSIZE'][i]) * 1000.0:g}" for i in range(4))
+    return f"{ROLE_LABEL.get(key, key)} {sect['name']} (H{dims})"
+
+
+def section_list_text():
+    """One entry per role, in the order the elements use them."""
+    order = []
+    for _eid, _i, _j, kind in ELEMS:
+        if kind not in order:
+            order.append(kind)
+    return ", ".join(section_text(k) for k in order)
+
 
 # ---------------------------------------------------------------------------
 # artifact helpers
@@ -436,11 +508,11 @@ def build(s):
         sect_i = before.get("SECT_I") or {}
         sizes[spec["SECT_NAME"]] = sect_i.get("vSIZE")
     step(3, "定义钢梁、钢柱截面",
-         not missing and all(v == SECTIONS[k]["vSIZE"] for k, v in
-                             (("COLUMN", sizes.get("COLUMN_H400X200X8X12")),
-                              ("BEAM", sizes.get("BEAM_H500X220X8X14")))),
-         f"COLUMN vSIZE={sizes.get('COLUMN_H400X200X8X12')}, "
-         f"BEAM vSIZE={sizes.get('BEAM_H500X220X8X14')}"
+         not missing and all(
+             sizes.get(SECTIONS[k]["name"]) == SECTIONS[k]["vSIZE"]
+             for k in SECTIONS),
+         ", ".join(f"{k} vSIZE={sizes.get(SECTIONS[k]['name'])}"
+                   for k in SECTIONS)
          + (f", 缺失={missing}" if missing else ""))
 
     # -- step 4: nodes ---------------------------------------------------
@@ -497,7 +569,8 @@ def build(s):
         stored[str(nid)] = (items[0] if items else {}).get("CONSTRAINT")
     step(6, "设置节点边界条件",
          not missing and all(v == SUPPORT_CONSTRAINT for v in stored.values()),
-         f"N1/N5 CONSTRAINT={stored} (DX,DY,DZ 固定 / RX,RY,RZ 自由)"
+         f"{support_label()} {support_kind()} CONSTRAINT={stored} "
+         f"({'/'.join(dof_split()[0])} 固定 / {'/'.join(dof_split()[1])} 自由)"
          + (f", 缺失={missing}" if missing else ""))
     return {"nodes": read}
 
@@ -688,9 +761,10 @@ def checks(s):
         seen.add(cur)
         stack.extend(adjacency.get(cur, ()))
     connected = bool(nodes) and seen == set(nodes)
-    restrained = len(cons) >= 2 and all(
+    supports = support_nodes()
+    restrained = bool(supports) and all(
         ((cons.get(n) or {}).get("ITEMS") or [{}])[0].get("CONSTRAINT")
-        for n in ("1", "5"))
+        for n in supports)
     findings.append(("机构/稳定性", connected and restrained,
                      f"节点连通={connected}({len(seen)}/{len(nodes)}), "
                      f"约束节点={sorted(cons)}"))
@@ -847,7 +921,7 @@ def collect(s):
     rgaps = [f"N{nid}/{combo}" for nid in SUPPORTS for combo in COMBO_NAMES
              if (nid, combo) not in react]
     step(16, "查询支座反力", not rgaps,
-         f"N1/N5 x 4 组合 反力, 缺失={rgaps or '无'}")
+         f"{support_label()} x {len(COMBO_NAMES)} 组合 反力, 缺失={rgaps or '无'}")
 
     return {"disp": disp, "forces": forces, "react": react,
             "tables": {"DISPLACEMENTG": disp_t, "BEAMFORCE": force_t,
@@ -1117,7 +1191,8 @@ def criteria(steps_by_no, data, peaks, modal_parsed, sub_names):
           f"累计参与质量(%)={(modal_parsed or {}).get('cumulative_ratio_percent')}"
           if modes else "无模态数据")),
         ("极值提取", all(v is not None for v in peaks.values()),
-         f"8 项极值提取成功={sum(1 for v in peaks.values() if v)}/8"),
+         f"{len(peaks)} 项极值提取成功="
+         f"{sum(1 for v in peaks.values() if v)}/{len(peaks)}"),
     ]
 
 
@@ -1287,18 +1362,18 @@ def report_head(w, disp_table, mm):
     w("| 项目 | 参数 |")
     w("| --- | --- |")
     w("| 结构类型 | 单层双坡钢门式刚架 |")
-    w("| 跨度 | 20 m |")
-    w("| 柱高 | 6 m |")
-    w("| 屋脊高度 | 8 m |")
+    w(f"| 跨度 | {SPAN:g} m |")
+    w(f"| 柱高 | {EAVE:g} m |")
+    w(f"| 屋脊高度 | {RIDGE:g} m |")
     w(f"| 材料 | {MATL_NAME} (E={MATL_ELAST / 1000.0:.0f} MPa, ν={MATL_POISN}, "
       f"γ={MATL_DEN} kN/m³, P_TYPE=2 自定义) |")
-    w("| 节点数量 | 5 |")
-    w("| 单元数量 | 4 |")
-    w("| 截面 | 柱 COLUMN_H400X200X8X12 (H400×200×8×12), "
-      "梁 BEAM_H500X220X8X14 (H500×220×8×14) |")
-    w(f"| 支座 | N1/N5 铰支, CONSTRAINT={SUPPORT_CONSTRAINT} "
-      "(DX,DY,DZ 固定 / RX,RY,RZ 自由) |")
-    w(f"| 结构类型 / 单位 | STYP={STYP} (X-Z 平面), FORCE=KN, DIST=M |")
+    w(f"| 节点数量 | {len(NODES)} |")
+    w(f"| 单元数量 | {len(ELEMS)} |")
+    w(f"| 截面 | {section_list_text()} |")
+    w(f"| 支座 | {support_label()} {support_kind()}, CONSTRAINT={SUPPORT_CONSTRAINT} "
+      f"({'/'.join(dof_split()[0])} 固定 / {'/'.join(dof_split()[1])} 自由) |")
+    w(f"| 结构类型 / 单位 | STYP={STYP} ({struct_type_text()}), "
+      f"FORCE={disp_table.get('FORCE')}, DIST={disp_table.get('DIST')} |")
     w()
     w("## 2. 荷载")
     w()
@@ -1503,8 +1578,13 @@ def report_results(w, data, peaks, modal_parsed, sub_names, balance, occupied,
           f"{fmt(entry['sum_MY'])} | {fmt(entry['applied_MY'])} | "
           f"{fmt(entry['residual_MY'], 4)} |")
     w()
-    w("说明: 柱脚铰支, 支座反力的弯矩分量 (MX/MY/MZ) 被释放, 恒为 0, 因此 ΣMY 取"
-      "反力对原点的力矩 Σ(z·FX − x·FZ); 施加 MY 为外荷载对原点的力矩, 二者相加应为 0。")
+    if support_kind() == "铰支":
+        w("说明: 柱脚铰支, 支座反力的弯矩分量 (MX/MY/MZ) 被释放, 恒为 0, 因此 ΣMY 取"
+          "反力对原点的力矩 Σ(z·FX − x·FZ); 施加 MY 为外荷载对原点的力矩, 二者相加应为 0。")
+    else:
+        w(f"说明: 支座为{support_kind()} (CONSTRAINT={SUPPORT_CONSTRAINT}), 支座会传递弯矩, "
+          "而本核算的 ΣMY 只取反力对原点的力矩 Σ(z·FX − x·FZ) — 它假定支座弯矩已被释放, "
+          "因此该行残差在这个约束下必然不为 0, 这是约束与本核算不匹配, 不是模型错了。")
     dead = next((entry for entry in balance if entry["case"] == "DEAD"), {})
     w()
     w("DEAD 工况自重核算 (自重只应出现一次):")

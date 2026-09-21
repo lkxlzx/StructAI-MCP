@@ -605,10 +605,12 @@ def _unserved_load_names(raw: str, data_hint: dict | None) -> list[str]:
 # --------------------------------------------------------------------------
 # midas_frame_run: the one-shot portal-frame pipeline
 # --------------------------------------------------------------------------
-#: Wall-clock budget for the one-shot run.  A single analysis is allowed
-#: ``timeouts.analysis`` (1800 s by default) on its own, so this is a
-#: stuck-process backstop rather than a bound on the analysis itself.
-_FRAME_RUN_TIMEOUT_S = 3600.0
+#: Wall-clock backstop for the one-shot run.  It has to clear the driver's own
+#: worst case rather than one analysis: ``solve()`` may issue up to three
+#: ``DOC:ANAL`` calls, each allowed ``timeouts.analysis`` (1800 s by default).
+#: A 3600 s budget killed a slow-but-successful run, leaving the live document
+#: fully built with no verdict at all.
+_FRAME_RUN_TIMEOUT_S = 7200.0
 
 
 def tool_frame_run(args: dict, deps: Deps) -> dict:
@@ -642,7 +644,13 @@ def tool_frame_run(args: dict, deps: Deps) -> dict:
         merged["out_dir"] = str(args["out_dir"])
 
     argv = [sys.executable, "-m", "midas_mcp.frame", "--json"]
-    if args.get("clear"):
+    #: ``--clear`` deletes this driver's collections from the LIVE document, so a
+    #: non-boolean has to be refused rather than read as truthy: a client sending
+    #: {"clear": "false"} means "do not delete", and Python would run the deletes.
+    clear = args.get("clear")
+    if clear is not None and not isinstance(clear, bool):
+        raise InputError("clear must be a boolean.")
+    if clear:
         argv.append("--clear")
 
     env = dict(os.environ)

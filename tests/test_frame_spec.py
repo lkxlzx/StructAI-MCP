@@ -266,5 +266,81 @@ class ShimTests(unittest.TestCase):
         self.assertIs(module.run, frame.run)
 
 
+class ReportFollowsSpecTests(unittest.TestCase):
+    """The report must describe the run that happened.
+
+    Every label in the model table used to be a literal - "20 m", "5", "N1/N5",
+    the section names.  The spec can change all of them, so a literal turns the
+    report into a description of the frame the driver was *built* against.
+    """
+
+    def tearDown(self):
+        frame.configure({})
+
+    def _head(self, dist="M", force="KN"):
+        # report_head writes through a `w(text="")` callback, so a bare
+        # list.append is not a stand-in for it.
+        out = []
+        frame.report_head(lambda text="": out.append(text),
+                          {"DIST": dist, "FORCE": force}, True)
+        return "\n".join(out)
+
+    def test_geometry_in_the_report_follows_the_spec(self):
+        frame.configure({"span": 24.0, "eave": 7.0, "ridge": 9.5})
+        text = self._head()
+        self.assertIn("| 跨度 | 24 m |", text)
+        self.assertIn("| 柱高 | 7 m |", text)
+        self.assertIn("| 屋脊高度 | 9.5 m |", text)
+        self.assertNotIn("| 跨度 | 20 m |", text)
+
+    def test_counts_come_from_the_model_not_a_literal(self):
+        frame.configure({"span": 24.0})
+        text = self._head()
+        self.assertIn(f"| 节点数量 | {len(frame.NODES)} |", text)
+        self.assertIn(f"| 单元数量 | {len(frame.ELEMS)} |", text)
+        self.assertEqual(len(frame.NODES), 5)
+
+    def test_a_renamed_section_is_reported_under_its_own_name(self):
+        frame.configure({"sections": {
+            "COLUMN": {"id": 1, "name": "CUSTOM_COL",
+                       "vsize": [0.5, 0.25, 0.01, 0.016]},
+            "BEAM": {"id": 2, "name": "CUSTOM_BEAM",
+                     "vsize": [0.6, 0.2, 0.01, 0.02]}}})
+        text = self._head()
+        self.assertIn("CUSTOM_COL (H500×250×10×16)", text)
+        self.assertIn("CUSTOM_BEAM (H600×200×10×20)", text)
+        self.assertNotIn("H400X200X8X12", text)
+
+    def test_support_label_follows_the_support_nodes(self):
+        frame.configure({"supports": {"nodes": [2, 4], "constraint": "1110000"}})
+        self.assertEqual(frame.support_label(), "N2/N4")
+        self.assertEqual(frame.support_nodes(), ("2", "4"))
+        self.assertIn("| 支座 | N2/N4 铰支", self._head())
+
+    def test_a_fixed_base_is_not_described_as_pinned(self):
+        frame.configure({"supports": {"nodes": [1, 5], "constraint": "1111110"}})
+        self.assertEqual(frame.support_kind(), "刚接")
+        self.assertIn("刚接", self._head())
+
+    def test_the_restraint_description_comes_from_the_constraint_string(self):
+        frame.configure({"supports": {"nodes": [1], "constraint": "1100000"}})
+        self.assertEqual(frame.dof_split(), (["DX", "DY"],
+                                            ["DZ", "RX", "RY", "RZ", "RW"]))
+        self.assertEqual(frame.support_kind(), "部分约束")
+
+    def test_an_unverified_structure_code_is_not_given_a_plane(self):
+        frame.configure({"styp": 2})
+        self.assertNotIn("X-Z 平面", frame.struct_type_text())
+        self.assertIn("2", frame.struct_type_text())
+
+    def test_units_in_the_model_table_come_from_the_response(self):
+        self.assertIn("FORCE=N, DIST=CM", self._head(dist="CM", force="N"))
+
+    def test_the_extreme_count_is_not_a_literal(self):
+        rows = frame.criteria({}, {"replies": {}}, {"a": 1, "b": None}, None, [])
+        detail = {name: text for name, _ok, text in rows}["极值提取"]
+        self.assertIn("/2", detail)
+
+
 if __name__ == "__main__":
     unittest.main()
