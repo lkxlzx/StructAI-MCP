@@ -1443,6 +1443,12 @@ def capability_payload(capability: Capability) -> dict[str, Any]:
     the only way a caller can narrow ~683 endpoints: ``domain`` (8 values) then
     ``feature`` (27) then ``product_scope`` to know whether the endpoint applies
     to the connected product at all.
+
+    ``description`` is the row's own free text under the name a reader looks for:
+    总纲 §4.2.13 makes ``capabilities.description`` the documented home of the
+    **Chinese annotation**, so a DB-seeded row's annotation appears here and an
+    unannotated row shows ``""``.  It is the same string as ``notes``, which is
+    kept under its historical key so nothing that already reads it has to change.
     """
     return {
         "code": capability.code,
@@ -1466,6 +1472,9 @@ def capability_payload(capability: Capability) -> dict[str, Any]:
         #: Manual chapter (closed 27) — the LLM's second filter.
         "feature": capability.feature,
         "enabled": is_enabled(capability.code),
+        #: 总纲 §4.2.13 — the Chinese annotation (``name_zh：description_zh``) of a
+        #: seeded row; ``""`` when the row carries none.  Nothing is composed here.
+        "description": capability.notes,
         "notes": capability.notes,
     }
 

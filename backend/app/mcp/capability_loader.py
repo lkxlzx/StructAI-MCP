@@ -68,8 +68,11 @@ Field mapping (capabilities + tool_interfaces + tools -> one ``Capability``)
                           keys override it
 ``adapter_action``        **no column** — JSON extension key, see below
 ``task_type``             **no column** — JSON extension key, see below
-``notes``                 ``capabilities.description`` (the DDL's own free-text
-                          capability description); JSON override keys win
+``notes``                 ``capabilities.description`` — the DDL's own free-text
+                          capability description, and 总纲 §4.2.13's documented home
+                          for the **Chinese annotation** an annotated
+                          ``tool_interfaces`` row carries (the loader copies it
+                          verbatim; it never composes one); JSON override keys win
 ========================  ==============================================================
 
 The interface lookup
@@ -806,6 +809,11 @@ def _to_capability(source: _SourceRow, counters: _Counters) -> Capability | None
         ),
         domain=_text(interface.domain) if interface is not None else None,
         feature=_text(interface.feature) if interface is not None else None,
+        # 总纲 §4.2.13: ``capabilities.description`` is the Chinese annotation's
+        # documented home (``notes`` has no column of its own), so a seeded row's
+        # ``notes`` **is** that annotation, copied verbatim.  An explicit
+        # ``constraints_json.notes`` still wins: an operator's statement outranks a
+        # seeded value, and ``metadata_json.notes`` remains the last fallback.
         notes=(
             _text(constraints.get(_KEY_NOTES))
             or _text(source.description)

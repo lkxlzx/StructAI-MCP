@@ -1368,6 +1368,44 @@ def test_query_capabilities_filters_by_domain_and_feature() -> None:
         reset_capabilities()
 
 
+def test_query_capabilities_exposes_the_chinese_annotation_as_description() -> None:
+    """总纲 §4.2.13：中文注释必须能从 ``target=capabilities`` 读到。
+
+    The registry is an **API catalogue**: the manuals' Chinese and English sections
+    document the *same* endpoints, so what a Chinese-speaking user (and the LLM)
+    needs is not the section's language but a Chinese annotation per row.  That
+    annotation reaches this projection under ``description`` — the name a reader
+    looks for — while ``notes`` keeps the same string under its historical key.  A
+    row the extraction could not annotate shows ``""``: nothing is composed here.
+    """
+    environment = env()
+    annotation = "主控数据：分析主控参数：自动约束旋转与法向、收敛容差等全局求解设置。"
+    try:
+        register_capability(
+            dataclasses.replace(
+                capability_table("midas_gen")["element.get"],
+                notes=annotation,
+                interface_code="midas_gen.db.elem.read",
+            ),
+            replace=True,
+        )
+
+        envelope = environment.call(
+            TOOL_QUERY, {"target": "capabilities", "action": "list"}
+        )
+        assert envelope["success"] is True
+        items = {row["code"]: row for row in envelope["data"]["items"]}
+        assert items["element.get"]["description"] == annotation
+        # …and the historical key still carries it, so nothing that reads ``notes``
+        # has to change.
+        assert items["element.get"]["notes"] == annotation
+        # 未注释的行留空，而不是编造一个（``node.list`` 的静态声明就是空注释）。
+        assert items["node.list"]["description"] == ""
+        assert items["node.list"]["description"] == items["node.list"]["notes"]
+    finally:
+        reset_capabilities()
+
+
 def test_query_capabilities_rejects_an_unknown_domain_or_feature() -> None:
     """总纲 §4.2.11 的封闭集合：越界取值 -> ``VALIDATION_ERROR``，不是空列表。"""
     environment = env()

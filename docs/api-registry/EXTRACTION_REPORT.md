@@ -600,9 +600,45 @@ Read with `errors="replace"`; U+200B is stripped from every line before matching
 5. **Entries with no URI** are recovered from the manual wherever the manual states the path (§5), including the 13 Gen entries that `inventory.json` records as `uri: null`.  Gen's index table states no URL for **13** rows; **0** of them were recovered from the entry's own title path or body, and **13** document no path anywhere — their body says `| **{base url} +** |`.  Those are counted and listed, not emitted with an invented endpoint.
 6. **`domain` is never inferred independently.**  It comes from `CAPABILITY_FEATURE_DOMAIN` once `feature` is known, so the three-layer hierarchy cannot drift.
 
-## 11. Self-validation
+## 11. The Chinese annotation (`title_zh.json`)
 
-The pipeline re-opened `interfaces.json` and re-validated it: every required field present, `product_scope` in the closed set, every `feature` in the closed set and consistent with `domain`, `(adapter_code, interface_code)` unique, every `request_schema_json` parseable as a JSON object, and every row's `method` in the HTTP set.
+The registry is an **API catalogue**, and the manuals' Chinese and English sections document the *same* endpoints — so the language of the section a row was read from says nothing about who can use it.  What matters is that every API can be found and understood by a Chinese-speaking user and by the LLM (总纲 §4.2.13: `capabilities.description` is the annotation's documented home).  Every row therefore carries:
+
+- `title` — the `接口名称` cell's markdown link with the link removed, unwrapped with the **same** expression the glossary used to key its entries (`re.match(r"\[(.*?)\]\([^)]*\)\s*$", t)`);
+- `description` — `name_zh + "：" + description_zh` when both exist, `name_zh` alone when only that exists, and `null` otherwise.  Nothing is invented: a title the glossary does not carry leaves it `null`;
+- `metadata_json.annotation_source` — `manual` (the manual ships the Chinese) or `glossary` (`title_zh.json` supplied it), so a reviewer can tell the two apart, plus `metadata_json.annotation_key`, the glossary key that matched.
+
+| item | value |
+| --- | --- |
+| glossary file | `G:\StructAI MCP\docs\api-registry\title_zh.json` |
+| status | `ok` — G:\StructAI MCP\docs\api-registry\title_zh.json: 952 usable titles of 952 declared |
+| titles usable / declared | 952 / 952 |
+| glossary complete | yes |
+| entries without `name_zh` | 0 |
+| rows annotated | 2517 / 2517 (100.0%) |
+| distinct titles annotated | 950 / 950 (100.0%) |
+| glossary entries never used | 2 |
+
+Annotated rows per `source`:
+
+| source | rows |
+| --- | --- |
+| `manual` | 535 |
+| `glossary` | 1982 |
+| `<none>` | 0 |
+
+`<none>` is the honest answer, not a defect: a title the glossary does not carry leaves the annotation `null`, and the seeder then leaves `capabilities.description` alone rather than writing a blank over a curated value.  A **missing or malformed** glossary produces the same kind of answer — this pipeline emits the identical row set without it, because the glossary is curated data that another task owns.
+
+Glossary entries no row ever looked up (**2**; first 2) — a large number here means the glossary's keys and the rows' titles are spelled differently:
+
+```text
+Truss Force
+Truss Stress
+```
+
+## 12. Self-validation
+
+The pipeline re-opened `interfaces.json` and re-validated it: every required field present, `product_scope` in the closed set, every `feature` in the closed set and consistent with `domain`, `(adapter_code, interface_code)` unique, every `request_schema_json` parseable as a JSON object, every row's `method` in the HTTP set, and `title` / `description` present on every row — with a non-empty `metadata_json.annotation_source` and a matched `annotation_key` whenever the row carries an annotation.
 
 It then checked the **collection** against the manuals' own marker counts, because a file can be perfectly well formed and still be missing most of what the manual states:
 
@@ -612,3 +648,5 @@ It then checked the **collection** against the manuals' own marker counts, becau
 - no manual reports `JSON Schema` markers with zero schemas attached.
 
 Measured on this run: `gen` 633 marker(s) / 624 attached, `civilnx` 71 marker(s) / 71 attached, `designer` 0 marker(s) / 0 attached.  A shortfall exits non-zero **instead of** writing this report, so a wrong count can never be mistaken for a clean run.
+
+It also checked the **Chinese annotation** against the glossary: when `title_zh.json` is present and complete, at least **50%** of the rows and of the distinct titles must carry an annotation.  A complete glossary that matches almost nothing means the unwrap rule and the glossary's keys disagree — the same silent-zero shape as `index_rows=0`, in a new place.  A missing, malformed or still-being-filled glossary is reported in §11 and does **not** fail the run: this pipeline must emit the same rows without it.

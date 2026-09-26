@@ -24,6 +24,8 @@ an underivable ``dispatch`` is skipped **and counted**     总纲 §4.4 (no new 
 ``enabled = 0`` (capability **or** interface) is skipped   V2.1 §16.1
 loading twice is idempotent                                V2.1 §16.1
 ``reset_capabilities()`` restores the static declaration   ``capabilities.py`` seam
+``capabilities.description`` is the Chinese annotation,    总纲 §4.2.13
+verbatim, and reaches ``notes`` / ``description``
 the 155 ``midas_gen`` rows equal the static declaration    **the acceptance test**
 ========================================================  ==========================
 """
@@ -50,6 +52,7 @@ from app.mcp.capabilities import (
     TOOL_QUERY,
     TOOL_TASK,
     Capability,
+    capability_payload,
     capability_rows,
     capability_table,
     reset_capabilities,
@@ -1547,3 +1550,73 @@ def test_the_static_declaration_survives_a_full_round_trip_byte_for_byte(
     run(load_capabilities(factory))
 
     assert tuple(capability_table(MIDAS_GEN).values()) == static
+
+
+# ---------------------------------------------------------------------------
+# 14. the Chinese annotation (总纲 §4.2.13)
+# ---------------------------------------------------------------------------
+def test_the_capabilities_description_is_the_annotation_in_notes(
+    sqlite_path: Path,
+) -> None:
+    """``capabilities.description`` -> ``Capability.notes`` -> the LLM payload.
+
+    总纲 §4.2.13 makes ``capabilities.description`` the Chinese annotation's
+    documented home (``notes`` has no column of its own), so a DB-loaded row's
+    ``notes`` **is** the annotation the seeder wrote — verbatim, with nothing
+    composed on the way — and ``capability_payload`` exposes the same string as
+    ``description``.  A row the extraction could not annotate keeps ``""`` rather
+    than a placeholder, and the interface-level ``metadata_json.annotation_source``
+    is inert: the loader must not warn about a key it does not know.
+    """
+    annotation = "主控数据：分析主控参数：自动约束旋转与法向、收敛容差等全局求解设置。"
+
+    def build(session: Session) -> None:
+        tools = _add_tools(session, TOOL_NAMES)
+        _add_adapter(session, MIDAS_GEN)
+        annotated = _add_interface(
+            session,
+            interface_code="midas_gen.db.elem.read",
+            endpoint="/db/ELEM",
+            response_root_key="ELEM",
+            metadata_json=json.dumps(
+                {"annotation_source": "glossary", "annotation_key": "Main Control Data"}
+            ),
+        )
+        _add_capability(
+            session,
+            tool_id=tools[TOOL_QUERY],
+            code="element.get",
+            resource="element",
+            action="get",
+            description=annotation,
+            # 总纲 §4.2.13: the capability level's only JSON column carries the
+            # annotation's provenance for a reviewer.
+            constraints_json=json.dumps({"annotation_source": "glossary"}),
+            interface_id=annotated,
+        )
+        bare = _add_interface(session, interface_code="midas_gen.db.node.read")
+        _add_capability(
+            session,
+            tool_id=tools[TOOL_QUERY],
+            code="node.list",
+            resource="node",
+            action="list",
+            interface_id=bare,
+        )
+
+    factory = _seed(sqlite_path, build)
+    result = run(load_capabilities(factory))
+
+    assert result.loaded == 2
+    assert result.skipped == 0
+    # ``annotation_source`` is not one of the loader's keys, so it is ignored
+    # rather than warned about (总纲 §4.4: no new error code for a foreign key).
+    assert result.warnings == {}
+
+    annotated = capability_table(MIDAS_GEN)["element.get"]
+    assert annotated.notes == annotation
+    assert capability_payload(annotated)["description"] == annotation
+
+    unannotated = capability_table(MIDAS_GEN)["node.list"]
+    assert unannotated.notes == ""
+    assert capability_payload(unannotated)["description"] == ""

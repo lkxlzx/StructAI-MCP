@@ -25,6 +25,11 @@ a DB-loaded capability dispatches through a real             v1.2 §38
 ``ToolDispatcher``: resolve -> gate -> handler -> adapter
 the extraction's rows are never invented (endpoint/method    总纲 §0.4
 come from the file verbatim)
+the annotation lands in ``capabilities.description``, a      总纲 §4.2.13
+``null`` one never clobbers a value that is there, and
+``annotation_source`` survives
+the glossary's missing / malformed file degrades to          抽取层不得依赖词表存在
+``null`` annotations instead of crashing
 ==========================================================  ==========================
 """
 
@@ -1104,3 +1109,432 @@ def test_seeding_a_file_with_no_rows_is_an_empty_but_complete_report(
     assert result.capabilities_inserted == 0
     assert result.tools_inserted == 4  # the tools come from the code, not the file
     assert _load(factory).rows_read == 0
+
+
+# ---------------------------------------------------------------------------
+# 8. the Chinese annotation (总纲 §4.2.13)
+# ---------------------------------------------------------------------------
+def _extraction_row(
+    *,
+    description: str | None = None,
+    annotation_source: str | None = None,
+    interface_code: str = "midas_gen.db.node.read",
+    endpoint: str = "/db/NODE",
+    method: str = "GET",
+    operation: str = "read",
+    title: str = "[Main Control Data](#main-control-data)",
+) -> dict[str, Any]:
+    """One hand-written extracted row carrying the annotation fields the pipeline emits.
+
+    The row is built here rather than read from ``interfaces.json`` on purpose: the
+    glossary's content is owned by another task, so a test that depended on it would
+    pass or fail for reasons that have nothing to do with this seeder.
+    """
+    metadata: dict[str, Any] = {"source_title": title}
+    if annotation_source is not None:
+        metadata["annotation_source"] = annotation_source
+    return {
+        "adapter_code": MIDAS_GEN,
+        "interface_code": interface_code,
+        "method": method,
+        "endpoint": endpoint,
+        "operation": operation,
+        "resource": "node",
+        "title": "Main Control Data",
+        "description": description,
+        "metadata_json": metadata,
+    }
+
+
+def _write_extraction(path: Path, rows: list[dict[str, Any]]) -> Path:
+    """A minimal but structurally valid extraction file the seeder can read."""
+    path.write_text(
+        json.dumps({"meta": {"counts": {"rows": len(rows)}}, "rows": rows}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    return path
+
+
+def _stored_capability(factory: Callable[[], Session], code: str) -> CapabilityRow:
+    """The ``capabilities`` row of one code, read straight from the database."""
+    with factory() as session:
+        row = session.scalar(
+            select(CapabilityRow).where(CapabilityRow.capability_code == code)
+        )
+    assert row is not None, code
+    return row
+
+
+def test_a_seeded_row_carries_the_annotation_in_capabilities_description(
+    sqlite_path: Path, tmp_path: Path
+) -> None:
+    """总纲 §4.2.13：``capabilities.description`` 是中文注释的家。
+
+    The annotation the extraction composed (``name_zh + "：" + description_zh``) is
+    written there verbatim, its provenance is preserved in the capability's
+    ``constraints_json`` (the level's only JSON column), and the loader then reads it
+    back as ``notes`` — which is what makes it visible to the LLM.
+    """
+    annotation = "主控数据：分析主控参数：自动约束旋转与法向、收敛容差等全局求解设置。"
+    path = _write_extraction(
+        tmp_path / "annotated.json",
+        [_extraction_row(description=annotation, annotation_source="glossary")],
+    )
+    result, factory = _seed(sqlite_path, path=path)
+    assert result.capabilities_inserted == 1
+
+    row = _stored_capability(factory, "node.get")
+    assert row.description == annotation
+    assert json.loads(str(row.constraints_json))["annotation_source"] == "glossary"
+
+    loaded = _load(factory)
+    assert loaded.skipped == 0
+    assert loaded.warnings == {}
+    assert capability_table(MIDAS_GEN)["node.get"].notes == annotation
+
+
+def test_a_null_annotation_does_not_overwrite_a_non_null_one(
+    sqlite_path: Path, tmp_path: Path
+) -> None:
+    """抽取层对**没说**的东西保持沉默：``null`` 注释不得覆盖已有值。
+
+    A curated description — or the annotation an earlier run wrote — must survive a
+    refresh whose extraction row carries no annotation.  The provenance of the value
+    that is actually stored survives with it, so a reviewer never sees a description
+    whose ``annotation_source`` has been blanked.
+    """
+    annotation = "主控数据：分析主控参数。"
+    annotated = _write_extraction(
+        tmp_path / "annotated.json",
+        [_extraction_row(description=annotation, annotation_source="glossary")],
+    )
+    bare = _write_extraction(tmp_path / "bare.json", [_extraction_row(description=None)])
+
+    _, factory = _seed(sqlite_path, path=annotated)
+    second = seed_interfaces(factory, path=bare)
+
+    assert second.capabilities_inserted == 0
+    assert second.capabilities_updated == 1
+    row = _stored_capability(factory, "node.get")
+    assert row.description == annotation
+    assert json.loads(str(row.constraints_json))["annotation_source"] == "glossary"
+    assert _load(factory).skipped == 0
+
+
+def test_a_stated_annotation_refreshes_the_row_that_owns_the_slot(
+    sqlite_path: Path, tmp_path: Path
+) -> None:
+    """A non-``null`` annotation is a statement, so it refreshes like every other column.
+
+    ``description`` is not frozen by the first run: the extraction is authoritative
+    for what it states, and the row that owns the slot's primary interface still
+    recognises itself on a second run (through ``interface_id``), which is what lets
+    an updated glossary reach the database.
+    """
+    first = _write_extraction(
+        tmp_path / "first.json",
+        [_extraction_row(description="主控数据：旧说明。", annotation_source="glossary")],
+    )
+    second = _write_extraction(
+        tmp_path / "second.json",
+        [_extraction_row(description="主控数据：新说明。", annotation_source="manual")],
+    )
+    _, factory = _seed(sqlite_path, path=first)
+    seed_interfaces(factory, path=second)
+
+    row = _stored_capability(factory, "node.get")
+    assert row.description == "主控数据：新说明。"
+    assert json.loads(str(row.constraints_json))["annotation_source"] == "manual"
+    assert _load(factory).warnings == {}
+
+
+def test_the_slots_primary_row_owns_the_annotation_across_runs(
+    sqlite_path: Path, tmp_path: Path
+) -> None:
+    """A collapsed slot's annotation is decided by a rule, not by 「who ran last」.
+
+    ``/post/TABLE``'s ``read`` (GET) and ``query`` (POST) both mean 「read this
+    table」 and share one capability (对接规范 §11.5.6), so two extracted rows with
+    two different annotations land on one slot.  The row that owns the slot's primary
+    interface owns its annotation, exactly as it owns ``interface_id`` — which makes
+    the result order-independent and a second run a no-op.
+    """
+    slug = "beam_force_analysis_result_table_beam_force_anal"
+    read_row = _extraction_row(
+        description="甲：第一行。",
+        annotation_source="glossary",
+        interface_code=f"midas_gen.post.table.{slug}.read",
+        endpoint="/post/TABLE",
+        method="POST",
+        operation="read",
+    )
+    query_row = _extraction_row(
+        description="乙：第二行。",
+        annotation_source="glossary",
+        interface_code=f"midas_gen.post.table.{slug}.query",
+        endpoint="/post/TABLE",
+        method="POST",
+        operation="query",
+    )
+    path = _write_extraction(tmp_path / "tables.json", [read_row, query_row])
+
+    first, factory = _seed(sqlite_path, path=path)
+    assert first.capabilities_inserted == 1, "the two rows must collapse onto one slot"
+    assert first.collapsed_rows == 1
+
+    code = f"{slug}.get"
+    assert _stored_capability(factory, code).description == "甲：第一行。"
+
+    second = seed_interfaces(factory, path=path)
+    # ``collapsed_rows`` counts rows that landed on a slot **an earlier row of the
+    # same run** created, so it is 0 on the second run — the slot already exists in
+    # the database, nothing is being created.  Asserting 1 here would be asserting
+    # the counter's name rather than the property under test.  The property is
+    # idempotence, and that is what the three assertions below state.
+    assert second.collapsed_rows == 0
+    assert second.capabilities_inserted == 0, "a second run must create nothing"
+    assert second.interfaces_inserted == 0
+    assert _stored_capability(factory, code).description == "甲：第一行。"
+    assert _load(factory).skipped == 0
+
+
+# ---------------------------------------------------------------------------
+# 9. the glossary's degradation path (extract_interfaces.py)
+# ---------------------------------------------------------------------------
+_EXTRACTOR: dict[str, Any] = {}
+
+
+def _extractor() -> Any:
+    """Import ``docs/api-registry/extract_interfaces.py`` as a module, once.
+
+    The pipeline is a script rather than a package, so it is loaded by path.  Its
+    ``main()`` is guarded, and importing it runs only its own declarations — which is
+    what makes the glossary's degradation path testable **without** running the
+    extraction: the whole point of ``load_title_zh`` is that it must never raise, and
+    a test that only ran the pipeline could not reach a missing file.
+    """
+    if "module" not in _EXTRACTOR:
+        import importlib.util
+
+        path = (
+            Path(__file__).resolve().parents[2]
+            / "docs"
+            / "api-registry"
+            / "extract_interfaces.py"
+        )
+        spec = importlib.util.spec_from_file_location("structai_extract_interfaces", path)
+        assert spec is not None and spec.loader is not None
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        _EXTRACTOR["module"] = module
+    return _EXTRACTOR["module"]
+
+
+def test_the_glossary_missing_file_degrades_to_null_annotations(tmp_path: Path) -> None:
+    """抽取层不得依赖词表存在：缺文件 -> 全 null 注释，且不抛异常、不阻断流水线。"""
+    module = _extractor()
+    glossary = module.load_title_zh(str(tmp_path / "no_such_glossary.json"))
+
+    assert glossary["status"] == "missing"
+    assert glossary["titles"] == {}
+    assert glossary["complete"] is False
+    assert module.annotation_for("[Main Control Data](#main-control-data)", glossary["titles"]) == (
+        None,
+        None,
+        None,
+    )
+    # …and a missing glossary is never a *problem*: it is a degradation, reported.
+    assert module.verify_annotations(module.annotation_report([], glossary)) == []
+
+
+def test_the_glossary_malformed_file_degrades_and_names_the_reason(tmp_path: Path) -> None:
+    """坏词表必须与「一条都没匹配上」区分开——否则这就是又一个静默零。"""
+    module = _extractor()
+
+    not_json = tmp_path / "not.json"
+    not_json.write_text("{oops", encoding="utf-8")
+    assert module.load_title_zh(str(not_json))["status"] == "malformed"
+
+    titles_not_an_object = tmp_path / "list.json"
+    titles_not_an_object.write_text('{"titles": [1, 2, 3]}', encoding="utf-8")
+    broken = module.load_title_zh(str(titles_not_an_object))
+    assert broken["status"] == "malformed"
+    assert broken["titles"] == {}
+    assert "titles" in str(broken["detail"])
+
+    top_level_not_an_object = tmp_path / "scalar.json"
+    top_level_not_an_object.write_text("[1, 2, 3]", encoding="utf-8")
+    assert module.load_title_zh(str(top_level_not_an_object))["status"] == "malformed"
+
+    # A directory is an OSError, not a crash (``IsADirectoryError`` on POSIX,
+    # ``PermissionError`` on Windows).
+    assert module.load_title_zh(str(tmp_path))["status"] == "malformed"
+
+
+def test_the_glossary_join_uses_the_glossarys_own_unwrap_rule() -> None:
+    """键是**去包装后**的标题，规则必须与词表逐字一致。
+
+    ``title_zh.json`` keys its entries with
+    ``re.match(r"\\[(.*?)\\]\\([^)]*\\)\\s*$", t)``; the index table writes the wrapped
+    form, so a lookup that unwraps differently matches nothing — and does it
+    silently.  Both glossary keys of the shipped schema are exercised: an English
+    title and a manual-sourced Chinese one whose text itself contains brackets.
+    """
+    module = _extractor()
+    glossary = {
+        "Main Control Data": {
+            "name_zh": "主控数据",
+            "description_zh": "分析主控参数。",
+            "source": "glossary",
+        },
+        "梁荷载(单元）[BMLD]Beam Loads": {"name_zh": "梁荷载(单元）", "source": "manual"},
+    }
+
+    assert module.unwrap_title("[Main Control Data](#main-control-data)") == "Main Control Data"
+    assert (
+        module.unwrap_title("[梁荷载(单元）[BMLD]Beam Loads](#梁荷载单元bmldbeam-loads)")
+        == "梁荷载(单元）[BMLD]Beam Loads"
+    )
+    # The non-greedy group plus the anchor cut at the **last** ``](``, so a title that
+    # itself contains brackets survives — the same trap ``title_key`` documents.
+    assert module.annotation_for("[Main Control Data](#main-control-data)", glossary) == (
+        "主控数据：分析主控参数。",
+        "glossary",
+        "Main Control Data",
+    )
+    # 只有名字时不得编造说明；两者都没有时整条留空。
+    assert module.annotation_for("[梁荷载(单元）[BMLD]Beam Loads](#x)", glossary) == (
+        "梁荷载(单元）",
+        "manual",
+        "梁荷载(单元）[BMLD]Beam Loads",
+    )
+    assert module.annotation_for("[Unknown Endpoint](#unknown)", glossary) == (None, None, None)
+    assert module.annotation_for(None, glossary) == (None, None, None)
+    assert module.annotation_for("", glossary) == (None, None, None)
+    # ``\s*$`` anchors the rule: a title that merely *contains* a link is not one.
+    assert (
+        module.unwrap_title("See [Nodal](#nodal) for details")
+        == "See [Nodal](#nodal) for details"
+    )
+
+
+def test_a_complete_glossary_that_matches_almost_nothing_fails_loudly(
+    tmp_path: Path,
+) -> None:
+    """The silent-zero guard: a complete glossary plus a broken join must not pass.
+
+    ``index_rows=0`` with ``anomalies=0`` is the failure this whole pipeline is built
+    around, and the annotation has the same shape: hundreds of curated titles, an
+    unwrap rule that disagrees with them, and thousands of ``null`` annotations that
+    every other count in the file still calls plausible.
+    """
+    module = _extractor()
+    good = tmp_path / "good.json"
+    good.write_text(
+        json.dumps(
+            {
+                "meta": {"schema_version": 1, "titles_total": 2},
+                "titles": {
+                    "Main Control Data": {
+                        "name_zh": "主控数据",
+                        "description_zh": "分析主控参数。",
+                        "source": "glossary",
+                    },
+                    "Nodal": {"name_zh": "节点", "source": "manual"},
+                },
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    glossary = module.load_title_zh(str(good))
+    assert glossary["status"] == "ok"
+    assert glossary["complete"] is True
+
+    rows: list[dict[str, Any]] = [
+        {
+            "title": "Something Else",
+            "description": None,
+            "metadata_json": {"annotation_source": None, "annotation_key": None},
+        },
+        {
+            "title": "Also Else",
+            "description": None,
+            "metadata_json": {"annotation_source": None, "annotation_key": None},
+        },
+        {
+            "title": "Nodal",
+            "description": "节点",
+            "metadata_json": {"annotation_source": "manual", "annotation_key": "Nodal"},
+        },
+    ]
+    report = module.annotation_report(rows, glossary)
+    assert report["rows_annotated"] == 1
+    assert report["rows_by_source"] == {
+        "manual": 1,
+        "glossary": 0,
+        "<none>": 2,
+    }
+    assert report["titles_annotated"] == 1
+    assert report["entries_never_used"] == 1
+    problems = module.verify_annotations(report)
+    assert problems, "one row in three annotated is below the floor"
+    assert "silent-zero" in problems[0]
+
+    # The boundary, pinned explicitly because it is the kind of thing two readers
+    # assume differently: the constant is a **floor**, so exactly
+    # ``ANNOTATION_COVERAGE_FLOOR`` passes and only *below* it is a problem.
+    exactly_at_floor = [
+        {
+            "title": "Nodal",
+            "description": "节点",
+            "metadata_json": {"annotation_source": "manual", "annotation_key": "Nodal"},
+        },
+        {
+            "title": "Something Else",
+            "description": None,
+            "metadata_json": {"annotation_source": None, "annotation_key": None},
+        },
+    ]
+    at_floor = module.annotation_report(exactly_at_floor, glossary)
+    assert at_floor["rows_annotated_pct"] == module.ANNOTATION_COVERAGE_FLOOR * 100
+    assert module.verify_annotations(at_floor) == [], "50% is the floor, not below it"
+
+    # A glossary that is still being filled in (fewer entries than its own
+    # ``meta.titles_total``) is reported, **not** fatal: it is incomplete, not broken.
+    draft = tmp_path / "draft.json"
+    draft.write_text(
+        json.dumps(
+            {
+                "meta": {"schema_version": 1, "titles_total": 950},
+                "titles": {"Main Control Data": {"name_zh": "主控数据", "source": "glossary"}},
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    draft_glossary = module.load_title_zh(str(draft))
+    assert draft_glossary["status"] == "ok"
+    assert draft_glossary["complete"] is False
+    assert module.verify_annotations(module.annotation_report(rows, draft_glossary)) == []
+
+    # …and a healthy join is not a problem either.
+    healthy = [
+        {
+            "title": "Nodal",
+            "description": "节点",
+            "metadata_json": {"annotation_source": "manual", "annotation_key": "Nodal"},
+        },
+        {
+            "title": "Main Control Data",
+            "description": "主控数据：分析主控参数。",
+            "metadata_json": {
+                "annotation_source": "glossary",
+                "annotation_key": "Main Control Data",
+            },
+        },
+    ]
+    healthy_report = module.annotation_report(healthy, glossary)
+    assert healthy_report["titles_annotated"] == 2
+    assert healthy_report["entries_never_used"] == 0
+    assert module.verify_annotations(healthy_report) == []

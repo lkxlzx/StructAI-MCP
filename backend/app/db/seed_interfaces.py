@@ -97,6 +97,30 @@ What the extraction does *not* give the MCP layer
   "Civil-only" answer on Gen too), so gate 4 of 总纲 §4.9.2 admits them
   optimistically with an ``unverified`` warning — the shipped behaviour, not a
   regression.
+* **The unwrapped ``title`` has no column.**  The extraction emits both ``title``
+  (the manual's own title, link removed) and ``description`` (the Chinese
+  annotation); only the annotation has a home in this schema
+  (``capabilities.description``), so the title stays in the extraction and in
+  ``tool_interfaces.metadata_json.annotation_key`` for review.
+
+The Chinese annotation (总纲 §4.2.13)
+------------------------------------
+The registry is an **API catalogue**, and the manuals' Chinese and English sections
+document the *same* endpoints — the section's language says nothing, so what matters
+is that every API carries a **Chinese annotation** a Chinese-speaking user and the
+LLM can read.  ``capabilities.description`` is that annotation's documented home
+(总纲 §4.2.13: ``notes`` has no column of its own), and
+:mod:`app.mcp.capability_loader` already maps that column to ``Capability.notes``.
+Each extracted row's ``description`` is therefore written there, and its
+``metadata_json.annotation_source`` (``manual`` / ``glossary``) is preserved in the
+capability's ``constraints_json`` — the only capability-level JSON column — so a
+reviewer can tell a name the manual ships from one ``title_zh.json`` supplied.
+
+A ``null`` annotation **never** overwrites a value that is already there: the
+extraction is authoritative for what it states and silent about what it does not, so
+a curated description (or the annotation an earlier row of the same run wrote)
+survives an unannotated refresh.  A non-null annotation refreshes the slot like every
+other column of this upsert.
 
 Behaviour contract
 ------------------
@@ -530,6 +554,26 @@ def _text(value: Any) -> str | None:
     return stripped or None
 
 
+def _row_annotation(raw: Mapping[str, Any]) -> tuple[str | None, str | None]:
+    """``(description, annotation_source)`` of one extracted row (总纲 §4.2.13).
+
+    ``description`` is the extraction's Chinese annotation
+    (``name_zh + "：" + description_zh``, or ``name_zh`` alone) and
+    ``metadata_json.annotation_source`` says whether the manual shipped that name or
+    ``title_zh.json`` supplied it.  Both are copied **verbatim**: this seeder never
+    composes an annotation, and an absent one stays ``None`` so the caller can leave
+    an existing value alone instead of writing a blank over it.
+    """
+    annotation = _text(raw.get("description"))
+    extraction = raw.get("metadata_json")
+    source = (
+        _text(extraction.get("annotation_source"))
+        if isinstance(extraction, Mapping)
+        else None
+    )
+    return annotation, source
+
+
 def _normalise_resource(value: str) -> str:
     """Lower-case and ``-`` -> ``_``.
 
@@ -876,6 +920,26 @@ def _link(
     return True
 
 
+def _annotation_source_of(row: CapabilityRow) -> str | None:
+    """``constraints_json.annotation_source`` of a stored capability row, or ``None``.
+
+    ``capabilities.constraints_json`` is the capability level's **only** JSON column
+    (``capability_loader``'s precedence table), so that is where the annotation's
+    provenance lives.  An unparseable blob is ignored rather than raised: this reads
+    a value this module wrote, and one bad blob must not cost a row.
+    """
+    raw = row.constraints_json
+    if not raw:
+        return None
+    try:
+        parsed = json.loads(raw)
+    except ValueError:
+        return None
+    if not isinstance(parsed, Mapping):
+        return None
+    return _text(parsed.get("annotation_source"))
+
+
 def _upsert_capability(
     session: Session,
     capabilities: dict[tuple[str, str], CapabilityRow],
@@ -890,14 +954,16 @@ def _upsert_capability(
     execute_key: tuple[str, str] | None,
     first_of_slot: bool,
     preexisting: frozenset[tuple[str, str]],
+    raw: Mapping[str, Any],
 ) -> CapabilityRow:
     """Insert or refresh one ``capabilities`` row (V2.1 §16.1).
 
     ``tool_id`` comes from the code's own ``TOOL_NAMES`` -> ``tools`` mapping
     (总纲 §4.2.12), never from ``tool_interfaces.tool_id`` (which is NULL).
     ``constraints_json`` carries only the fields ``Capability`` has no column for
-    — ``adapter_action`` and ``task_type`` — and only for the execute rows the
-    static declaration already classifies.
+    — ``adapter_action`` and ``task_type`` (for the execute rows the static
+    declaration already classifies) and the annotation's ``annotation_source``
+    (总纲 §4.2.13; the loader ignores keys it does not know).
 
     The three counters are separated by *when* the slot was occupied, decided
     before this call writes anything: a slot that already held a row when the run
@@ -908,6 +974,38 @@ def _upsert_capability(
     """
     code = capability_slot(resource, action)
     key = (classified.adapter_code, code)
+    existing = capabilities.get(key)
+
+    # --- the Chinese annotation (总纲 §4.2.13) ------------------------------
+    # ``capabilities.description`` is the annotation's documented home (the loader
+    # maps it to ``Capability.notes``, which ``capability_payload`` exposes to the
+    # LLM).  Two rules, and both are order-independent so a second run cannot flip
+    # the value:
+    #
+    # 1. a ``null`` annotation **never** clobbers a value that is already there —
+    #    the extraction is authoritative for what it states and silent about what it
+    #    does not, so a curated description survives an unannotated refresh;
+    # 2. the row that owns the slot's primary interface owns its annotation, exactly
+    #    as it owns ``interface_id``.  A row that collapsed onto the slot keeps what
+    #    is there (or fills a gap), so the primary's annotation wins whichever order
+    #    the extracted rows arrive in — and on a re-run the owner still recognises
+    #    itself through ``interface_id``, which is why the file can refresh the value
+    #    instead of freezing the first run's.
+    annotation, annotation_source = _row_annotation(raw)
+    previous_source = _annotation_source_of(existing) if existing is not None else None
+    owns_annotation = existing is None or existing.description is None or (
+        existing.interface_id is not None
+        and int(existing.interface_id) == int(interface.id)
+    )
+    if annotation is None or not owns_annotation:
+        description = existing.description if existing is not None else None
+        annotation_source = previous_source
+    else:
+        description = annotation
+    if description is None:
+        # 没有注释就没有来源：两者一起出现，一起缺席（抽取层的自校验也断言这一条）。
+        annotation_source = None
+
     constraints: dict[str, Any] = {}
     if execute_key is not None:
         adapter_action, task_type = _EXECUTE_ROW_FIELDS.get(execute_key, (None, None))
@@ -915,6 +1013,8 @@ def _upsert_capability(
             constraints["adapter_action"] = adapter_action
         if task_type is not None:
             constraints["task_type"] = task_type
+    if annotation_source is not None:
+        constraints["annotation_source"] = annotation_source
     constraints_json = (
         json.dumps(constraints, ensure_ascii=False, sort_keys=True) if constraints else None
     )
@@ -926,7 +1026,6 @@ def _upsert_capability(
             counts["capabilities_updated"] += 1
         else:
             counts["collapsed_rows"] += 1
-    existing = capabilities.get(key)
     if existing is None:
         existing = CapabilityRow(
             tool_id=tool_ids[classified.tool],
@@ -934,7 +1033,7 @@ def _upsert_capability(
             capability_code=code,
             resource=resource,
             action=action,
-            description=None,
+            description=description,
             interface_id=int(interface.id),
             enabled=1,
             constraints_json=constraints_json,
@@ -953,6 +1052,7 @@ def _upsert_capability(
     existing.tool_id = tool_ids[classified.tool]
     existing.resource = resource
     existing.action = action
+    existing.description = description
     existing.constraints_json = constraints_json
     return existing
 
@@ -1076,6 +1176,7 @@ def seed_interfaces(
                     execute_key=classified.execute_key,
                     first_of_slot=first_of_slot,
                     preexisting=preexisting,
+                    raw=raw,
                 )
                 if not first_of_slot:
                     counters.collapse(classified.capability_code, classified.interface_code)
@@ -1107,6 +1208,7 @@ def seed_interfaces(
                         # not a collapse: it owns its own primary link.
                         first_of_slot=True,
                         preexisting=preexisting,
+                        raw=raw,
                     )
                     _link(
                         session,
@@ -1218,10 +1320,12 @@ def _interface_metadata(raw: Mapping[str, Any], resource: str) -> str:
     """``tool_interfaces.metadata_json`` — provenance, never a dispatch override.
 
     The keys are the extraction's own provenance plus the
-    ``extraction_request_schema`` this seeder refuses to use as a payload schema.
-    **No** ``dispatch`` key is written: a dispatch override would assert a value
-    the loader's own rule table cannot derive, which is what
-    :data:`SKIP_EXECUTE_UNMAPPED` exists to refuse.
+    ``extraction_request_schema`` this seeder refuses to use as a payload schema,
+    and the annotation's provenance (总纲 §4.2.13): ``annotation_source`` and the
+    ``annotation_key`` the glossary matched, so the unwrapping is auditable at the
+    interface level as well as on the capability row.  **No** ``dispatch`` key is
+    written: a dispatch override would assert a value the loader's own rule table
+    cannot derive, which is what :data:`SKIP_EXECUTE_UNMAPPED` exists to refuse.
     """
     extraction = raw.get("metadata_json")
     source = extraction if isinstance(extraction, Mapping) else {}
@@ -1238,6 +1342,8 @@ def _interface_metadata(raw: Mapping[str, Any], resource: str) -> str:
         "documented_methods": source.get("documented_methods"),
         "merged_records": source.get("merged_records"),
         "interface_code_disambiguation": source.get("interface_code_disambiguation"),
+        "annotation_source": source.get("annotation_source"),
+        "annotation_key": source.get("annotation_key"),
     }
     request_schema = raw.get("request_schema_json")
     if request_schema is not None:

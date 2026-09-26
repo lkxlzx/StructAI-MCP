@@ -1,0 +1,4800 @@
+{
+  "$comment": [
+    "中文注释词表 —— 英文标题 -> 中文名称 + 中文说明。",
+    "键是**去包装后的英文标题**（去掉 markdown 链接 [X](#anchor)，保留原文大小写与标点）。",
+    "由 docs/api-registry/extract_interfaces.py 在生成 interfaces.json 时并入每一行；",
+    "再经 backend/app/db/seed_interfaces.py 写入 capabilities.description，",
+    "最后由 backend/app/mcp/capability_loader.py 读成 Capability.notes，",
+    "并由 capability_payload() 暴露给 LLM（midas_query target=capabilities）。",
+    "",
+    "来源优先级（高到低）：",
+    "  1. manual —— 手册自带的中文（Civil NX 双语标题、Designer 中文标题），直接抽取；",
+    "  2. glossary —— 本文件的 name_zh / description_zh，为手册只有英文的条目补写；",
+    "  3. null —— 都没有时留空，**不得**编造。",
+    "",
+    "依据：总纲 §4.2.11（三层分类）、V2.1 §17.4（interface_code）。"
+  ],
+  "meta": {
+    "schema_version": 1,
+    "generated_by": "docs/api-registry/title_zh.json",
+    "titles_total": 952,
+    "titles_referenced_by_rows": 950,
+    "titles_unreferenced": 2,
+    "titles_with_manual_chinese": 209,
+    "titles_needing_glossary": 743,
+    "rows_annotated": 2517,
+    "rows_total": 2517,
+    "measurement_note": [
+      "实测值。任务书给出的 950 / 209 / 741 与此处的 952 / 209 / 743 有两处出入，均已查明：",
+      "① 950 vs 951（补键前）：任务书的统计正则与逐键枚举在一处**嵌套方括号**标题上分歧 ——",
+      "   实际标题是 '[刚性连接[RIGD]Rigid Link](#…)'，内层还有一个 [RIGD]。",
+      "   词表当时只收了英文键 'Rigid Link'，未收那 4 行真正使用的双语键，故有 4 行无注释。",
+      "   已补 '刚性连接[RIGD]Rigid Link'（source=manual），现命中 2517/2517 = 100%。",
+      "② 209 vs 208：补键后 manual 来源为 209，与任务书一致。",
+      "③ titles_unreferenced = 2（'Truss Force' / 'Truss Stress'）：行实际使用的是",
+      "   '内力Truss Force' / '应力Truss Stress'，二者已在词表中。多余键无害，保留以便复用。"
+    ]
+  },
+  "titles": {
+    "Main Control Data": {
+      "name_zh": "主控数据",
+      "description_zh": "分析主控参数：自动约束旋转与法向、收敛容差等全局求解设置。",
+      "source": "glossary"
+    },
+    "梁荷载(单元）[BMLD]Beam Loads": {
+      "name_zh": "梁荷载(单元）",
+      "description_zh": "梁单元荷载。",
+      "source": "manual"
+    },
+    "Boundary Change Assignment": {
+      "name_zh": "边界变更分配",
+      "description_zh": "定义边界条件随施工阶段或荷载工况发生变化的分配数据。",
+      "source": "glossary"
+    },
+    "Assign Boundary Combination": {
+      "name_zh": "分配边界组合",
+      "description_zh": "把已定义的边界组合分配到模型中的节点或单元上。",
+      "source": "glossary"
+    },
+    "Define Boundary Combination": {
+      "name_zh": "定义边界组合",
+      "description_zh": "定义由若干边界条件组成的边界组合，供分析工况引用。",
+      "source": "glossary"
+    },
+    "Static Loads": {
+      "name_zh": "静力荷载",
+      "description_zh": "静力荷载工况的定义数据（名称、类型与激活状态）。",
+      "source": "glossary"
+    },
+    "Define Boundary Group": {
+      "name_zh": "定义边界组",
+      "description_zh": "定义边界组，把边界条件按施工阶段或变更条件分组。",
+      "source": "glossary"
+    },
+    "Self Weight": {
+      "name_zh": "自重",
+      "description_zh": "把单元自重转换为指定方向的荷载并分配到荷载工况。",
+      "source": "glossary"
+    },
+    "Bearing Evaluation": {
+      "name_zh": "支座评价",
+      "description_zh": "桥梁支座评价参数：支座类型与承载力校核所用的系数。",
+      "source": "glossary"
+    },
+    "Bearing Property": {
+      "name_zh": "支座特性",
+      "description_zh": "定义支座特性值（支座类型、刚度与容许位移）。",
+      "source": "glossary"
+    },
+    "Seismic Perform. Code": {
+      "name_zh": "抗震性能规范",
+      "description_zh": "抗震性能评价所依据的设计规范选项。",
+      "source": "glossary"
+    },
+    "Temperature": {
+      "name_zh": "温度",
+      "description_zh": "温度荷载的分配数据（单元或节点上的温度值）。",
+      "source": "glossary"
+    },
+    "Buckling Analysis Control": {
+      "name_zh": "屈曲分析控制",
+      "description_zh": "屈曲分析控制数据：屈曲模态数量与荷载工况设置。",
+      "source": "glossary"
+    },
+    "FCM Camber Control": {
+      "name_zh": "FCM预拱度控制",
+      "description_zh": "悬臂法（FCM）施工的预拱度控制数据。",
+      "source": "glossary"
+    },
+    "Convection Coefficient Functions": {
+      "name_zh": "对流系数函数",
+      "description_zh": "水化热分析用的对流系数随时间或温度变化的函数。",
+      "source": "glossary"
+    },
+    "Change General Link Properties": {
+      "name_zh": "修改一般连接特性值",
+      "description_zh": "修改已分配给模型的一般连接所引用的特性值。",
+      "source": "glossary"
+    },
+    "Concurrent Joint Force Group": {
+      "name_zh": "同时节点力组",
+      "description_zh": "定义移动荷载分析中同时发生内力的节点力组。",
+      "source": "glossary"
+    },
+    "Define Constraints Label Direction": {
+      "name_zh": "定义标签方向",
+      "description_zh": "定义约束（支承）标签在图形中显示的方向。",
+      "source": "glossary"
+    },
+    "Plate Cutting Line Diagram": {
+      "name_zh": "板切割线图",
+      "description_zh": "板单元切割线图的数据与显示设置。",
+      "source": "glossary"
+    },
+    "Construction": {
+      "name_zh": "施工阶段",
+      "description_zh": "施工阶段的定义数据：阶段名称、激活与钝化范围。",
+      "source": "glossary"
+    },
+    "Nodal": {
+      "name_zh": "节点荷载",
+      "description_zh": "作用在节点上的集中力与集中弯矩荷载。",
+      "source": "glossary"
+    },
+    "Define Supports": {
+      "name_zh": "一般支承",
+      "description_zh": "定义节点的一般支承条件（各自由度约束标志）。",
+      "source": "glossary"
+    },
+    "Floor Load": {
+      "name_zh": "楼面荷载",
+      "description_zh": "楼面荷载（分配楼面荷载）的定义与分配数据。",
+      "source": "glossary"
+    },
+    "Material": {
+      "name_zh": "材料",
+      "description_zh": "材料特性值：弹性模量、泊松比、容重与线膨胀系数。",
+      "source": "glossary"
+    },
+    "Section": {
+      "name_zh": "截面",
+      "description_zh": "截面特性值：截面形状、尺寸与计算得到的截面常数。",
+      "source": "glossary"
+    },
+    "Thickness": {
+      "name_zh": "厚度",
+      "description_zh": "板单元厚度特性值（厚度类型与各方向厚度）。",
+      "source": "glossary"
+    },
+    "Concurrent Reaction Group": {
+      "name_zh": "同时反力组",
+      "description_zh": "定义移动荷载分析中同时发生反力的节点组。",
+      "source": "glossary"
+    },
+    "Creep Coefficient for Construction Stage": {
+      "name_zh": "施工阶段徐变系数",
+      "description_zh": "按施工阶段定义混凝土的徐变系数。",
+      "source": "glossary"
+    },
+    "Composite Section for Construction Stage": {
+      "name_zh": "施工阶段组合截面",
+      "description_zh": "定义施工阶段中由不同材料或龄期构件组成的组合截面。",
+      "source": "glossary"
+    },
+    "Cutting Line": {
+      "name_zh": "切割线",
+      "description_zh": "定义用于查看板单元内力的切割线位置。",
+      "source": "glossary"
+    },
+    "RC Design": {
+      "name_zh": "RC设计",
+      "description_zh": "钢筋混凝土设计参数与配筋数据的入口。",
+      "source": "glossary"
+    },
+    "Definition of Frame": {
+      "name_zh": "框架定义",
+      "description_zh": "定义设计用框架（构件在节点处的归属与端部条件）。",
+      "source": "glossary"
+    },
+    "Domain": {
+      "name_zh": "区域",
+      "description_zh": "定义区域（Domain）：把节点或单元划入一个命名区域。",
+      "source": "glossary"
+    },
+    "Diaphragm Disconnect": {
+      "name_zh": "横隔板断开",
+      "description_zh": "定义横隔板与主梁之间的连接解除关系。",
+      "source": "glossary"
+    },
+    "Design Steel Code": {
+      "name_zh": "钢结构设计规范",
+      "description_zh": "钢结构设计所依据的规范选项。",
+      "source": "glossary"
+    },
+    "Railway Dynamic Factor": {
+      "name_zh": "铁路动力系数",
+      "description_zh": "铁路列车荷载的动力系数定义。",
+      "source": "glossary"
+    },
+    "Dynamic Load Allowance": {
+      "name_zh": "动力荷载增大系数",
+      "description_zh": "移动荷载的动力荷载增大系数（冲击系数）定义。",
+      "source": "glossary"
+    },
+    "Railway Dynamic Factor by Element": {
+      "name_zh": "单元铁路动力系数",
+      "description_zh": "按单元指定铁路列车荷载的动力系数。",
+      "source": "glossary"
+    },
+    "Change Property": {
+      "name_zh": "修改特性",
+      "description_zh": "把已建模单元的材料或截面特性批量修改为另一特性。",
+      "source": "glossary"
+    },
+    "Small Displacement - Initial Force Control Data": {
+      "name_zh": "小位移-初始力控制数据",
+      "description_zh": "小位移分析中初始力（几何刚度初始荷载）的控制数据。",
+      "source": "glossary"
+    },
+    "Eigenvalue Analysis Control": {
+      "name_zh": "特征值分析控制",
+      "description_zh": "特征值（振型）分析控制数据：模态数量、频率范围与迭代设置。",
+      "source": "glossary"
+    },
+    "Create Element": {
+      "name_zh": "建立单元",
+      "description_zh": "建立单元：由节点连接关系生成梁、板、实体等单元。",
+      "source": "glossary"
+    },
+    "Elastic Link": {
+      "name_zh": "弹性连接",
+      "description_zh": "弹性连接单元：定义两节点之间各自由度的弹性刚度。",
+      "source": "glossary"
+    },
+    "Plastic Material": {
+      "name_zh": "塑性材料",
+      "description_zh": "塑性材料特性值：用于非线性分析的屈服与硬化参数。",
+      "source": "glossary"
+    },
+    "Seismic Earth Pressure": {
+      "name_zh": "地震土压力",
+      "description_zh": "作用在挡土结构上的地震土压力荷载。",
+      "source": "glossary"
+    },
+    "Static Earth Pressure": {
+      "name_zh": "静力土压力",
+      "description_zh": "作用在挡土结构上的静力土压力荷载。",
+      "source": "glossary"
+    },
+    "Element Stiffness Scale Factor": {
+      "name_zh": "单元刚度修改系数",
+      "description_zh": "按单元指定刚度修改系数，用于调整单元刚度。",
+      "source": "glossary"
+    },
+    "Heat of Hydration": {
+      "name_zh": "水化热",
+      "description_zh": "水化热分析所需的热学特性与放热数据。",
+      "source": "glossary"
+    },
+    "Element Temperatures": {
+      "name_zh": "单元温度",
+      "description_zh": "分配给单元的节点温度值，用于温度荷载或水化热分析。",
+      "source": "glossary"
+    },
+    "Evaluation": {
+      "name_zh": "评价组",
+      "description_zh": "抗震性能评价组：把需要评价的构件或楼层编成一组。",
+      "source": "glossary"
+    },
+    "Evaluation Parameters": {
+      "name_zh": "评价参数",
+      "description_zh": "抗震性能评价所用的判定参数。",
+      "source": "glossary"
+    },
+    "Effective Width Scale Factor": {
+      "name_zh": "有效宽度系数",
+      "description_zh": "定义梁单元有效宽度（翼缘有效宽度）的修改系数。",
+      "source": "glossary"
+    },
+    "Prestress": {
+      "name_zh": "预应力",
+      "description_zh": "梁单元预应力荷载（预应力钢束的张力与布置）。",
+      "source": "glossary"
+    },
+    "Assign Floor": {
+      "name_zh": "分配楼面荷载",
+      "description_zh": "把楼面荷载类型分配到指定楼层的板或梁上。",
+      "source": "glossary"
+    },
+    "Define Floor Load Type": {
+      "name_zh": "定义楼面荷载类型",
+      "description_zh": "定义楼面荷载类型：面荷载值与梁上分配方式。",
+      "source": "glossary"
+    },
+    "Fiber Division of Section": {
+      "name_zh": "纤维截面分割",
+      "description_zh": "把截面分割为纤维，供纤维模型的非线性分析使用。",
+      "source": "glossary"
+    },
+    "Inelastic Material Properties": {
+      "name_zh": "非线性材料特性",
+      "description_zh": "非线性（弹塑性）材料特性值：骨架曲线与滞回规则。",
+      "source": "glossary"
+    },
+    "Finishing Material": {
+      "name_zh": "装修材料荷载",
+      "description_zh": "装修材料荷载：按单元分配的附加恒荷载。",
+      "source": "glossary"
+    },
+    "Beam End Release": {
+      "name_zh": "释放梁端约束",
+      "description_zh": "释放梁单元两端的部分或全部自由度约束。",
+      "source": "glossary"
+    },
+    "Grid Analysis Load": {
+      "name_zh": "网格分析荷载",
+      "description_zh": "网格模型分析用的荷载数据。",
+      "source": "glossary"
+    },
+    "General Camber Control": {
+      "name_zh": "一般预拱度控制",
+      "description_zh": "一般预拱度控制数据：预拱度的计算与施加方式。",
+      "source": "glossary"
+    },
+    "Group Damping": {
+      "name_zh": "组阻尼",
+      "description_zh": "按结构组指定各振型的阻尼比。",
+      "source": "glossary"
+    },
+    "Define Structure Group": {
+      "name_zh": "定义结构组",
+      "description_zh": "定义结构组，把节点与单元按施工阶段或显示需要分组。",
+      "source": "glossary"
+    },
+    "Bridge Girder Diagrams": {
+      "name_zh": "桥梁主梁图",
+      "description_zh": "桥梁主梁内力与应力图形的数据与显示设置。",
+      "source": "glossary"
+    },
+    "Assign General Spring Supports": {
+      "name_zh": "分配一般弹性支承",
+      "description_zh": "把一般弹性支承类型分配到节点上。",
+      "source": "glossary"
+    },
+    "General Spring": {
+      "name_zh": "一般弹性支承",
+      "description_zh": "一般弹性支承类型：各自由度的弹簧刚度值。",
+      "source": "glossary"
+    },
+    "Temperature Gradient": {
+      "name_zh": "温度梯度",
+      "description_zh": "梁截面或板厚度方向的温度梯度荷载。",
+      "source": "glossary"
+    },
+    "Assign Heat Source": {
+      "name_zh": "分配热源",
+      "description_zh": "把热源（放热函数）分配到指定单元。",
+      "source": "glossary"
+    },
+    "Element Convection Boundary": {
+      "name_zh": "单元对流边界",
+      "description_zh": "分配给单元的对流边界条件（对流系数与环境温度）。",
+      "source": "glossary"
+    },
+    "Heat of Hydration Analysis Control": {
+      "name_zh": "水化热分析控制",
+      "description_zh": "水化热分析控制数据：分析时长、步长与收敛条件。",
+      "source": "glossary"
+    },
+    "Heat of Hydaration Result Graph": {
+      "name_zh": "水化热结果图形",
+      "description_zh": "水化热分析结果的图形输出设置。",
+      "source": "glossary"
+    },
+    "Pipe Cooling": {
+      "name_zh": "管冷",
+      "description_zh": "冷却水管的布置与冷却水特性数据。",
+      "source": "glossary"
+    },
+    "Heat Source Functions": {
+      "name_zh": "热源函数",
+      "description_zh": "定义水化热分析用热源（放热）随时间变化的函数。",
+      "source": "glossary"
+    },
+    "Prescribed Temperature": {
+      "name_zh": "指定温度",
+      "description_zh": "水化热分析中强制指定节点温度边界。",
+      "source": "glossary"
+    },
+    "Define Construction Stage for Hydration": {
+      "name_zh": "定义水化热施工阶段",
+      "description_zh": "定义水化热分析所用的施工阶段。",
+      "source": "glossary"
+    },
+    "Inealstic Hinge Control Data": {
+      "name_zh": "非弹性特性控制数据",
+      "description_zh": "非弹性铰（集中铰）分析的控制数据。",
+      "source": "glossary"
+    },
+    "Assign Inelastic Hinge Properties": {
+      "name_zh": "分配非弹性铰特性值",
+      "description_zh": "把非弹性铰特性值分配到指定位置。",
+      "source": "glossary"
+    },
+    "Assign Inelastic Hinges - Beam": {
+      "name_zh": "分配非弹性铰-梁",
+      "description_zh": "在梁单元上分配非弹性铰。",
+      "source": "glossary"
+    },
+    "Assign Inelastic Hinges - General Link": {
+      "name_zh": "分配非弹性铰-一般连接",
+      "description_zh": "在一般连接单元上分配非弹性铰。",
+      "source": "glossary"
+    },
+    "Assign Inelastic Hinges - Point Spring Support": {
+      "name_zh": "分配非弹性铰-节点弹性支承",
+      "description_zh": "在节点弹性支承上分配非弹性铰。",
+      "source": "glossary"
+    },
+    "Assign Inelastic Hinges - Truss": {
+      "name_zh": "分配非弹性铰-桁架",
+      "description_zh": "在桁架单元上分配非弹性铰。",
+      "source": "glossary"
+    },
+    "Ignore Elements for Load Cases": {
+      "name_zh": "忽略荷载工况的单元",
+      "description_zh": "指定在某些荷载工况中不参与受力的单元。",
+      "source": "glossary"
+    },
+    "Ignore Elements for Pushover Intial Load": {
+      "name_zh": "忽略Pushover初始荷载的单元",
+      "description_zh": "指定在 Pushover 初始荷载中不参与受力的单元。",
+      "source": "glossary"
+    },
+    "Large Displacement - Initial Forces for Geometric Stiffness": {
+      "name_zh": "大位移-几何刚度初始力",
+      "description_zh": "大位移分析中作为几何刚度初始状态的初始力数据。",
+      "source": "glossary"
+    },
+    "Material Data-Concrete-Inelastic Material Pr": {
+      "name_zh": "材料数据-混凝土-非线性材料特性",
+      "description_zh": "混凝土的弹塑性材料特性数据（用于纤维模型或非弹性铰）。",
+      "source": "glossary"
+    },
+    "Inelastic Material Link for Auto Generation": {
+      "name_zh": "非线性材料自动生成连接",
+      "description_zh": "把非线性材料特性与单元材料自动关联的映射数据。",
+      "source": "glossary"
+    },
+    "Additional Impact Factor": {
+      "name_zh": "附加冲击系数",
+      "description_zh": "在规范冲击系数之外附加的冲击（动力）系数。",
+      "source": "glossary"
+    },
+    "Small Displacement - Initial Element Force": {
+      "name_zh": "小位移-初始单元力",
+      "description_zh": "小位移分析中施加在单元上的初始内力。",
+      "source": "glossary"
+    },
+    "Load Combinations": {
+      "name_zh": "荷载组合",
+      "description_zh": "荷载组合的定义数据：组合名称、类型与包含的荷载工况。",
+      "source": "glossary"
+    },
+    "Load Combination": {
+      "name_zh": "荷载组合",
+      "description_zh": "单个荷载组合的组成（各荷载工况及其组合系数）。",
+      "source": "glossary"
+    },
+    "Load Combinations - General": {
+      "name_zh": "荷载组合-一般",
+      "description_zh": "一般（通用）荷载组合的定义数据。",
+      "source": "glossary"
+    },
+    "Load Combinations (Seismic)": {
+      "name_zh": "荷载组合（地震）",
+      "description_zh": "地震荷载组合的定义数据。",
+      "source": "glossary"
+    },
+    "Load Combinations (SRC Design)": {
+      "name_zh": "荷载组合（SRC设计）",
+      "description_zh": "SRC 设计用荷载组合的定义数据。",
+      "source": "glossary"
+    },
+    "Load Combinations (Steel Design)": {
+      "name_zh": "荷载组合（钢结构设计）",
+      "description_zh": "钢结构设计用荷载组合的定义数据。",
+      "source": "glossary"
+    },
+    "Load Combinations (Composite Steel G": {
+      "name_zh": "荷载组合（组合钢梁设计）",
+      "description_zh": "组合钢梁设计用荷载组合的定义数据。",
+      "source": "glossary"
+    },
+    "Define Load Group": {
+      "name_zh": "定义荷载组",
+      "description_zh": "定义荷载组，把荷载工况按用途分组。",
+      "source": "glossary"
+    },
+    "Load Sequence for Nonlinear": {
+      "name_zh": "非线性荷载顺序",
+      "description_zh": "非线性分析中荷载工况的施加顺序。",
+      "source": "glossary"
+    },
+    "Unbraced Length": {
+      "name_zh": "无支承长度",
+      "description_zh": "构件设计用的无支承长度（计算长度）数据。",
+      "source": "glossary"
+    },
+    "Traffic Line Lanes": {
+      "name_zh": "交通车道线",
+      "description_zh": "由梁单元组成的车道线定义（车道宽度与偏心）。",
+      "source": "glossary"
+    },
+    "Traffic Line Lanes - China": {
+      "name_zh": "交通车道线-China",
+      "description_zh": "按中国规范定义的车道线数据。",
+      "source": "glossary"
+    },
+    "Traffic Line Lanes - India": {
+      "name_zh": "交通车道线-India",
+      "description_zh": "按印度规范定义的车道线数据。",
+      "source": "glossary"
+    },
+    "Traffic Line Lanes - Moving Load Optimizaion": {
+      "name_zh": "交通车道线-移动荷载优化",
+      "description_zh": "用于移动荷载优化的车道线数据。",
+      "source": "glossary"
+    },
+    "Traffic Line Lanes - Transverse": {
+      "name_zh": "交通车道线-横向移动荷载",
+      "description_zh": "横向移动荷载分析用的车道线数据。",
+      "source": "glossary"
+    },
+    "Loads to Masses": {
+      "name_zh": "荷载转换为质量",
+      "description_zh": "把指定荷载工况的荷载按比例转换为动力分析用的质量。",
+      "source": "glossary"
+    },
+    "Limiting Slenderness Ratio": {
+      "name_zh": "长细比限值",
+      "description_zh": "构件设计用的长细比限值。",
+      "source": "glossary"
+    },
+    "Main-Domain": {
+      "name_zh": "主区域",
+      "description_zh": "定义主区域（Main-Domain），作为子区域的父级范围。",
+      "source": "glossary"
+    },
+    "Modify Concrete Materials": {
+      "name_zh": "修改混凝土材料",
+      "description_zh": "修改混凝土材料的设计用特性（强度、容重等）。",
+      "source": "glossary"
+    },
+    "Material Properties": {
+      "name_zh": "材料特性值",
+      "description_zh": "材料特性值列表的查询与批量修改。",
+      "source": "glossary"
+    },
+    "Modify Member Type": {
+      "name_zh": "修改构件类型",
+      "description_zh": "修改单元的构件类型（梁、柱、支撑、墙等设计分类）。",
+      "source": "glossary"
+    },
+    "Linear Constraints": {
+      "name_zh": "线性约束",
+      "description_zh": "定义节点自由度之间的线性约束方程。",
+      "source": "glossary"
+    },
+    "Member Assignment": {
+      "name_zh": "构件分配",
+      "description_zh": "把单元分配到设计用构件（Member）分组。",
+      "source": "glossary"
+    },
+    "Force-Deformation Function": {
+      "name_zh": "变形-内力函数",
+      "description_zh": "定义非弹性铰或连接单元的内力-变形关系函数。",
+      "source": "glossary"
+    },
+    "Lane Support - Negative Moments at Interior Piers": {
+      "name_zh": "车道支承-中墩负弯矩",
+      "description_zh": "移动荷载分析中车道支承处中墩负弯矩的取值设置。",
+      "source": "glossary"
+    },
+    "Lane Support - Reactions at Interior Piers": {
+      "name_zh": "车道支承-中墩反力",
+      "description_zh": "移动荷载分析中车道支承处中墩反力的取值设置。",
+      "source": "glossary"
+    },
+    "Moment Curvatrue": {
+      "name_zh": "弯矩-曲率",
+      "description_zh": "定义截面弯矩-曲率关系，用于非弹性铰特性。",
+      "source": "glossary"
+    },
+    "Moving Load Code": {
+      "name_zh": "移动荷载规范",
+      "description_zh": "移动荷载分析所依据的规范（各国车队与折减规则）。",
+      "source": "glossary"
+    },
+    "Moving Load Analysis Con": {
+      "name_zh": "移动荷载分析控制",
+      "description_zh": "移动荷载分析控制数据（影响线加载与结果组合方式）。",
+      "source": "glossary"
+    },
+    "Moving Load Analysis Control(BS)": {
+      "name_zh": "移动荷载分析控制(BS)",
+      "description_zh": "按英国规范（BS）的移动荷载分析控制数据。",
+      "source": "glossary"
+    },
+    "Moving Load Analysis Control(China)": {
+      "name_zh": "移动荷载分析控制(China)",
+      "description_zh": "按中国规范的移动荷载分析控制数据。",
+      "source": "glossary"
+    },
+    "Moving Load Analysis Control(India)": {
+      "name_zh": "移动荷载分析控制(India)",
+      "description_zh": "按印度规范的移动荷载分析控制数据。",
+      "source": "glossary"
+    },
+    "Moving Load Analysis Control(Transverse)": {
+      "name_zh": "移动荷载分析控制(Transverse)",
+      "description_zh": "横向移动荷载分析的控制数据。",
+      "source": "glossary"
+    },
+    "Vehicle Classes": {
+      "name_zh": "车辆类型",
+      "description_zh": "定义移动荷载用的车辆类型（轴重、轴距与轮距）。",
+      "source": "glossary"
+    },
+    "Vehicles - AASHTO Standard": {
+      "name_zh": "车辆-AASHTO标准",
+      "description_zh": "AASHTO 标准车队（车辆荷载）的定义数据。",
+      "source": "glossary"
+    },
+    "Vehicles - Transverse": {
+      "name_zh": "车辆-横向移动荷载",
+      "description_zh": "横向移动荷载分析用的车辆定义数据。",
+      "source": "glossary"
+    },
+    "Moving Load Cases": {
+      "name_zh": "移动荷载工况",
+      "description_zh": "移动荷载工况的定义数据（车道、车辆与组合系数）。",
+      "source": "glossary"
+    },
+    "Moving Load Cases - BS": {
+      "name_zh": "移动荷载工况-BS",
+      "description_zh": "按英国规范（BS）定义的移动荷载工况。",
+      "source": "glossary"
+    },
+    "Moving Load Cases - China": {
+      "name_zh": "移动荷载工况-China",
+      "description_zh": "按中国规范定义的移动荷载工况。",
+      "source": "glossary"
+    },
+    "Moving Load Cases - Eurocode": {
+      "name_zh": "移动荷载工况-Eurocode",
+      "description_zh": "按欧洲规范定义的移动荷载工况。",
+      "source": "glossary"
+    },
+    "Moving Load Cases - India": {
+      "name_zh": "移动荷载工况-India",
+      "description_zh": "按印度规范定义的移动荷载工况。",
+      "source": "glossary"
+    },
+    "Moving Load Cases - Poland": {
+      "name_zh": "移动荷载工况-Poland",
+      "description_zh": "按波兰规范定义的移动荷载工况。",
+      "source": "glossary"
+    },
+    "Moving Load Cases - Transverse": {
+      "name_zh": "移动荷载工况-横向移动荷载",
+      "description_zh": "横向移动荷载工况的定义数据。",
+      "source": "glossary"
+    },
+    "Nodal Body": {
+      "name_zh": "节点体力",
+      "description_zh": "作用在节点上的体力（自重式体积荷载）。",
+      "source": "glossary"
+    },
+    "Nonlinear Analysis Control Data": {
+      "name_zh": "非线性分析控制数据",
+      "description_zh": "非线性分析控制数据：迭代方法、收敛条件与荷载步。",
+      "source": "glossary"
+    },
+    "Nonlinear Analysis Control": {
+      "name_zh": "非线性分析控制",
+      "description_zh": "非线性分析的控制参数设置。",
+      "source": "glossary"
+    },
+    "General Link Properties": {
+      "name_zh": "一般连接特性值",
+      "description_zh": "一般连接特性值：连接类型与各自由度的力-变形关系。",
+      "source": "glossary"
+    },
+    "General Link": {
+      "name_zh": "一般连接",
+      "description_zh": "一般连接单元：在两节点之间建立非线性连接。",
+      "source": "glossary"
+    },
+    "Nodal Masses": {
+      "name_zh": "节点质量",
+      "description_zh": "分配给节点的集中质量与质量惯性矩。",
+      "source": "glossary"
+    },
+    "Create Node": {
+      "name_zh": "建立节点",
+      "description_zh": "建立节点：定义节点坐标与编号。",
+      "source": "glossary"
+    },
+    "Named Plane": {
+      "name_zh": "命名的平面",
+      "description_zh": "定义命名的平面，供建模与结果查看引用。",
+      "source": "glossary"
+    },
+    "Point Spring": {
+      "name_zh": "节点弹性支承",
+      "description_zh": "节点弹性支承：节点各自由度的弹簧刚度。",
+      "source": "glossary"
+    },
+    "Nodal Temperatures": {
+      "name_zh": "节点温度",
+      "description_zh": "分配给节点的温度值（温度荷载或水化热分析）。",
+      "source": "glossary"
+    },
+    "Named UCS": {
+      "name_zh": "定义用户坐标系",
+      "description_zh": "定义命名的用户坐标系（UCS）。",
+      "source": "glossary"
+    },
+    "Beam End Offsets": {
+      "name_zh": "梁端刚域",
+      "description_zh": "定义梁单元端部的刚域（偏心）长度。",
+      "source": "glossary"
+    },
+    "P-Delta Analysis Control": {
+      "name_zh": "P-Delta分析控制",
+      "description_zh": "P-Delta（二阶）分析的控制数据。",
+      "source": "glossary"
+    },
+    "Assign Pushover Hinge Properties": {
+      "name_zh": "分配Pushover铰特性",
+      "description_zh": "把 Pushover 铰特性值分配到指定单元。",
+      "source": "glossary"
+    },
+    "Project Information": {
+      "name_zh": "项目信息",
+      "description_zh": "工程项目的说明信息（工程名、设计者、备注等）。",
+      "source": "glossary"
+    },
+    "Pre-composite Section": {
+      "name_zh": "组合前截面",
+      "description_zh": "定义组合截面在组合作用形成之前的截面数据。",
+      "source": "glossary"
+    },
+    "Assign Plane": {
+      "name_zh": "分配平面荷载",
+      "description_zh": "把平面荷载类型分配到指定平面。",
+      "source": "glossary"
+    },
+    "Plane Load Type": {
+      "name_zh": "定义平面荷载类型",
+      "description_zh": "定义平面荷载类型：作用在平面上的面荷载值。",
+      "source": "glossary"
+    },
+    "Pushover Analysis Control Data": {
+      "name_zh": "Pushover分析控制数据",
+      "description_zh": "Pushover 分析控制数据：目标位移、加载模式与收敛条件。",
+      "source": "glossary"
+    },
+    "Pushover Global Control": {
+      "name_zh": "Pushover整体控制",
+      "description_zh": "Pushover 分析的整体控制参数。",
+      "source": "glossary"
+    },
+    "Pushover Load": {
+      "name_zh": "Pushover荷载",
+      "description_zh": "Pushover 分析用的侧向荷载分布数据。",
+      "source": "glossary"
+    },
+    "Pushover Load Case": {
+      "name_zh": "Pushover荷载工况",
+      "description_zh": "Pushover 荷载工况的定义数据。",
+      "source": "glossary"
+    },
+    "Parameter of Seismic Loads": {
+      "name_zh": "地震荷载参数",
+      "description_zh": "静力地震荷载（等效静力法）的计算参数。",
+      "source": "glossary"
+    },
+    "Parameter of Soil Properties": {
+      "name_zh": "土层特性参数",
+      "description_zh": "地震荷载计算所用的场地土层特性参数。",
+      "source": "glossary"
+    },
+    "Assign Pressure": {
+      "name_zh": "指定压力荷载",
+      "description_zh": "把压力荷载分配到板或实体单元表面。",
+      "source": "glossary"
+    },
+    "Plate End Release": {
+      "name_zh": "释放板端约束",
+      "description_zh": "释放板单元边界的部分或全部自由度约束。",
+      "source": "glossary"
+    },
+    "Prestress Beam": {
+      "name_zh": "梁单元预应力荷载",
+      "description_zh": "梁单元上的预应力荷载（张拉力与预应力损失参数）。",
+      "source": "glossary"
+    },
+    "Define Pressure Load Type": {
+      "name_zh": "定义压力荷载类型",
+      "description_zh": "定义压力荷载类型：压力大小与作用方向。",
+      "source": "glossary"
+    },
+    "Section Manager": {
+      "name_zh": "截面管理器",
+      "description_zh": "截面管理器：查看与编辑截面的几何组成数据。",
+      "source": "glossary"
+    },
+    "Pretension": {
+      "name_zh": "初拉力",
+      "description_zh": "索或桁架单元的初拉力荷载。",
+      "source": "glossary"
+    },
+    "Panel Zone Effects": {
+      "name_zh": "刚域效果",
+      "description_zh": "定义梁柱节点区（刚域）的刚度效果。",
+      "source": "glossary"
+    },
+    "Rebar Input for Column Section": {
+      "name_zh": "柱截面钢筋输入",
+      "description_zh": "输入柱截面的钢筋布置数据。",
+      "source": "glossary"
+    },
+    "Modify Beam Rebar Data": {
+      "name_zh": "修改梁钢筋数据",
+      "description_zh": "修改梁构件已有的钢筋数据。",
+      "source": "glossary"
+    },
+    "Modify Column Rebar Data": {
+      "name_zh": "修改柱钢筋数据",
+      "description_zh": "修改柱构件已有的钢筋数据。",
+      "source": "glossary"
+    },
+    "Modify Brace Rebar Data": {
+      "name_zh": "修改支撑钢筋数据",
+      "description_zh": "修改支撑构件已有的钢筋数据。",
+      "source": "glossary"
+    },
+    "Modify Wall Rebar Data": {
+      "name_zh": "修改墙钢筋数据",
+      "description_zh": "修改墙构件已有的钢筋数据。",
+      "source": "glossary"
+    },
+    "Rigid Link": {
+      "name_zh": "刚性连接",
+      "description_zh": "刚性连接：把主节点与从节点自由度刚性耦合。",
+      "source": "glossary"
+    },
+    "刚性连接[RIGD]Rigid Link": {
+      "name_zh": "刚性连接",
+      "description_zh": "刚性连接：把主节点与从节点自由度刚性耦合。",
+      "source": "manual"
+    },
+    "Section Manager - Reinforcement": {
+      "name_zh": "截面管理器-钢筋",
+      "description_zh": "截面管理器中钢筋（配筋）数据的编辑视图。",
+      "source": "glossary"
+    },
+    "Sub-Domain": {
+      "name_zh": "子区域",
+      "description_zh": "定义子区域（Sub-Domain），隶属某个主区域。",
+      "source": "glossary"
+    },
+    "BRIDGE INFORMATION": {
+      "name_zh": "桥梁信息",
+      "description_zh": "桥梁总体信息（跨径布置、桥宽与结构体系）。",
+      "source": "glossary"
+    },
+    "HYSTERESIS-DAMPER": {
+      "name_zh": "滞回阻尼器",
+      "description_zh": "滞回（弹塑性）阻尼器的力学特性数据。",
+      "source": "glossary"
+    },
+    "Isolator(MSS)": {
+      "name_zh": "隔震器(MSS)",
+      "description_zh": "多弹簧剪切型（MSS）隔震器的特性数据。",
+      "source": "glossary"
+    },
+    "Specified Displacements of Support": {
+      "name_zh": "强制位移",
+      "description_zh": "在支承节点上施加强制位移（支座位移）荷载。",
+      "source": "glossary"
+    },
+    "Steel Damper": {
+      "name_zh": "钢阻尼器",
+      "description_zh": "钢阻尼器的力学特性数据。",
+      "source": "glossary"
+    },
+    "Draft _[SDVE]Viscoelastic Damper": {
+      "name_zh": "粘弹性阻尼器",
+      "description_zh": "粘弹性阻尼器的力学特性数据。",
+      "source": "glossary"
+    },
+    "Seismic Device": {
+      "name_zh": "地震装置",
+      "description_zh": "各类地震（减隔震）装置的通用特性数据。",
+      "source": "glossary"
+    },
+    "Section Manager - Stiffness": {
+      "name_zh": "截面管理器-刚度",
+      "description_zh": "截面管理器中截面刚度数据的编辑视图。",
+      "source": "glossary"
+    },
+    "Section Properties": {
+      "name_zh": "截面特性值",
+      "description_zh": "截面特性值：截面常数与刚度数据的查询。",
+      "source": "glossary"
+    },
+    "Plate Element for Influence Surface": {
+      "name_zh": "影响面用板单元",
+      "description_zh": "指定用于生成影响面的板单元。",
+      "source": "glossary"
+    },
+    "Node Local Axis": {
+      "name_zh": "节点局部坐标轴",
+      "description_zh": "定义节点的局部坐标轴方向（节点坐标系）。",
+      "source": "glossary"
+    },
+    "Traffic Surface Lanes": {
+      "name_zh": "交通车道面",
+      "description_zh": "由板单元组成的车道面定义（用于影响面分析）。",
+      "source": "glossary"
+    },
+    "Traffic Surface Lanes - China": {
+      "name_zh": "交通车道面-China",
+      "description_zh": "按中国规范定义的车道面数据。",
+      "source": "glossary"
+    },
+    "Traffic Surface Lanes - Moving Load Optimization": {
+      "name_zh": "交通车道面-移动荷载优化",
+      "description_zh": "用于移动荷载优化的车道面数据。",
+      "source": "glossary"
+    },
+    "Settlement Analysis Control Data": {
+      "name_zh": "沉降分析控制数据",
+      "description_zh": "支座沉降分析的控制数据（沉降组与工况）。",
+      "source": "glossary"
+    },
+    "Settlement": {
+      "name_zh": "沉降",
+      "description_zh": "支座沉降（强制位移型沉降）荷载数据。",
+      "source": "glossary"
+    },
+    "Span Information": {
+      "name_zh": "跨度信息",
+      "description_zh": "桥梁跨度信息：各跨的起止节点与跨径。",
+      "source": "glossary"
+    },
+    "Dynamic": {
+      "name_zh": "动力荷载",
+      "description_zh": "动力荷载数据（节点动力荷载的时程定义）。",
+      "source": "glossary"
+    },
+    "Response Spectrum Load Cases": {
+      "name_zh": "反应谱荷载工况",
+      "description_zh": "反应谱荷载工况：反应谱函数、作用方向与组合方式。",
+      "source": "glossary"
+    },
+    "Static Seismic Load - KDS(41-17-00:2019)": {
+      "name_zh": "静力地震荷载-KDS(41-17-00:2019)",
+      "description_zh": "按 KDS 41 17 00:2019 计算的等效静力地震荷载。",
+      "source": "glossary"
+    },
+    "Surface Spring - Distributed Spring": {
+      "name_zh": "面弹性支承-分布弹簧",
+      "description_zh": "面弹性支承的分布弹簧刚度数据。",
+      "source": "glossary"
+    },
+    "Define Construction": {
+      "name_zh": "定义施工阶段",
+      "description_zh": "定义施工阶段：阶段名称、激活/钝化单元与边界。",
+      "source": "glossary"
+    },
+    "Set-Back Loads for Nonlinear Construction St": {
+      "name_zh": "非线性施工阶段退回荷载",
+      "description_zh": "非线性施工阶段分析中退回（卸除）的荷载数据。",
+      "source": "glossary"
+    },
+    "Construction Stage Analysis Control Data": {
+      "name_zh": "施工阶段分析控制数据",
+      "description_zh": "施工阶段分析控制数据：阶段划分与时间依存效应选项。",
+      "source": "glossary"
+    },
+    "Static Load": {
+      "name_zh": "静力荷载",
+      "description_zh": "单个静力荷载的定义数据。",
+      "source": "glossary"
+    },
+    "System Temperatures": {
+      "name_zh": "系统温度",
+      "description_zh": "作用于整个结构的系统温度（整体升温或降温）荷载。",
+      "source": "glossary"
+    },
+    "Story Data": {
+      "name_zh": "层数据",
+      "description_zh": "楼层数据：各层的层高、层荷载与层质量。",
+      "source": "glossary"
+    },
+    "Section Manager-Stress Points": {
+      "name_zh": "截面管理器-应力点",
+      "description_zh": "截面管理器中应力点（应力输出位置）的设置视图。",
+      "source": "glossary"
+    },
+    "Structure Type": {
+      "name_zh": "结构类型",
+      "description_zh": "结构类型设置（建筑、桥梁、大坝等），影响分析选项。",
+      "source": "glossary"
+    },
+    "Support Length Property": {
+      "name_zh": "支承长度特性",
+      "description_zh": "桥梁支承长度（支座搁置长度）的校核特性数据。",
+      "source": "glossary"
+    },
+    "Static Wind Load - KDS(41-12:2022)": {
+      "name_zh": "静力风荷载-KDS(41-12:2022)",
+      "description_zh": "按 KDS 41 12:2022 计算的静力风荷载。",
+      "source": "glossary"
+    },
+    "Tendon Location for Composite Section": {
+      "name_zh": "组合截面钢束的位置",
+      "description_zh": "定义预应力钢束在组合截面中的位置。",
+      "source": "glossary"
+    },
+    "Define Tendon Group": {
+      "name_zh": "定义钢束组",
+      "description_zh": "定义钢束组，把预应力钢束按用途分组。",
+      "source": "glossary"
+    },
+    "Time Dependent Material": {
+      "name_zh": "时间依存性材料",
+      "description_zh": "时间依存性材料特性（徐变、收缩与抗压强度发展）。",
+      "source": "glossary"
+    },
+    "Time Dependent Material Function(MTC)": {
+      "name_zh": "时间依存性材料函数(MTC)",
+      "description_zh": "定义时间依存性材料特性随时间变化的函数。",
+      "source": "glossary"
+    },
+    "Creep-Shrinkage": {
+      "name_zh": "徐变/收缩",
+      "description_zh": "混凝土徐变与收缩特性数据。",
+      "source": "glossary"
+    },
+    "Tendon Profile": {
+      "name_zh": "钢束形状",
+      "description_zh": "预应力钢束的几何形状（坐标与曲线类型）。",
+      "source": "glossary"
+    },
+    "Tendon Property": {
+      "name_zh": "钢束特性",
+      "description_zh": "预应力钢束特性值（面积、弹性模量与张拉控制应力）。",
+      "source": "glossary"
+    },
+    "Tendon Prestress": {
+      "name_zh": "钢束预应力",
+      "description_zh": "分配给钢束的预应力荷载（张拉力与损失参数）。",
+      "source": "glossary"
+    },
+    "Time History Functions": {
+      "name_zh": "时程函数",
+      "description_zh": "时程分析用的时间函数（地震波、时变荷载）。",
+      "source": "glossary"
+    },
+    "Ground Acceleration": {
+      "name_zh": "地面加速度",
+      "description_zh": "时程分析用的地面加速度数据。",
+      "source": "glossary"
+    },
+    "Time History Global Control": {
+      "name_zh": "时程分析整体控制",
+      "description_zh": "时程分析整体控制数据：时间步长、阻尼与积分方法。",
+      "source": "glossary"
+    },
+    "Time History Load": {
+      "name_zh": "时程荷载",
+      "description_zh": "时程分析中随时间变化的荷载定义。",
+      "source": "glossary"
+    },
+    "Time History Load Cases": {
+      "name_zh": "时程荷载工况",
+      "description_zh": "时程荷载工况的定义数据。",
+      "source": "glossary"
+    },
+    "Multiple Support Excitation": {
+      "name_zh": "多点激励",
+      "description_zh": "多点激励（各支承输入不同地震动）的定义数据。",
+      "source": "glossary"
+    },
+    "Dynamic Nodal": {
+      "name_zh": "动力节点荷载",
+      "description_zh": "节点上的动力荷载（时程节点力）。",
+      "source": "glossary"
+    },
+    "Time History Output Option": {
+      "name_zh": "时程输出选项",
+      "description_zh": "时程分析结果输出的时间步与输出对象选项。",
+      "source": "glossary"
+    },
+    "Time History Graph - Element Force Smart Graph": {
+      "name_zh": "时程图形-单元内力智能图形",
+      "description_zh": "时程分析结果的单元内力智能图形输出。",
+      "source": "glossary"
+    },
+    "Time History Graph - General Link Smart Graph": {
+      "name_zh": "时程图形-一般连接智能图形",
+      "description_zh": "时程分析结果的一般连接智能图形输出。",
+      "source": "glossary"
+    },
+    "Time History Graph - Inelastic Hinge Smart Graph": {
+      "name_zh": "时程图形-非弹性铰智能图形",
+      "description_zh": "时程分析结果的非弹性铰智能图形输出。",
+      "source": "glossary"
+    },
+    "Time History Graph - Seismic Devices Smart Graph": {
+      "name_zh": "时程图形-地震装置智能图形",
+      "description_zh": "时程分析结果的地震装置智能图形输出。",
+      "source": "glossary"
+    },
+    "Time Varying Static": {
+      "name_zh": "时变静力荷载",
+      "description_zh": "随时间变化的静力荷载数据。",
+      "source": "glossary"
+    },
+    "Time Dependent Material Link": {
+      "name_zh": "时间依存性材料连接",
+      "description_zh": "把时间依存性材料特性与单元材料相关联的映射数据。",
+      "source": "glossary"
+    },
+    "Time Loads for Construction Stage": {
+      "name_zh": "施工阶段时间荷载",
+      "description_zh": "施工阶段中按时间定义的荷载。",
+      "source": "glossary"
+    },
+    "Tapered": {
+      "name_zh": "变截面",
+      "description_zh": "变截面（渐变段）的定义数据。",
+      "source": "glossary"
+    },
+    "Define Header and Footer": {
+      "name_zh": "定义页眉和页脚",
+      "description_zh": "定义计算书输出用的页眉与页脚内容。",
+      "source": "glossary"
+    },
+    "Cable Control - Unknown Load Factor Constraints": {
+      "name_zh": "索控制-未知荷载系数约束",
+      "description_zh": "索控制（未知荷载系数法）的约束条件定义。",
+      "source": "glossary"
+    },
+    "Unit System": {
+      "name_zh": "单位系统",
+      "description_zh": "模型的单位系统设置（力、长度与温度单位）。",
+      "source": "glossary"
+    },
+    "User Defined": {
+      "name_zh": "用户定义",
+      "description_zh": "用户自定义数据（用户定义的材料或函数曲线）。",
+      "source": "glossary"
+    },
+    "Section for Resultant Forces - Define Virtua": {
+      "name_zh": "合力截面-定义虚梁",
+      "description_zh": "定义用于计算合力的虚梁（Virtual Beam）。",
+      "source": "glossary"
+    },
+    "Modify Wall Mark Design": {
+      "name_zh": "修改墙标记设计",
+      "description_zh": "修改墙构件的标记（Mark）与设计归属。",
+      "source": "glossary"
+    },
+    "Wave Loads": {
+      "name_zh": "波浪荷载",
+      "description_zh": "作用在结构上的波浪荷载参数。",
+      "source": "glossary"
+    },
+    "DESIGN/PSC/AASHTO-LRFD24/DIDP : Design Position": {
+      "name_zh": "设计位置",
+      "description_zh": "PSC 设计中沿构件纵向的设计（控制）截面位置。",
+      "source": "glossary"
+    },
+    "DESIGN/PSC/AASHTO-LRFD24/DIDP-VBEAM : Design Position for Virtual Beam": {
+      "name_zh": "虚梁设计位置",
+      "description_zh": "虚梁（Virtual Beam）沿纵向的设计截面位置。",
+      "source": "glossary"
+    },
+    "DESIGN/PSC/AASHTO-LRFD24/DIOP : Output Position": {
+      "name_zh": "输出位置",
+      "description_zh": "PSC 设计结果的输出截面位置。",
+      "source": "glossary"
+    },
+    "DESIGN/PSC/AASHTO-LRFD24/DIOP-VBEAM : Output Position for Virtual Beam": {
+      "name_zh": "虚梁输出位置",
+      "description_zh": "虚梁设计结果的输出截面位置。",
+      "source": "glossary"
+    },
+    "DESIGN/PSC/AASHTO-LRFD24/DPSC : Design Code Option": {
+      "name_zh": "设计规范选项",
+      "description_zh": "AASHTO LRFD24 的 PSC 设计规范选项。",
+      "source": "glossary"
+    },
+    "DESIGN/PSC/AASHTO-LRFD24/DSPSC : Design Code": {
+      "name_zh": "设计规范",
+      "description_zh": "PSC 设计所依据的规范及其版本。",
+      "source": "glossary"
+    },
+    "DESIGN/PSC/AASHTO-LRFD24/INFS : Interface shear": {
+      "name_zh": "结合面抗剪",
+      "description_zh": "预制与现浇部分结合面的抗剪验算参数。",
+      "source": "glossary"
+    },
+    "DESIGN/PSC/AASHTO-LRFD24/INFS-VBEAM : Interface shear": {
+      "name_zh": "结合面抗剪",
+      "description_zh": "虚梁结合面的抗剪验算参数。",
+      "source": "glossary"
+    },
+    "DESIGN/PSC/AASHTO-LRFD24/MATD : Modify Material": {
+      "name_zh": "修改材料",
+      "description_zh": "修改 PSC 设计用材料特性值。",
+      "source": "glossary"
+    },
+    "DESIGN/PSC/AASHTO-LRFD24/MEMB : PSC Segment Assignment": {
+      "name_zh": "PSC节段分配",
+      "description_zh": "把单元分配到 PSC 节段，用于分段设计。",
+      "source": "glossary"
+    },
+    "DESIGN/PSC/AASHTO-LRFD24/MEMB-VBEAM : PSC Segment Assignment": {
+      "name_zh": "PSC节段分配",
+      "description_zh": "虚梁的 PSC 节段分配数据。",
+      "source": "glossary"
+    },
+    "DESIGN/PSC/AASHTO-LRFD24/PSC-ANAL : Perform Design": {
+      "name_zh": "执行设计",
+      "description_zh": "执行 AASHTO LRFD24 的 PSC 设计计算。",
+      "source": "glossary"
+    },
+    "DESIGN/PSC/AASHTO-LRFD24/RPSC : Logitudinal Rebar-Reinforcements": {
+      "name_zh": "纵向钢筋-配筋",
+      "description_zh": "PSC 构件的纵向钢筋配筋数据。",
+      "source": "glossary"
+    },
+    "DESIGN/PSC/AASHTO-LRFD24/SECF : Logitudinal Rebar-Stiffness": {
+      "name_zh": "纵向钢筋-刚度",
+      "description_zh": "纵向钢筋对截面刚度的贡献数据。",
+      "source": "glossary"
+    },
+    "DESIGN/PSC/AASHTO-LRFD24/SLCT : Serviceability Load Combination Type": {
+      "name_zh": "正常使用极限状态荷载组合类型",
+      "description_zh": "正常使用极限状态验算所用的荷载组合类型。",
+      "source": "glossary"
+    },
+    "DESIGN/PSC/AASHTO-LRFD24/TABLE : Check stress for cross section at a construction stage": {
+      "name_zh": "验算施工阶段截面应力",
+      "description_zh": "输出施工阶段各截面应力的验算结果表。",
+      "source": "glossary"
+    },
+    "DESIGN/PSC/AASHTO-LRFD24/TABLE : Check Combined Shear and Torsion Strength": {
+      "name_zh": "验算抗剪与抗扭组合强度",
+      "description_zh": "输出剪力与扭矩组合作用下的强度验算结果表。",
+      "source": "glossary"
+    },
+    "DESIGN/PSC/AASHTO-LRFD24/TABLE : Check crack width at service loads": {
+      "name_zh": "验算使用荷载下裂缝宽度",
+      "description_zh": "输出使用荷载作用下裂缝宽度的验算结果表。",
+      "source": "glossary"
+    },
+    "DESIGN/PSC/AASHTO-LRFD24/TABLE : Check Flexure Strength": {
+      "name_zh": "验算抗弯强度",
+      "description_zh": "输出截面抗弯强度的验算结果表。",
+      "source": "glossary"
+    },
+    "DESIGN/PSC/AASHTO-LRFD24/TABLE : Check Shear Strength": {
+      "name_zh": "验算抗剪强度",
+      "description_zh": "输出截面抗剪强度的验算结果表。",
+      "source": "glossary"
+    },
+    "DESIGN/PSC/AASHTO-LRFD24/TABLE : Check tensile stress for Prestressing tendons": {
+      "name_zh": "验算预应力钢束拉应力",
+      "description_zh": "输出预应力钢束拉应力的验算结果表。",
+      "source": "glossary"
+    },
+    "DESIGN/PSC/AASHTO-LRFD24/TABLE : Design Forces": {
+      "name_zh": "设计内力",
+      "description_zh": "输出 PSC 设计各控制截面的设计内力结果表。",
+      "source": "glossary"
+    },
+    "DESIGN/PSC/AASHTO-LRFD24/TABLE : Principal stress at a construction stage": {
+      "name_zh": "施工阶段主应力",
+      "description_zh": "输出施工阶段截面主应力的结果表。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/DRC : RC Design Code": {
+      "name_zh": "RC设计规范",
+      "description_zh": "钢筋混凝土设计所依据的规范选项。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/BC-ANAL : RC Beam Check Perform": {
+      "name_zh": "RC梁验算",
+      "description_zh": "执行 KDS 41 20:2022 的 RC 梁截面验算。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/BC-REPORT : RC Beam Check Report": {
+      "name_zh": "RC梁验算计算书",
+      "description_zh": "生成 RC 梁验算的详细计算书。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/BC-TABLE : RC Beam Check Table": {
+      "name_zh": "RC梁验算表格",
+      "description_zh": "输出 RC 梁验算结果的表格。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/BD-ANAL : RC Beam Design Perform": {
+      "name_zh": "RC梁设计",
+      "description_zh": "执行 KDS 41 20:2022 的 RC 梁配筋设计。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/BD-REPORT : RC Beam Design Report": {
+      "name_zh": "RC梁设计计算书",
+      "description_zh": "生成 RC 梁设计的详细计算书。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/BD-TABLE : RC Beam Design Table": {
+      "name_zh": "RC梁设计表格",
+      "description_zh": "输出 RC 梁设计结果的表格。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/BEMW : Boundary Element Method by Wall ID": {
+      "name_zh": "按墙ID的边界单元法",
+      "description_zh": "按墙 ID 用边界单元法计算墙体设计内力。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/BRC-ANAL : RC Brace Check Perform": {
+      "name_zh": "RC支撑验算",
+      "description_zh": "执行 KDS 41 20:2022 的 RC 支撑截面验算。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/BRC-REPORT : RC Brace Check Report": {
+      "name_zh": "RC支撑验算计算书",
+      "description_zh": "生成 RC 支撑验算的详细计算书。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/BRC-TABLE : RC Brace Check Table": {
+      "name_zh": "RC支撑验算表格",
+      "description_zh": "输出 RC 支撑验算结果的表格。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/BRD-ANAL : RC Brace Design Perform": {
+      "name_zh": "RC支撑设计",
+      "description_zh": "执行 KDS 41 20:2022 的 RC 支撑配筋设计。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/BRD-REPORT : RC Brace Design Report": {
+      "name_zh": "RC支撑设计计算书",
+      "description_zh": "生成 RC 支撑设计的详细计算书。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/BRD-TABLE : RC Brace Design Table": {
+      "name_zh": "RC支撑设计表格",
+      "description_zh": "输出 RC 支撑设计结果的表格。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/CC-ANAL : RC Column Check Perform": {
+      "name_zh": "RC柱验算",
+      "description_zh": "执行 KDS 41 20:2022 的 RC 柱截面验算。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/CC-REPORT : RC Column Check Report": {
+      "name_zh": "RC柱验算计算书",
+      "description_zh": "生成 RC 柱验算的详细计算书。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/CC-TABLE : RC Column Check Table": {
+      "name_zh": "RC柱验算表格",
+      "description_zh": "输出 RC 柱验算结果的表格。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/CD-ANAL : RC Column Design Perform": {
+      "name_zh": "RC柱设计",
+      "description_zh": "执行 KDS 41 20:2022 的 RC 柱配筋设计。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/CD-REPORT : RC Column Design Report": {
+      "name_zh": "RC柱设计计算书",
+      "description_zh": "生成 RC 柱设计的详细计算书。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/CD-TABLE : RC Column Design Table": {
+      "name_zh": "RC柱设计表格",
+      "description_zh": "输出 RC 柱设计结果的表格。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/CDESIGN : RC Concrete Design Result": {
+      "name_zh": "RC混凝土设计结果",
+      "description_zh": "RC 混凝土构件的设计结果汇总数据。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/CMFT : Equivalent Moment Correction Factor(Cm)": {
+      "name_zh": "等效弯矩系数(Cm)",
+      "description_zh": "柱设计用的等效弯矩系数 Cm 的取值设置。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/DCO : Concrete Design Code Option": {
+      "name_zh": "混凝土设计规范选项",
+      "description_zh": "混凝土设计规范及其分项选项。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/DCRE : Design Criteria for Rebar": {
+      "name_zh": "钢筋设计标准",
+      "description_zh": "钢筋设计标准：直径、间距与保护层等构造要求。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/DCREM : Same Beam Rebar at Joints": {
+      "name_zh": "节点处梁钢筋相同",
+      "description_zh": "指定节点处各梁采用相同钢筋的规则。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/DCRM-BEAM : Design Criteria for Rebars by Beam Member": {
+      "name_zh": "梁构件钢筋设计标准",
+      "description_zh": "按梁构件分别指定的钢筋设计标准。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/DCRM-BRACE : Design Criteria for Rebars by Brace Member": {
+      "name_zh": "支撑构件钢筋设计标准",
+      "description_zh": "按支撑构件分别指定的钢筋设计标准。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/DCRM-COLUMN : Design Criteria for Rebars by Column Member": {
+      "name_zh": "柱构件钢筋设计标准",
+      "description_zh": "按柱构件分别指定的钢筋设计标准。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/DCRM-WALL : Design Criteria for Rebars by Wall Member": {
+      "name_zh": "墙构件钢筋设计标准",
+      "description_zh": "按墙构件分别指定的钢筋设计标准。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/DCTL : Definition of Frame": {
+      "name_zh": "框架定义",
+      "description_zh": "定义 RC 设计用的框架（构件端部与节点归属）。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/DFBA : Design Force for Beam Assigned as Member": {
+      "name_zh": "按构件分配的梁设计内力",
+      "description_zh": "把梁的设计内力按构件分配方式指定。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/EQCT : Seismic Load Combination Type": {
+      "name_zh": "地震荷载组合类型",
+      "description_zh": "抗震设计所用的地震荷载组合类型。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/FMAG : Moment Magnifier(B1/Delta_b, B2/Delta_s)": {
+      "name_zh": "弯矩放大系数(B1/Δb, B2/Δs)",
+      "description_zh": "柱设计用的弯矩放大系数 B1、B2 的取值设置。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/HCBM : Haunched Beam Assignment": {
+      "name_zh": "加腋梁分配",
+      "description_zh": "把加腋（变高）梁数据分配到指定梁单元。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/HCD-ANAL : RC Haunched Beam Design Perform": {
+      "name_zh": "RC加腋梁设计",
+      "description_zh": "执行 RC 加腋梁的配筋设计。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/HCD-REPORT : RC Haunched Beam Design Report": {
+      "name_zh": "RC加腋梁设计计算书",
+      "description_zh": "生成 RC 加腋梁设计的详细计算书。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/HCD-TABLE : RC Haunched Beam Design Table": {
+      "name_zh": "RC加腋梁设计表格",
+      "description_zh": "输出 RC 加腋梁设计结果的表格。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/KFAC : Effective Length Factor (K)": {
+      "name_zh": "有效长度系数(K)",
+      "description_zh": "构件设计用的有效长度系数 K 的取值设置。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/LCTB : Load Contribution for Nonlinear Load Case": {
+      "name_zh": "非线性荷载工况的荷载贡献",
+      "description_zh": "指定非线性荷载工况中各荷载的贡献比例。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/LENG : Unbraced Length (L, Lb)": {
+      "name_zh": "无支承长度(L, Lb)",
+      "description_zh": "构件设计用的无支承长度 L 与 Lb 的取值设置。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/LLRF : Live Load Reduction Factor": {
+      "name_zh": "活荷载折减系数",
+      "description_zh": "按构件指定活荷载折减系数。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/LMRR : Limiting Maximum Rebar Ratio": {
+      "name_zh": "最大配筋率限值",
+      "description_zh": "截面最大配筋率的限值设置。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/MATD : Modify Concrete Material": {
+      "name_zh": "修改混凝土材料",
+      "description_zh": "修改 RC 设计用的混凝土材料特性值。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/MBTP : Modify Member Type": {
+      "name_zh": "修改构件类型",
+      "description_zh": "修改 RC 设计中的构件类型（梁、柱、支撑、墙）。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/MCMB : Moment Calculation Method for Beam": {
+      "name_zh": "梁弯矩计算方法",
+      "description_zh": "梁设计内力的弯矩计算方法选择。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/MEMB : Member Assignment": {
+      "name_zh": "构件分配",
+      "description_zh": "把单元分配到 RC 设计用的构件分组。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/MLLR : Modify Live Load Reduction Factor": {
+      "name_zh": "修改活荷载折减系数",
+      "description_zh": "修改已指定的活荷载折减系数。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/MRFT : Moment Redistribution Factor": {
+      "name_zh": "弯矩重分配系数",
+      "description_zh": "梁端弯矩重分配系数的取值设置。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/PMDM : P-M Curve Calculation Method": {
+      "name_zh": "P-M曲线计算方法",
+      "description_zh": "柱截面 P-M 相关曲线的计算方法选择。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/REBB : Modify Beam Rebar Data": {
+      "name_zh": "修改梁钢筋数据",
+      "description_zh": "修改 RC 梁构件已有的钢筋数据。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/REBC : Modify Column Rebar Data": {
+      "name_zh": "修改柱钢筋数据",
+      "description_zh": "修改 RC 柱构件已有的钢筋数据。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/REBR : Modify Brace Rebar Data": {
+      "name_zh": "修改支撑钢筋数据",
+      "description_zh": "修改 RC 支撑构件已有的钢筋数据。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/REBW : Modify Wall Rebar Data": {
+      "name_zh": "修改墙钢筋数据",
+      "description_zh": "修改 RC 墙构件已有的钢筋数据。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/REXC : Rebar Exposure Condition": {
+      "name_zh": "钢筋暴露条件",
+      "description_zh": "按环境暴露等级确定钢筋保护层等要求。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/SCOL : Seismic Column Type": {
+      "name_zh": "抗震柱类型",
+      "description_zh": "按抗震要求指定的柱类型（普通、中等、特殊）。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/SDGN : Seismic Design Type": {
+      "name_zh": "抗震设计类型",
+      "description_zh": "抗震设计类型的选择设置。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/SRDF : Strength Reduction Factors": {
+      "name_zh": "强度折减系数",
+      "description_zh": "各受力状态下的强度折减系数 φ 的取值设置。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/SUEQ : Scale up Factor for Earthquake": {
+      "name_zh": "地震放大系数",
+      "description_zh": "地震作用（内力）的放大系数设置。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/TABLE : Beam Design Forces": {
+      "name_zh": "梁设计内力",
+      "description_zh": "输出 RC 梁各控制截面的设计内力表格。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/TABLE : Brace Design Forces": {
+      "name_zh": "支撑设计内力",
+      "description_zh": "输出 RC 支撑各控制截面的设计内力表格。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/TABLE : Column Design Forces": {
+      "name_zh": "柱设计内力",
+      "description_zh": "输出 RC 柱各控制截面的设计内力表格。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/TRFT : Torsion Reduction Factor": {
+      "name_zh": "抗扭折减系数",
+      "description_zh": "混凝土抗扭承载力的折减系数设置。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/ULCT : Underground Load Combination Type": {
+      "name_zh": "地下荷载组合类型",
+      "description_zh": "地下结构设计用的荷载组合类型。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/WC-ANAL : RC Wall Check Perform": {
+      "name_zh": "RC墙验算",
+      "description_zh": "执行 RC 墙构件的截面验算。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/WC-REPORT : RC Wall Check Report": {
+      "name_zh": "RC墙验算计算书",
+      "description_zh": "生成 RC 墙验算的详细计算书。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/WC-TABLE : RC Wall Check Table": {
+      "name_zh": "RC墙验算表格",
+      "description_zh": "输出 RC 墙验算结果的表格。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/WD-ANAL : RC Wall Design Perform": {
+      "name_zh": "RC墙设计",
+      "description_zh": "执行 RC 墙构件的配筋设计。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/WD-REPORT : RC Wall Design Report": {
+      "name_zh": "RC墙设计计算书",
+      "description_zh": "生成 RC 墙设计的详细计算书。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/WD-TABLE : RC Wall Design Table": {
+      "name_zh": "RC墙设计表格",
+      "description_zh": "输出 RC 墙设计结果的表格。",
+      "source": "glossary"
+    },
+    "DESIGN/RC/KDS-41-20-2022/WMAK : Modify Wall Mark Data": {
+      "name_zh": "修改墙标记数据",
+      "description_zh": "修改 RC 墙构件的标记（Mark）数据。",
+      "source": "glossary"
+    },
+    "DESIGN/SECT : Section for Design": {
+      "name_zh": "设计用截面",
+      "description_zh": "指定设计计算所用的截面（设计截面）。",
+      "source": "glossary"
+    },
+    "DESIGN/SRC/AIK-SRC2K/BC-ANAL : SRC Beam Checking Perform": {
+      "name_zh": "SRC梁验算",
+      "description_zh": "执行 AIK-SRC2K 的 SRC 梁截面验算。",
+      "source": "glossary"
+    },
+    "DESIGN/SRC/AIK-SRC2K/BC-REPORT : SRC Beam Checking Report": {
+      "name_zh": "SRC梁验算计算书",
+      "description_zh": "生成 SRC 梁验算的详细计算书。",
+      "source": "glossary"
+    },
+    "DESIGN/SRC/AIK-SRC2K/BC-TABLE : SRC Beam Checking Table": {
+      "name_zh": "SRC梁验算表格",
+      "description_zh": "输出 SRC 梁验算结果的表格。",
+      "source": "glossary"
+    },
+    "DESIGN/SRC/AIK-SRC2K/CC-ANAL : SRC Column Checking Perform": {
+      "name_zh": "SRC柱验算",
+      "description_zh": "执行 AIK-SRC2K 的 SRC 柱截面验算。",
+      "source": "glossary"
+    },
+    "DESIGN/SRC/AIK-SRC2K/CC-REPORT : SRC Column Checking Report": {
+      "name_zh": "SRC柱验算计算书",
+      "description_zh": "生成 SRC 柱验算的详细计算书。",
+      "source": "glossary"
+    },
+    "DESIGN/SRC/AIK-SRC2K/CC-TABLE : SRC Column Checking Table": {
+      "name_zh": "SRC柱验算表格",
+      "description_zh": "输出 SRC 柱验算结果的表格。",
+      "source": "glossary"
+    },
+    "DESIGN/SRC/AIK-SRC2K/CMFT : Equivalent Moment Correction Factor(Cm)": {
+      "name_zh": "等效弯矩系数(Cm)",
+      "description_zh": "SRC 柱设计用的等效弯矩系数 Cm 设置。",
+      "source": "glossary"
+    },
+    "DESIGN/SRC/AIK-SRC2K/DCO : Design Code Option": {
+      "name_zh": "设计规范选项",
+      "description_zh": "SRC 设计规范及其分项选项。",
+      "source": "glossary"
+    },
+    "DESIGN/SRC/AIK-SRC2K/DCTL : Definition of Frame": {
+      "name_zh": "框架定义",
+      "description_zh": "定义 SRC 设计用的框架。",
+      "source": "glossary"
+    },
+    "DESIGN/SRC/AIK-SRC2K/DSRC : SRC Design Code": {
+      "name_zh": "SRC设计规范",
+      "description_zh": "SRC 设计所依据的规范选项。",
+      "source": "glossary"
+    },
+    "DESIGN/SRC/AIK-SRC2K/EQCT : Seismic Load Combination Type": {
+      "name_zh": "地震荷载组合类型",
+      "description_zh": "SRC 抗震设计用的地震荷载组合类型。",
+      "source": "glossary"
+    },
+    "DESIGN/SRC/AIK-SRC2K/FMAG : Moment Magnifier(B1/Delta_b, B2/Delta_s)": {
+      "name_zh": "弯矩放大系数(B1/Δb, B2/Δs)",
+      "description_zh": "SRC 柱设计用的弯矩放大系数 B1、B2 设置。",
+      "source": "glossary"
+    },
+    "DESIGN/SRC/AIK-SRC2K/KFAC : Effective Length Factor (K)": {
+      "name_zh": "有效长度系数(K)",
+      "description_zh": "SRC 构件设计用的有效长度系数 K 设置。",
+      "source": "glossary"
+    },
+    "DESIGN/SRC/AIK-SRC2K/LCTB : Load Contribution for Nonlinear Load Case": {
+      "name_zh": "非线性荷载工况的荷载贡献",
+      "description_zh": "指定非线性荷载工况中各荷载的贡献比例。",
+      "source": "glossary"
+    },
+    "DESIGN/SRC/AIK-SRC2K/LENG : Unbraced Length (L, Lb)": {
+      "name_zh": "无支承长度(L, Lb)",
+      "description_zh": "SRC 构件设计用的无支承长度设置。",
+      "source": "glossary"
+    },
+    "DESIGN/SRC/AIK-SRC2K/LLRF : Live Load Reduction Factor": {
+      "name_zh": "活荷载折减系数",
+      "description_zh": "按构件指定活荷载折减系数。",
+      "source": "glossary"
+    },
+    "DESIGN/SRC/AIK-SRC2K/LTSR : Limiting Slenderness Ratio": {
+      "name_zh": "长细比限值",
+      "description_zh": "SRC 构件的长细比限值设置。",
+      "source": "glossary"
+    },
+    "DESIGN/SRC/AIK-SRC2K/MATD : Modify SRC Material": {
+      "name_zh": "修改SRC材料",
+      "description_zh": "修改 SRC 设计用的材料特性值。",
+      "source": "glossary"
+    },
+    "DESIGN/SRC/AIK-SRC2K/MBTP : Modify Member Type": {
+      "name_zh": "修改构件类型",
+      "description_zh": "修改 SRC 设计中的构件类型。",
+      "source": "glossary"
+    },
+    "DESIGN/SRC/AIK-SRC2K/MCRD : Modify SRC Column Section Data": {
+      "name_zh": "修改SRC柱截面数据",
+      "description_zh": "修改 SRC 柱的截面组成数据。",
+      "source": "glossary"
+    },
+    "DESIGN/SRC/AIK-SRC2K/MEMB : Member Assignment": {
+      "name_zh": "构件分配",
+      "description_zh": "把单元分配到 SRC 设计用的构件分组。",
+      "source": "glossary"
+    },
+    "DESIGN/SRC/AIK-SRC2K/MLLR : Modify Live Load Reduction Factor": {
+      "name_zh": "修改活荷载折减系数",
+      "description_zh": "修改已指定的活荷载折减系数。",
+      "source": "glossary"
+    },
+    "DESIGN/SRC/AIK-SRC2K/MRBD : Modify SRC Beam Section Data": {
+      "name_zh": "修改SRC梁截面数据",
+      "description_zh": "修改 SRC 梁的截面组成数据。",
+      "source": "glossary"
+    },
+    "DESIGN/SRC/AIK-SRC2K/OCHECK : SRC Optimal Design": {
+      "name_zh": "SRC最优设计",
+      "description_zh": "执行 SRC 构件的优化（最优）设计。",
+      "source": "glossary"
+    },
+    "DESIGN/SRC/AIK-SRC2K/SUEQ : Scale up Factor for Earthquake": {
+      "name_zh": "地震放大系数",
+      "description_zh": "地震作用（内力）的放大系数设置。",
+      "source": "glossary"
+    },
+    "DESIGN/SRC/AIK-SRC2K/TABLE : SRC Beam Design Forces": {
+      "name_zh": "SRC梁设计内力",
+      "description_zh": "输出 SRC 梁各控制截面的设计内力表格。",
+      "source": "glossary"
+    },
+    "DESIGN/SRC/AIK-SRC2K/TABLE : SRC Column Design Forces": {
+      "name_zh": "SRC柱设计内力",
+      "description_zh": "输出 SRC 柱各控制截面的设计内力表格。",
+      "source": "glossary"
+    },
+    "Design Code": {
+      "name_zh": "设计规范",
+      "description_zh": "设计所依据的规范及其版本设置。",
+      "source": "glossary"
+    },
+    "DESIGN/STEEL/KDS-41-30-2022/CBFT : Bending Coefficient(Cb)": {
+      "name_zh": "弯曲系数(Cb)",
+      "description_zh": "钢构件设计用的等效弯矩系数 Cb 设置。",
+      "source": "glossary"
+    },
+    "DESIGN/STEEL/KDS-41-30-2022/CMFT : Equivalent Moment Correction Factor(Cm)": {
+      "name_zh": "等效弯矩系数(Cm)",
+      "description_zh": "钢构件设计用的等效弯矩系数 Cm 设置。",
+      "source": "glossary"
+    },
+    "DESIGN/STEEL/KDS-41-30-2022/CODE-ANAL : Steel Code Check Perform": {
+      "name_zh": "钢结构验算",
+      "description_zh": "执行 KDS 41 30:2022 的钢构件规范验算。",
+      "source": "glossary"
+    },
+    "DESIGN/STEEL/KDS-41-30-2022/CODE-REPORT : Steel Code Check Report": {
+      "name_zh": "钢结构验算计算书",
+      "description_zh": "生成钢结构验算的详细计算书。",
+      "source": "glossary"
+    },
+    "DESIGN/STEEL/KDS-41-30-2022/CODE-TABLE : Steel Code Check Table": {
+      "name_zh": "钢结构验算表格",
+      "description_zh": "输出钢结构验算结果的表格。",
+      "source": "glossary"
+    },
+    "DESIGN/STEEL/KDS-41-30-2022/CRCM : Combined Ratio Calculation Method for Circular Section": {
+      "name_zh": "圆截面组合应力比计算方法",
+      "description_zh": "圆管截面的组合应力比计算方法选择。",
+      "source": "glossary"
+    },
+    "DESIGN/STEEL/KDS-41-30-2022/DCO : Design Code Option": {
+      "name_zh": "设计规范选项",
+      "description_zh": "钢结构设计规范及其分项选项。",
+      "source": "glossary"
+    },
+    "DESIGN/STEEL/KDS-41-30-2022/DCTL : Definition of Frame": {
+      "name_zh": "框架定义",
+      "description_zh": "定义钢结构设计用的框架。",
+      "source": "glossary"
+    },
+    "DESIGN/STEEL/KDS-41-30-2022/DREULT : Steel Design Result": {
+      "name_zh": "钢结构设计结果",
+      "description_zh": "钢构件设计结果的汇总数据。",
+      "source": "glossary"
+    },
+    "DESIGN/STEEL/KDS-41-30-2022/EQCT : Seismic Load Combination Type": {
+      "name_zh": "地震荷载组合类型",
+      "description_zh": "钢结构抗震设计用的地震荷载组合类型。",
+      "source": "glossary"
+    },
+    "DESIGN/STEEL/KDS-41-30-2022/FMAG : Moment Magnifier(B1/Delta_b, B2/Delta_s)": {
+      "name_zh": "弯矩放大系数(B1/Δb, B2/Δs)",
+      "description_zh": "钢构件设计用的弯矩放大系数 B1、B2 设置。",
+      "source": "glossary"
+    },
+    "DESIGN/STEEL/KDS-41-30-2022/HCBM : Haunched Beam Assignment": {
+      "name_zh": "加腋梁分配",
+      "description_zh": "把加腋（变高）梁数据分配到指定梁单元。",
+      "source": "glossary"
+    },
+    "DESIGN/STEEL/KDS-41-30-2022/KFAC : Effective Length Factor (K)": {
+      "name_zh": "有效长度系数(K)",
+      "description_zh": "钢构件设计用的有效长度系数 K 设置。",
+      "source": "glossary"
+    },
+    "DESIGN/STEEL/KDS-41-30-2022/LCTB : Load Contribution for Nonlinear Load Case": {
+      "name_zh": "非线性荷载工况的荷载贡献",
+      "description_zh": "指定非线性荷载工况中各荷载的贡献比例。",
+      "source": "glossary"
+    },
+    "DESIGN/STEEL/KDS-41-30-2022/LENG : Unbraced Length (L, Lb)": {
+      "name_zh": "无支承长度(L, Lb)",
+      "description_zh": "钢构件设计用的无支承长度设置。",
+      "source": "glossary"
+    },
+    "DESIGN/STEEL/KDS-41-30-2022/LLRF : Live Load Reduction Factor": {
+      "name_zh": "活荷载折减系数",
+      "description_zh": "按构件指定活荷载折减系数。",
+      "source": "glossary"
+    },
+    "DESIGN/STEEL/KDS-41-30-2022/LTSR : Limiting Slenderness Ratio": {
+      "name_zh": "长细比限值",
+      "description_zh": "钢构件的长细比限值设置。",
+      "source": "glossary"
+    },
+    "DESIGN/STEEL/KDS-41-30-2022/MBTP : Modify Member Type": {
+      "name_zh": "修改构件类型",
+      "description_zh": "修改钢结构设计中的构件类型。",
+      "source": "glossary"
+    },
+    "DESIGN/STEEL/KDS-41-30-2022/MEMB : Member Assignment": {
+      "name_zh": "构件分配",
+      "description_zh": "把单元分配到钢结构设计用的构件分组。",
+      "source": "glossary"
+    },
+    "DESIGN/STEEL/KDS-41-30-2022/MLLR : Modify Live Load Reduction Factor": {
+      "name_zh": "修改活荷载折减系数",
+      "description_zh": "修改已指定的活荷载折减系数。",
+      "source": "glossary"
+    },
+    "Steel Optimal Design": {
+      "name_zh": "钢结构最优设计",
+      "description_zh": "执行钢构件的优化（最优）设计。",
+      "source": "glossary"
+    },
+    "DESIGN/STEEL/KDS-41-30-2022/SERV : Serviceability Parameters": {
+      "name_zh": "正常使用极限状态参数",
+      "description_zh": "钢结构正常使用极限状态验算的参数设置。",
+      "source": "glossary"
+    },
+    "DESIGN/STEEL/KDS-41-30-2022/SLRS : Seismic Load Resisting System by Member": {
+      "name_zh": "按构件的抗震结构体系",
+      "description_zh": "按构件指定抗震结构体系（抗弯框架、支撑框架等）。",
+      "source": "glossary"
+    },
+    "DESIGN/STEEL/KDS-41-30-2022/SMODI : Modify Steel Material": {
+      "name_zh": "修改钢材材料",
+      "description_zh": "修改钢结构设计用的钢材材料特性值。",
+      "source": "glossary"
+    },
+    "DESIGN/STEEL/KDS-41-30-2022/SRDF : Strength Reduction Factors": {
+      "name_zh": "强度折减系数",
+      "description_zh": "钢结构各受力状态的强度折减系数设置。",
+      "source": "glossary"
+    },
+    "DESIGN/STEEL/KDS-41-30-2022/SUEQ : Scale up Factor for Earthquake": {
+      "name_zh": "地震放大系数",
+      "description_zh": "地震作用（内力）的放大系数设置。",
+      "source": "glossary"
+    },
+    "DESIGN/STEEL/KDS-41-30-2022/TABLE : Steel Member Design Forces": {
+      "name_zh": "钢构件设计内力",
+      "description_zh": "输出钢构件各控制截面的设计内力表格。",
+      "source": "glossary"
+    },
+    "DESIGN/STEEL/KDS-41-30-2022/ULCT : Underground Load Combination Type": {
+      "name_zh": "地下荷载组合类型",
+      "description_zh": "地下结构设计用的荷载组合类型。",
+      "source": "glossary"
+    },
+    "RATING/PSC/AASHTO-LRFR19/DFRC : Define Rating Case": {
+      "name_zh": "定义评定工况",
+      "description_zh": "定义桥梁承载力评定（Rating）用的评定工况。",
+      "source": "glossary"
+    },
+    "RATING/PSC/AASHTO-LRFR19/PFRO : Position for Rating Output": {
+      "name_zh": "评定输出位置",
+      "description_zh": "评定结果的输出截面位置。",
+      "source": "glossary"
+    },
+    "RATING/PSC/AASHTO-LRFR19/PFRO-VBEAM : Position for Rating Output": {
+      "name_zh": "评定输出位置",
+      "description_zh": "虚梁评定结果的输出截面位置。",
+      "source": "glossary"
+    },
+    "RATING/PSC/AASHTO-LRFR19/RPSC-ANAL : Perform Rating": {
+      "name_zh": "执行评定",
+      "description_zh": "执行 AASHTO LRFR19 的桥梁承载力评定计算。",
+      "source": "glossary"
+    },
+    "Close Project...": {
+      "name_zh": "关闭项目",
+      "description_zh": "关闭当前打开的模型文件（项目）。",
+      "source": "glossary"
+    },
+    "Export to Json": {
+      "name_zh": "导出为Json",
+      "description_zh": "把当前模型导出为 JSON 格式文件。",
+      "source": "glossary"
+    },
+    "Export to mgt/mct": {
+      "name_zh": "导出为mgt/mct",
+      "description_zh": "把当前模型导出为 MGT/MCT 文本格式文件。",
+      "source": "glossary"
+    },
+    "Import to Json": {
+      "name_zh": "从Json导入",
+      "description_zh": "从 JSON 文件导入模型数据。",
+      "source": "glossary"
+    },
+    "Import to mgt/mct": {
+      "name_zh": "从mgt/mct导入",
+      "description_zh": "从 MGT/MCT 文本文件导入模型数据。",
+      "source": "glossary"
+    },
+    "New Project...": {
+      "name_zh": "新项目",
+      "description_zh": "新建空白工程（清空当前模型）。",
+      "source": "glossary"
+    },
+    "Open Project...": {
+      "name_zh": "打开项目",
+      "description_zh": "打开已有的模型文件。",
+      "source": "glossary"
+    },
+    "Save": {
+      "name_zh": "保存",
+      "description_zh": "保存当前模型文件。",
+      "source": "glossary"
+    },
+    "Save as...": {
+      "name_zh": "另存为",
+      "description_zh": "把当前模型另存为新的文件。",
+      "source": "glossary"
+    },
+    "Save Current Stage As": {
+      "name_zh": "当前施工阶段另存为",
+      "description_zh": "把当前施工阶段的状态另存为模型文件。",
+      "source": "glossary"
+    },
+    "Auto-Mesh Planar Area": {
+      "name_zh": "自动网格平面区域",
+      "description_zh": "对平面区域自动划分网格并生成板单元。",
+      "source": "glossary"
+    },
+    "Divide Elements": {
+      "name_zh": "分割单元",
+      "description_zh": "按指定份数或长度分割已有单元。",
+      "source": "glossary"
+    },
+    "Gust Factor Calculator": {
+      "name_zh": "阵风系数计算器",
+      "description_zh": "按规范计算风荷载阵风系数的辅助工具。",
+      "source": "glossary"
+    },
+    "Load Combination (Concrete) - KDS 41 20 : 2022": {
+      "name_zh": "荷载组合（混凝土）-KDS 41 20:2022",
+      "description_zh": "按 KDS 41 20:2022 自动生成混凝土设计用荷载组合。",
+      "source": "glossary"
+    },
+    "Load Combination (General) - KDS : 2022": {
+      "name_zh": "荷载组合（一般）-KDS:2022",
+      "description_zh": "按 KDS 2022 自动生成一般荷载组合。",
+      "source": "glossary"
+    },
+    "Load Combination (SRC) - KDS 41 SRC : 2022": {
+      "name_zh": "荷载组合（SRC）-KDS 41 SRC:2022",
+      "description_zh": "按 KDS 41 SRC:2022 自动生成 SRC 设计用荷载组合。",
+      "source": "glossary"
+    },
+    "Load Combination (Steel) - KDS 41 30 : 2022": {
+      "name_zh": "荷载组合（钢结构）-KDS 41 30:2022",
+      "description_zh": "按 KDS 41 30:2022 自动生成钢结构设计用荷载组合。",
+      "source": "glossary"
+    },
+    "Line Beam Load": {
+      "name_zh": "梁荷载(连续)",
+      "description_zh": "连续梁（多跨线梁）上的分布荷载。",
+      "source": "glossary"
+    },
+    "Project Status": {
+      "name_zh": "项目状态",
+      "description_zh": "查询当前工程的状态（是否已分析、是否有结果等）。",
+      "source": "glossary"
+    },
+    "Show Calculation Results": {
+      "name_zh": "获取截面特性值",
+      "description_zh": "触发并返回截面特性值的计算结果。",
+      "source": "glossary"
+    },
+    "Surface Spring": {
+      "name_zh": "面弹性支承",
+      "description_zh": "面弹性支承：板或实体单元表面的分布弹簧刚度。",
+      "source": "glossary"
+    },
+    "Story Calc OPT": {
+      "name_zh": "层计算选项",
+      "description_zh": "楼层（层）相关计算结果的输出选项。",
+      "source": "glossary"
+    },
+    "Story Properties": {
+      "name_zh": "层特性",
+      "description_zh": "各楼层的层特性数据（层高、层质量与层刚度）。",
+      "source": "glossary"
+    },
+    "Story Irregularity Check Parameter": {
+      "name_zh": "层不规则性检查参数",
+      "description_zh": "楼层不规则性（扭转、刚度、重量等）检查的判定参数。",
+      "source": "glossary"
+    },
+    "Story Check Parameter": {
+      "name_zh": "层检查参数",
+      "description_zh": "楼层验算（层剪力、层位移等）所用的判定参数。",
+      "source": "glossary"
+    },
+    "Using Load Combinations": {
+      "name_zh": "使用荷载组合",
+      "description_zh": "指定分析或设计所使用的荷载组合。",
+      "source": "glossary"
+    },
+    "P-M Interaction Diagram (General Section)": {
+      "name_zh": "P-M相关曲线（一般截面）",
+      "description_zh": "一般截面的轴力-弯矩（P-M）相关曲线数据。",
+      "source": "glossary"
+    },
+    "Steel Code Check": {
+      "name_zh": "钢结构验算",
+      "description_zh": "钢构件规范验算的执行入口。",
+      "source": "glossary"
+    },
+    "Analysis": {
+      "name_zh": "分析",
+      "description_zh": "执行分析计算的入口。",
+      "source": "glossary"
+    },
+    "Beam Detail Analysis": {
+      "name_zh": "梁详细分析",
+      "description_zh": "对梁构件执行详细（细部分析）计算。",
+      "source": "glossary"
+    },
+    "Axisymmetric Force(G)": {
+      "name_zh": "轴对称内力(整体)",
+      "description_zh": "轴对称单元在整体坐标系下的内力结果。",
+      "source": "glossary"
+    },
+    "Axisymmetric Force (Global) - Analysis Result Table": {
+      "name_zh": "轴对称内力（整体）",
+      "description_zh": "轴对称单元整体坐标系内力的分析结果表。",
+      "source": "glossary"
+    },
+    "Axisymmetric Force(L)": {
+      "name_zh": "轴对称内力(局部)",
+      "description_zh": "轴对称单元在局部坐标系下的内力结果。",
+      "source": "glossary"
+    },
+    "Axisymmetric Force (Local) - Analysis Result Table": {
+      "name_zh": "轴对称内力（局部）",
+      "description_zh": "轴对称单元局部坐标系内力的分析结果表。",
+      "source": "glossary"
+    },
+    "Axisymmetric Stress(G)": {
+      "name_zh": "轴对称应力(整体)",
+      "description_zh": "轴对称单元在整体坐标系下的应力结果。",
+      "source": "glossary"
+    },
+    "Axisymmetric Stress (Global) - Analysis Result Table": {
+      "name_zh": "轴对称应力（整体）",
+      "description_zh": "轴对称单元整体坐标系应力的分析结果表。",
+      "source": "glossary"
+    },
+    "Axisymmetric Stress(L)": {
+      "name_zh": "轴对称应力(局部)",
+      "description_zh": "轴对称单元在局部坐标系下的应力结果。",
+      "source": "glossary"
+    },
+    "Axisymmetric Stress (Local) - Analysis Result Table": {
+      "name_zh": "轴对称应力（局部）",
+      "description_zh": "轴对称单元局部坐标系应力的分析结果表。",
+      "source": "glossary"
+    },
+    "Beam": {
+      "name_zh": "梁",
+      "description_zh": "梁单元结果类别下的结果项。",
+      "source": "glossary"
+    },
+    "Beam Force - Analysis Result Table": {
+      "name_zh": "梁内力",
+      "description_zh": "梁单元内力的分析结果表。",
+      "source": "glossary"
+    },
+    "Beam Force (Composite Section f": {
+      "name_zh": "梁内力（组合截面）",
+      "description_zh": "组合截面梁单元的梁内力结果。",
+      "source": "glossary"
+    },
+    "Beam Force (Static Prestress) - Analysis Result Table": {
+      "name_zh": "梁内力（静力预应力）",
+      "description_zh": "静力预应力作用下梁内力的分析结果表。",
+      "source": "glossary"
+    },
+    "Beam Force (Static Prestress)": {
+      "name_zh": "梁内力（静力预应力）",
+      "description_zh": "静力预应力作用下的梁内力结果。",
+      "source": "glossary"
+    },
+    "Beam Force - TH Result Table": {
+      "name_zh": "梁内力（时程）",
+      "description_zh": "时程分析中梁单元内力的结果表。",
+      "source": "glossary"
+    },
+    "Beam Section Properties at Last Stage - Analysis Result Table": {
+      "name_zh": "最终阶段梁截面特性值",
+      "description_zh": "施工阶段分析中最终阶段梁截面特性值的结果表。",
+      "source": "glossary"
+    },
+    "Beam Stress (7th DOF)": {
+      "name_zh": "梁应力(第7自由度)",
+      "description_zh": "考虑第 7 自由度（翘曲）的梁单元应力结果。",
+      "source": "glossary"
+    },
+    "Beam Stress (7th DOF) (PSC)": {
+      "name_zh": "梁应力(第7自由度)(PSC)",
+      "description_zh": "PSC 梁考虑第 7 自由度的应力结果。",
+      "source": "glossary"
+    },
+    "Beam Stress - Analysis Result Table": {
+      "name_zh": "梁应力",
+      "description_zh": "梁单元应力的分析结果表。",
+      "source": "glossary"
+    },
+    "Beam Stress": {
+      "name_zh": "梁应力",
+      "description_zh": "梁单元各应力分量结果。",
+      "source": "glossary"
+    },
+    "Beam Stress (Composite Section": {
+      "name_zh": "梁应力（组合截面）",
+      "description_zh": "组合截面梁单元的梁应力结果。",
+      "source": "glossary"
+    },
+    "Beam Stress (Equivalent) - Analysis Result Table": {
+      "name_zh": "梁应力（等效）",
+      "description_zh": "等效（von Mises 等）梁应力的分析结果表。",
+      "source": "glossary"
+    },
+    "Beam Stress (Equivalent)": {
+      "name_zh": "梁应力（等效）",
+      "description_zh": "梁单元的等效（组合）应力结果。",
+      "source": "glossary"
+    },
+    "Beam Stress (PSC) - Analysis Result Table": {
+      "name_zh": "梁应力（PSC）",
+      "description_zh": "PSC 梁单元应力的分析结果表。",
+      "source": "glossary"
+    },
+    "Beam Stress (PSC)": {
+      "name_zh": "梁应力（PSC）",
+      "description_zh": "PSC 梁单元的应力结果。",
+      "source": "glossary"
+    },
+    "Buckling Mode Shape - Analysis Result Table": {
+      "name_zh": "屈曲模态",
+      "description_zh": "屈曲分析各阶屈曲模态的分析结果表。",
+      "source": "glossary"
+    },
+    "Cable": {
+      "name_zh": "索",
+      "description_zh": "索单元结果类别下的结果项。",
+      "source": "glossary"
+    },
+    "Cable Configuration - Analysis Result Table": {
+      "name_zh": "索信息",
+      "description_zh": "索单元几何形态（索形）的分析结果表。",
+      "source": "glossary"
+    },
+    "Cable Configuration": {
+      "name_zh": "索信息",
+      "description_zh": "索单元的几何形态（索形）结果。",
+      "source": "glossary"
+    },
+    "Cable Efficiency - Analysis Result Table": {
+      "name_zh": "索效应",
+      "description_zh": "索效率（索效应）的分析结果表。",
+      "source": "glossary"
+    },
+    "Cable Efficiency": {
+      "name_zh": "索效应",
+      "description_zh": "索单元的索效率结果。",
+      "source": "glossary"
+    },
+    "Cable Force - Analysis Result Table": {
+      "name_zh": "索内力",
+      "description_zh": "索单元张力的分析结果表。",
+      "source": "glossary"
+    },
+    "Capacity Irregularity Check(Weak Story) - Story Result Table": {
+      "name_zh": "承载力不规则性检查（薄弱层）",
+      "description_zh": "按承载力判定薄弱层的层结果表。",
+      "source": "glossary"
+    },
+    "Cold Formed Design - Cold Formed Steel Member Design Forces": {
+      "name_zh": "冷弯型钢设计-冷弯钢构件设计内力",
+      "description_zh": "冷弯型钢构件设计内力的结果表。",
+      "source": "glossary"
+    },
+    "Composite Section for C.S. (Force and Stress) - Analysis Result Table": {
+      "name_zh": "施工阶段组合截面（内力和应力）",
+      "description_zh": "施工阶段组合截面内力与应力的分析结果表。",
+      "source": "glossary"
+    },
+    "Composite Section for C.S. (Self-Constraint Force and Stress) - Analysis Result Table": {
+      "name_zh": "施工阶段组合截面（自约束内力和应力）",
+      "description_zh": "施工阶段组合截面自约束内力与应力的分析结果表。",
+      "source": "glossary"
+    },
+    "Concrete Design - Beam Design Forces": {
+      "name_zh": "混凝土设计-梁设计内力",
+      "description_zh": "混凝土梁设计内力的结果表。",
+      "source": "glossary"
+    },
+    "Concrete Design - Brace Design Forces": {
+      "name_zh": "混凝土设计-支撑设计内力",
+      "description_zh": "混凝土支撑设计内力的结果表。",
+      "source": "glossary"
+    },
+    "Concrete Design - Column Design Forces": {
+      "name_zh": "混凝土设计-柱设计内力",
+      "description_zh": "混凝土柱设计内力的结果表。",
+      "source": "glossary"
+    },
+    "Concrete Design - Wall Design Forces": {
+      "name_zh": "混凝土设计-墙设计内力",
+      "description_zh": "混凝土墙设计内力的结果表。",
+      "source": "glossary"
+    },
+    "Concurrent Joint Force Table": {
+      "name_zh": "同时节点力表格",
+      "description_zh": "同时发生的节点力结果表格。",
+      "source": "glossary"
+    },
+    "Construction Stage - Beam Se": {
+      "name_zh": "施工阶段-梁",
+      "description_zh": "施工阶段分析中梁单元结果的结果表。",
+      "source": "glossary"
+    },
+    "Construction Stage -": {
+      "name_zh": "施工阶段",
+      "description_zh": "施工阶段分析结果的结果表。",
+      "source": "glossary"
+    },
+    "Construction Stage - Element": {
+      "name_zh": "施工阶段-单元",
+      "description_zh": "施工阶段分析中单元结果的结果表。",
+      "source": "glossary"
+    },
+    "Construction Stage - Lack": {
+      "name_zh": "施工阶段-装配内力",
+      "description_zh": "施工阶段分析中欠松（装配）内力结果的结果表。",
+      "source": "glossary"
+    },
+    "Criteria for Regularity in Plan - Story Result Table": {
+      "name_zh": "平面规则性判定",
+      "description_zh": "平面规则性判定指标的层结果表。",
+      "source": "glossary"
+    },
+    "Displacement - HY Result Table": {
+      "name_zh": "位移（水化热）",
+      "description_zh": "水化热分析中位移的结果表。",
+      "source": "glossary"
+    },
+    "Displacement Table -": {
+      "name_zh": "位移表格",
+      "description_zh": "节点位移结果表格。",
+      "source": "glossary"
+    },
+    "Displacement Table - Global": {
+      "name_zh": "位移表格-整体",
+      "description_zh": "整体坐标系下节点位移的结果表格。",
+      "source": "glossary"
+    },
+    "Displacement/Velocity/Acceleration - TH Result Table": {
+      "name_zh": "位移/速度/加速度（时程）",
+      "description_zh": "时程分析中位移、速度与加速度的结果表。",
+      "source": "glossary"
+    },
+    "Displacements - Analysis Result Table": {
+      "name_zh": "位移",
+      "description_zh": "节点位移的分析结果表。",
+      "source": "glossary"
+    },
+    "Effective Span Length - Analysis Result Table": {
+      "name_zh": "有效跨度",
+      "description_zh": "单元有效跨度的分析结果表。",
+      "source": "glossary"
+    },
+    "Effective Span Length - Pl": {
+      "name_zh": "有效跨度-板",
+      "description_zh": "板单元有效跨度的结果。",
+      "source": "glossary"
+    },
+    "Elastic Link - Analysis Result Table": {
+      "name_zh": "弹性连接",
+      "description_zh": "弹性连接单元内力的分析结果表。",
+      "source": "glossary"
+    },
+    "Element Properties at Each Stage - Analysis Result Table": {
+      "name_zh": "各施工阶段单元特性值",
+      "description_zh": "各施工阶段单元特性值的分析结果表。",
+      "source": "glossary"
+    },
+    "Element Weight Table": {
+      "name_zh": "单元重量表格",
+      "description_zh": "各单元重量的结果表格。",
+      "source": "glossary"
+    },
+    "Equilibrium Element Nodal": {
+      "name_zh": "单元节点平衡力",
+      "description_zh": "单元节点平衡力结果。",
+      "source": "glossary"
+    },
+    "Equilibrium Element Nodal Force - Analysis Result Table": {
+      "name_zh": "单元节点平衡力",
+      "description_zh": "单元节点平衡力的分析结果表。",
+      "source": "glossary"
+    },
+    "Fiber Section Average Compression Strain - TH Result Table": {
+      "name_zh": "纤维截面平均压应变（时程）",
+      "description_zh": "时程分析中纤维截面平均压应变的结果表。",
+      "source": "glossary"
+    },
+    "Fiber Section Elastic Modulus Retention Rate - TH Result Table": {
+      "name_zh": "纤维截面弹性模量保持率（时程）",
+      "description_zh": "时程分析中纤维截面弹性模量保持率的结果表。",
+      "source": "glossary"
+    },
+    "Fiber Section Estimate Yield Strength - TH Result Table": {
+      "name_zh": "纤维截面估算屈服强度（时程）",
+      "description_zh": "时程分析中纤维截面估算屈服强度的结果表。",
+      "source": "glossary"
+    },
+    "Fiber Section Event Step - TH Result Table": {
+      "name_zh": "纤维截面事件步（时程）",
+      "description_zh": "时程分析中纤维截面事件发生步的结果表。",
+      "source": "glossary"
+    },
+    "Fiber Section Maximum Strain of The Cell - TH Result Table": {
+      "name_zh": "纤维截面单元最大应变（时程）",
+      "description_zh": "时程分析中纤维截面各纤维最大应变的结果表。",
+      "source": "glossary"
+    },
+    "General Link - Analysis Result Table": {
+      "name_zh": "一般连接",
+      "description_zh": "一般连接单元内力的分析结果表。",
+      "source": "glossary"
+    },
+    "General Link - TH Result Table": {
+      "name_zh": "一般连接（时程）",
+      "description_zh": "时程分析中一般连接单元的结果表。",
+      "source": "glossary"
+    },
+    "Get Result Table from Smart Report Table": {
+      "name_zh": "从智能报告表格获取结果表格",
+      "description_zh": "按智能报告表格的标识提取对应的结果表格。",
+      "source": "glossary"
+    },
+    "Inelastic Hinge Beam Summary - TH Result Table": {
+      "name_zh": "非弹性铰梁摘要（时程）",
+      "description_zh": "时程分析中梁非弹性铰摘要的结果表。",
+      "source": "glossary"
+    },
+    "Inelastic Hinge Deformation - TH Result Table": {
+      "name_zh": "非弹性铰变形（时程）",
+      "description_zh": "时程分析中非弹性铰变形的结果表。",
+      "source": "glossary"
+    },
+    "Inelastic Hinge Ductility Factor(D/D1) - TH Result Table": {
+      "name_zh": "非弹性铰延性系数(D/D1)（时程）",
+      "description_zh": "时程分析中非弹性铰延性系数 D/D1 的结果表。",
+      "source": "glossary"
+    },
+    "Inelastic Hinge Ductility Factor(D/D2) - TH Result Table": {
+      "name_zh": "非弹性铰延性系数(D/D2)（时程）",
+      "description_zh": "时程分析中非弹性铰延性系数 D/D2 的结果表。",
+      "source": "glossary"
+    },
+    "Inelastic Hinge Element Rotation - TH Result Table": {
+      "name_zh": "非弹性铰单元转角（时程）",
+      "description_zh": "时程分析中非弹性铰所在单元转角的结果表。",
+      "source": "glossary"
+    },
+    "Inelastic Hinge Event Time - TH Result Table": {
+      "name_zh": "非弹性铰事件时间（时程）",
+      "description_zh": "时程分析中非弹性铰事件发生时间的结果表。",
+      "source": "glossary"
+    },
+    "Inelastic Hinge Force - TH Result Table": {
+      "name_zh": "非弹性铰内力（时程）",
+      "description_zh": "时程分析中非弹性铰内力的结果表。",
+      "source": "glossary"
+    },
+    "Inelastic Hinge General Link Summary - TH Result Table": {
+      "name_zh": "非弹性铰一般连接摘要（时程）",
+      "description_zh": "时程分析中一般连接非弹性铰摘要的结果表。",
+      "source": "glossary"
+    },
+    "Inelastic Hinge Truss Summary - TH Result Table": {
+      "name_zh": "非弹性铰桁架摘要（时程）",
+      "description_zh": "时程分析中桁架非弹性铰摘要的结果表。",
+      "source": "glossary"
+    },
+    "Initial Element Force - Analysis Result Table": {
+      "name_zh": "初始单元力",
+      "description_zh": "初始单元力的分析结果表。",
+      "source": "glossary"
+    },
+    "Initial Element": {
+      "name_zh": "初始单元",
+      "description_zh": "初始状态下的单元结果。",
+      "source": "glossary"
+    },
+    "Lack of Fit Force (Beam) - Analysis Result Table": {
+      "name_zh": "装配内力（梁）",
+      "description_zh": "梁单元欠松（装配）内力的分析结果表。",
+      "source": "glossary"
+    },
+    "Lack of Fit Force (Plate) - Analysis Result Table": {
+      "name_zh": "装配内力（板）",
+      "description_zh": "板单元欠松（装配）内力的分析结果表。",
+      "source": "glossary"
+    },
+    "Lack of Fit Force (Truss) - Analysis Result Table": {
+      "name_zh": "装配内力（桁架）",
+      "description_zh": "桁架单元欠松（装配）内力的分析结果表。",
+      "source": "glossary"
+    },
+    "Load Summary Table": {
+      "name_zh": "荷载统计表格",
+      "description_zh": "各荷载工况荷载值的统计表格。",
+      "source": "glossary"
+    },
+    "Mass Summary Table": {
+      "name_zh": "质量统计表格",
+      "description_zh": "结构质量的统计表格。",
+      "source": "glossary"
+    },
+    "Material Table": {
+      "name_zh": "材料表格",
+      "description_zh": "模型中所用材料的特性值表格。",
+      "source": "glossary"
+    },
+    "Nodal Body Force Table": {
+      "name_zh": "节点体力表格",
+      "description_zh": "节点体力荷载的结果表格。",
+      "source": "glossary"
+    },
+    "Nodal Results of RS - Analysis Result Table": {
+      "name_zh": "反应谱节点结果",
+      "description_zh": "反应谱分析中节点结果的结果表。",
+      "source": "glossary"
+    },
+    "Overturning Moment - Story Result Table": {
+      "name_zh": "倾覆弯矩",
+      "description_zh": "各层倾覆弯矩的层结果表。",
+      "source": "glossary"
+    },
+    "Pipe Cooling Nodal Temperature - HY Result Table": {
+      "name_zh": "管冷节点温度（水化热）",
+      "description_zh": "水化热分析中冷却水管节点温度的结果表。",
+      "source": "glossary"
+    },
+    "Plane Force (Global) - Analysis Result Table": {
+      "name_zh": "平面内力（整体）",
+      "description_zh": "平面应力单元整体坐标系内力的分析结果表。",
+      "source": "glossary"
+    },
+    "Plane Force (Local) - Analysis Result Table": {
+      "name_zh": "平面内力（局部）",
+      "description_zh": "平面应力单元局部坐标系内力的分析结果表。",
+      "source": "glossary"
+    },
+    "Plane Strain Force (Global) - Analysis Result Table": {
+      "name_zh": "平面应变内力（整体）",
+      "description_zh": "平面应变单元整体坐标系内力的分析结果表。",
+      "source": "glossary"
+    },
+    "Plane Strain Force (Local) - Analysis Result Table": {
+      "name_zh": "平面应变内力（局部）",
+      "description_zh": "平面应变单元局部坐标系内力的分析结果表。",
+      "source": "glossary"
+    },
+    "Plane Strain Stress (Global) - Analysis Result Table": {
+      "name_zh": "平面应变应力（整体）",
+      "description_zh": "平面应变单元整体坐标系应力的分析结果表。",
+      "source": "glossary"
+    },
+    "Plane Strain Stress (Local) - Analysis Result Table": {
+      "name_zh": "平面应变应力（局部）",
+      "description_zh": "平面应变单元局部坐标系应力的分析结果表。",
+      "source": "glossary"
+    },
+    "Plane Stress (Global) - Analysis Result Table": {
+      "name_zh": "平面应力（整体）",
+      "description_zh": "平面应力单元整体坐标系应力的分析结果表。",
+      "source": "glossary"
+    },
+    "Plane Stress (Local) - Analysis Result Table": {
+      "name_zh": "平面应力（局部）",
+      "description_zh": "平面应力单元局部坐标系应力的分析结果表。",
+      "source": "glossary"
+    },
+    "Plate Force (Global) - Analysis Result Table": {
+      "name_zh": "板内力（整体）",
+      "description_zh": "板单元整体坐标系内力的分析结果表。",
+      "source": "glossary"
+    },
+    "Plate Force (Local) - Analysis Result Table": {
+      "name_zh": "板内力（局部）",
+      "description_zh": "板单元局部坐标系内力的分析结果表。",
+      "source": "glossary"
+    },
+    "Plate Force (Unit Length) - Analysis Result Table": {
+      "name_zh": "板内力（单位长度）",
+      "description_zh": "板单元单位长度内力的分析结果表。",
+      "source": "glossary"
+    },
+    "Plate Strain (Global) - Analysis Result Table": {
+      "name_zh": "板应变（整体）",
+      "description_zh": "板单元整体坐标系应变的分析结果表。",
+      "source": "glossary"
+    },
+    "Plate Strain (Local) - Analysis Result Table": {
+      "name_zh": "板应变（局部）",
+      "description_zh": "板单元局部坐标系应变的分析结果表。",
+      "source": "glossary"
+    },
+    "Plate Stress (Global) - Analysis Result Table": {
+      "name_zh": "板应力（整体）",
+      "description_zh": "板单元整体坐标系应力的分析结果表。",
+      "source": "glossary"
+    },
+    "Plate Stress (Local) - Analysis Result Table": {
+      "name_zh": "板应力（局部）",
+      "description_zh": "板单元局部坐标系应力的分析结果表。",
+      "source": "glossary"
+    },
+    "post/TABLE : Story Drift(X,Y,Combine) - Story Result Table": {
+      "name_zh": "层间位移角(X,Y,组合)",
+      "description_zh": "各层 X、Y 向及组合层间位移角的层结果表。",
+      "source": "glossary"
+    },
+    "Reaction - Analysis Result Table": {
+      "name_zh": "反力",
+      "description_zh": "支座反力的分析结果表。",
+      "source": "glossary"
+    },
+    "Restraint Supports Table": {
+      "name_zh": "约束支承表格",
+      "description_zh": "模型中被约束自由度的支承信息表格。",
+      "source": "glossary"
+    },
+    "Resultant Forces - Analysis Result Table": {
+      "name_zh": "合力",
+      "description_zh": "指定截面或区域的合力分析结果表。",
+      "source": "glossary"
+    },
+    "Resultant Forces": {
+      "name_zh": "合力",
+      "description_zh": "指定截面或区域的合力结果。",
+      "source": "glossary"
+    },
+    "Results Tables": {
+      "name_zh": "结果表格",
+      "description_zh": "结果表格的通用读取入口。",
+      "source": "glossary"
+    },
+    "Section Table": {
+      "name_zh": "截面表格",
+      "description_zh": "模型中所用截面的特性值表格。",
+      "source": "glossary"
+    },
+    "Solid Force (Global) - Analysis Result Table": {
+      "name_zh": "实体内力（整体）",
+      "description_zh": "实体单元整体坐标系内力的分析结果表。",
+      "source": "glossary"
+    },
+    "Solid Force (Local) - Analysis Result Table": {
+      "name_zh": "实体内力（局部）",
+      "description_zh": "实体单元局部坐标系内力的分析结果表。",
+      "source": "glossary"
+    },
+    "Solid Strain (Global) - Analysis Result Table": {
+      "name_zh": "实体应变（整体）",
+      "description_zh": "实体单元整体坐标系应变的分析结果表。",
+      "source": "glossary"
+    },
+    "Solid Strain (Local) - Analysis Result Table": {
+      "name_zh": "实体应变（局部）",
+      "description_zh": "实体单元局部坐标系应变的分析结果表。",
+      "source": "glossary"
+    },
+    "Solid Stress (Global) - Analysis Result Table": {
+      "name_zh": "实体应力（整体）",
+      "description_zh": "实体单元整体坐标系应力的分析结果表。",
+      "source": "glossary"
+    },
+    "Solid Stress (Local) - Analysis Result Table": {
+      "name_zh": "实体应力（局部）",
+      "description_zh": "实体单元局部坐标系应力的分析结果表。",
+      "source": "glossary"
+    },
+    "SRC Design - SRC Beam Design Forces": {
+      "name_zh": "SRC设计-SRC梁设计内力",
+      "description_zh": "SRC 梁设计内力的结果表。",
+      "source": "glossary"
+    },
+    "SRC Design - SRC Column Design Forces": {
+      "name_zh": "SRC设计-SRC柱设计内力",
+      "description_zh": "SRC 柱设计内力的结果表。",
+      "source": "glossary"
+    },
+    "Steel Design - Steel Member Design Forces": {
+      "name_zh": "钢结构设计-钢构件设计内力",
+      "description_zh": "钢构件设计内力的结果表。",
+      "source": "glossary"
+    },
+    "Stiffness Irregularity Check (Soft Story) - Story Result Table": {
+      "name_zh": "刚度不规则性检查（软弱层）",
+      "description_zh": "按层刚度判定软弱层的层结果表。",
+      "source": "glossary"
+    },
+    "Story Axial Force Sum - Story Result Table": {
+      "name_zh": "层轴力和",
+      "description_zh": "各层轴力之和的层结果表。",
+      "source": "glossary"
+    },
+    "Story Displacement(X,Y,Combined) - Story Result Table": {
+      "name_zh": "层位移(X,Y,组合)",
+      "description_zh": "各层 X、Y 向及组合位移的层结果表。",
+      "source": "glossary"
+    },
+    "Story Eccentricity - Story Result Table": {
+      "name_zh": "层偏心率",
+      "description_zh": "各层质量中心与刚度中心偏心率的层结果表。",
+      "source": "glossary"
+    },
+    "Story Load Summary": {
+      "name_zh": "层荷载统计",
+      "description_zh": "按楼层统计的荷载汇总。",
+      "source": "glossary"
+    },
+    "Story Mass Summary": {
+      "name_zh": "层质量统计",
+      "description_zh": "按楼层统计的质量汇总。",
+      "source": "glossary"
+    },
+    "Story Mode Shape - Story Result Table": {
+      "name_zh": "层振型",
+      "description_zh": "各层振型分量的层结果表。",
+      "source": "glossary"
+    },
+    "Story Shear Force Coefficient(R.S.Analysis) - Story Result Table": {
+      "name_zh": "层剪力系数（反应谱分析）",
+      "description_zh": "反应谱分析中各层剪力系数的层结果表。",
+      "source": "glossary"
+    },
+    "Story Shear Force(R.S.Analysis) - Story Result Table": {
+      "name_zh": "层剪力（反应谱分析）",
+      "description_zh": "反应谱分析中各层剪力的层结果表。",
+      "source": "glossary"
+    },
+    "Story Shear Force Ratio - Story Result Table": {
+      "name_zh": "层剪力比",
+      "description_zh": "相邻层层剪力之比的层结果表。",
+      "source": "glossary"
+    },
+    "Story Stability Coefficient - Story Result Table": {
+      "name_zh": "层稳定系数",
+      "description_zh": "各层稳定系数的层结果表。",
+      "source": "glossary"
+    },
+    "Story Weight": {
+      "name_zh": "层重量",
+      "description_zh": "各层重量的结果数据。",
+      "source": "glossary"
+    },
+    "Stress - HY Result Table": {
+      "name_zh": "应力（水化热）",
+      "description_zh": "水化热分析中应力的结果表。",
+      "source": "glossary"
+    },
+    "Temperature - HY Result Table": {
+      "name_zh": "温度（水化热）",
+      "description_zh": "水化热分析中温度的结果表。",
+      "source": "glossary"
+    },
+    "Tendon Approximate Loss - Analysis Result Table": {
+      "name_zh": "钢束近似损失",
+      "description_zh": "预应力钢束近似损失的分析结果表。",
+      "source": "glossary"
+    },
+    "Tendon Arrangement - Analysis Result Table": {
+      "name_zh": "钢束布置",
+      "description_zh": "预应力钢束布置的分析结果表。",
+      "source": "glossary"
+    },
+    "Tendon Coordinates - Analysis Result Table": {
+      "name_zh": "钢束坐标",
+      "description_zh": "预应力钢束各点坐标的分析结果表。",
+      "source": "glossary"
+    },
+    "Tendon Elongation - Analysis Result Table": {
+      "name_zh": "钢束伸长量",
+      "description_zh": "预应力钢束伸长量的分析结果表。",
+      "source": "glossary"
+    },
+    "Tendon Loss - Analysis Result Table": {
+      "name_zh": "钢束损失",
+      "description_zh": "预应力钢束预应力损失的分析结果表。",
+      "source": "glossary"
+    },
+    "Tendon Stress Limit Check - Analysis Result Table": {
+      "name_zh": "钢束应力限值检查",
+      "description_zh": "预应力钢束应力限值检查的分析结果表。",
+      "source": "glossary"
+    },
+    "Tendon Weight - Analysis Result Table": {
+      "name_zh": "钢束重量",
+      "description_zh": "预应力钢束重量的分析结果表。",
+      "source": "glossary"
+    },
+    "Tensile Stress - HY Result Table": {
+      "name_zh": "拉应力（水化热）",
+      "description_zh": "水化热分析中拉应力的结果表。",
+      "source": "glossary"
+    },
+    "Torsional Amplification Factor - Story Result Table": {
+      "name_zh": "扭转放大系数",
+      "description_zh": "各层扭转放大系数的层结果表。",
+      "source": "glossary"
+    },
+    "Torsional Irregularity Check - Story Result Table": {
+      "name_zh": "扭转不规则性检查",
+      "description_zh": "楼层扭转不规则性检查的层结果表。",
+      "source": "glossary"
+    },
+    "Truss Force - Analysis Result Table": {
+      "name_zh": "桁架内力",
+      "description_zh": "桁架单元轴力的分析结果表。",
+      "source": "glossary"
+    },
+    "Truss Force - TH Result Table": {
+      "name_zh": "桁架内力（时程）",
+      "description_zh": "时程分析中桁架单元内力的结果表。",
+      "source": "glossary"
+    },
+    "Truss Stress - Analysis Result Table": {
+      "name_zh": "桁架应力",
+      "description_zh": "桁架单元应力的分析结果表。",
+      "source": "glossary"
+    },
+    "Ultimate Story Shear For Check - Story Result Table": {
+      "name_zh": "极限层剪力检查",
+      "description_zh": "极限层剪力验算的层结果表。",
+      "source": "glossary"
+    },
+    "Vibration Mode Shape - Analysis Result Table": {
+      "name_zh": "振型",
+      "description_zh": "特征值分析各阶振型的分析结果表。",
+      "source": "glossary"
+    },
+    "Wall Force - Analysis Result Table": {
+      "name_zh": "墙内力",
+      "description_zh": "墙单元内力的分析结果表。",
+      "source": "glossary"
+    },
+    "Weight Irregularity Check - Story Result Table": {
+      "name_zh": "重量不规则性检查",
+      "description_zh": "楼层重量不规则性检查的层结果表。",
+      "source": "glossary"
+    },
+    "Time History Text - Node Results": {
+      "name_zh": "时程文本-节点结果",
+      "description_zh": "以文本形式输出的时程分析节点结果。",
+      "source": "glossary"
+    },
+    "Active": {
+      "name_zh": "激活",
+      "description_zh": "激活（打开）指定的模型文件或视图。",
+      "source": "glossary"
+    },
+    "Viewpoint": {
+      "name_zh": "视点",
+      "description_zh": "设置模型视图的视点（观察角度）。",
+      "source": "glossary"
+    },
+    "Model View Screenshot(Load,Boundary)": {
+      "name_zh": "模型视图截图（荷载、边界）",
+      "description_zh": "截取显示荷载与边界条件的模型视图图像。",
+      "source": "glossary"
+    },
+    "Display": {
+      "name_zh": "显示",
+      "description_zh": "控制模型中各对象的显示开关。",
+      "source": "glossary"
+    },
+    "Dialog Capture": {
+      "name_zh": "对话框截图",
+      "description_zh": "截取当前对话框的图像。",
+      "source": "glossary"
+    },
+    "Type of Display": {
+      "name_zh": "显示类型",
+      "description_zh": "结果图形的显示类型（云图、等值线等）。",
+      "source": "glossary"
+    },
+    "Select": {
+      "name_zh": "选择",
+      "description_zh": "按条件选择模型中的节点或单元。",
+      "source": "glossary"
+    },
+    "Beam Forces/Moments": {
+      "name_zh": "梁内力/弯矩",
+      "description_zh": "梁单元的轴力、剪力与弯矩结果。",
+      "source": "glossary"
+    },
+    "Beam Stresses": {
+      "name_zh": "梁应力",
+      "description_zh": "梁单元的应力结果。",
+      "source": "glossary"
+    },
+    "Displacements": {
+      "name_zh": "位移",
+      "description_zh": "节点的位移结果。",
+      "source": "glossary"
+    },
+    "Elastic Link Forces/Momnets": {
+      "name_zh": "弹性连接内力/弯矩",
+      "description_zh": "弹性连接单元的力与弯矩结果。",
+      "source": "glossary"
+    },
+    "General Link Forces/Momnets": {
+      "name_zh": "一般连接内力/弯矩",
+      "description_zh": "一般连接单元的力与弯矩结果。",
+      "source": "glossary"
+    },
+    "Plate Forces/Moments": {
+      "name_zh": "板内力/弯矩",
+      "description_zh": "板单元的单位宽度内力与弯矩结果。",
+      "source": "glossary"
+    },
+    "Reactions": {
+      "name_zh": "反力",
+      "description_zh": "支座反力结果。",
+      "source": "glossary"
+    },
+    "Solid Stresses": {
+      "name_zh": "实体应力",
+      "description_zh": "实体单元的应力结果。",
+      "source": "glossary"
+    },
+    "Truss Forces": {
+      "name_zh": "桁架内力",
+      "description_zh": "桁架单元的轴力结果。",
+      "source": "glossary"
+    },
+    "Absolute Acceleration": {
+      "name_zh": "绝对加速度",
+      "description_zh": "时程分析中节点的绝对加速度结果。",
+      "source": "glossary"
+    },
+    "Axisymmetric Force(Global)": {
+      "name_zh": "轴对称内力(整体)",
+      "description_zh": "轴对称单元整体坐标系下的内力结果。",
+      "source": "glossary"
+    },
+    "Axisymmetric Force(Local)": {
+      "name_zh": "轴对称内力(局部)",
+      "description_zh": "轴对称单元局部坐标系下的内力结果。",
+      "source": "glossary"
+    },
+    "Axisymmetric Stress(Global)": {
+      "name_zh": "轴对称应力(整体)",
+      "description_zh": "轴对称单元整体坐标系下的应力结果。",
+      "source": "glossary"
+    },
+    "Axisymmetric Stress(Local)": {
+      "name_zh": "轴对称应力(局部)",
+      "description_zh": "轴对称单元局部坐标系下的应力结果。",
+      "source": "glossary"
+    },
+    "Beam Force": {
+      "name_zh": "梁内力",
+      "description_zh": "梁单元的梁内力结果。",
+      "source": "glossary"
+    },
+    "Beam Section Properties at Last Stage": {
+      "name_zh": "最终阶段梁截面特性值",
+      "description_zh": "施工阶段分析中最终阶段的梁截面特性值结果。",
+      "source": "glossary"
+    },
+    "Buckling Mode": {
+      "name_zh": "屈曲模态",
+      "description_zh": "屈曲分析的屈曲模态结果。",
+      "source": "glossary"
+    },
+    "Composite Section-Beam Force": {
+      "name_zh": "组合截面-梁内力",
+      "description_zh": "组合截面梁单元的梁内力结果。",
+      "source": "glossary"
+    },
+    "Composite Section-Beam Stress": {
+      "name_zh": "组合截面-梁应力",
+      "description_zh": "组合截面梁单元的梁应力结果。",
+      "source": "glossary"
+    },
+    "Displacement": {
+      "name_zh": "位移",
+      "description_zh": "位移结果项。",
+      "source": "glossary"
+    },
+    "Distributed": {
+      "name_zh": "分布",
+      "description_zh": "分布（弹簧或质量）类型的结果项。",
+      "source": "glossary"
+    },
+    "Dx": {
+      "name_zh": "Dx",
+      "description_zh": "X 方向位移分量结果。",
+      "source": "glossary"
+    },
+    "Dy": {
+      "name_zh": "Dy",
+      "description_zh": "Y 方向位移分量结果。",
+      "source": "glossary"
+    },
+    "Dz": {
+      "name_zh": "Dz",
+      "description_zh": "Z 方向位移分量结果。",
+      "source": "glossary"
+    },
+    "Effective Span Length-Beam": {
+      "name_zh": "有效跨度-梁",
+      "description_zh": "梁单元的有效跨度结果。",
+      "source": "glossary"
+    },
+    "Effective Span Length-Plate": {
+      "name_zh": "有效跨度-板",
+      "description_zh": "板单元的有效跨度结果。",
+      "source": "glossary"
+    },
+    "Effective Span Length-Truss": {
+      "name_zh": "有效跨度-桁架",
+      "description_zh": "桁架单元的有效跨度结果。",
+      "source": "glossary"
+    },
+    "Eigenvalue Mode": {
+      "name_zh": "特征值模态",
+      "description_zh": "特征值分析的模态结果。",
+      "source": "glossary"
+    },
+    "Elastic Link - View By Max Value Items": {
+      "name_zh": "弹性连接-按最大值查看",
+      "description_zh": "按最大值查看弹性连接单元结果的视图项。",
+      "source": "glossary"
+    },
+    "Element Properties at Each Stage": {
+      "name_zh": "各施工阶段单元特性值",
+      "description_zh": "各施工阶段单元特性值的结果。",
+      "source": "glossary"
+    },
+    "Equilibrium Element Nodal Force": {
+      "name_zh": "单元节点平衡力",
+      "description_zh": "单元节点平衡力结果。",
+      "source": "glossary"
+    },
+    "General Link-Deformation": {
+      "name_zh": "一般连接-变形",
+      "description_zh": "一般连接单元的变形结果。",
+      "source": "glossary"
+    },
+    "General Link-Force": {
+      "name_zh": "一般连接-内力",
+      "description_zh": "一般连接单元的内力结果。",
+      "source": "glossary"
+    },
+    "General Link-Force-View By Max Value Items": {
+      "name_zh": "一般连接-内力-按最大值查看",
+      "description_zh": "按最大值查看一般连接内力的视图项。",
+      "source": "glossary"
+    },
+    "Hydration Displacement": {
+      "name_zh": "水化热位移",
+      "description_zh": "水化热分析中的位移结果。",
+      "source": "glossary"
+    },
+    "Hydration Stress(Global)": {
+      "name_zh": "水化热应力（整体）",
+      "description_zh": "水化热分析中整体坐标系的应力结果。",
+      "source": "glossary"
+    },
+    "Hydration Stress(Local)": {
+      "name_zh": "水化热应力（局部）",
+      "description_zh": "水化热分析中局部坐标系的应力结果。",
+      "source": "glossary"
+    },
+    "Hydration Temperature": {
+      "name_zh": "水化热温度",
+      "description_zh": "水化热分析中的温度结果。",
+      "source": "glossary"
+    },
+    "Hydration Tensile Stress": {
+      "name_zh": "水化热拉应力",
+      "description_zh": "水化热分析中的拉应力结果。",
+      "source": "glossary"
+    },
+    "Initial Element Force": {
+      "name_zh": "初始单元力",
+      "description_zh": "初始状态的单元内力结果。",
+      "source": "glossary"
+    },
+    "Lack-of-Fit-Force-Beam": {
+      "name_zh": "装配内力-梁",
+      "description_zh": "梁单元的欠松（装配）内力结果。",
+      "source": "glossary"
+    },
+    "Lack-of-Fit-Force-Plate": {
+      "name_zh": "装配内力-板",
+      "description_zh": "板单元的欠松（装配）内力结果。",
+      "source": "glossary"
+    },
+    "Lack-of-Fit-Force-Truss": {
+      "name_zh": "装配内力-桁架",
+      "description_zh": "桁架单元的欠松（装配）内力结果。",
+      "source": "glossary"
+    },
+    "Lumped": {
+      "name_zh": "集中",
+      "description_zh": "集中（弹簧或质量）类型的结果项。",
+      "source": "glossary"
+    },
+    "Nodal Acceleration": {
+      "name_zh": "节点加速度",
+      "description_zh": "节点的加速度结果。",
+      "source": "glossary"
+    },
+    "Nodal Inertia force": {
+      "name_zh": "节点惯性力",
+      "description_zh": "节点的惯性力结果。",
+      "source": "glossary"
+    },
+    "Participation Vector Mode": {
+      "name_zh": "参与向量模态",
+      "description_zh": "振型参与向量对应的模态结果。",
+      "source": "glossary"
+    },
+    "Pipe Cooling Nodal Temperature": {
+      "name_zh": "管冷节点温度",
+      "description_zh": "冷却水管节点的温度结果。",
+      "source": "glossary"
+    },
+    "Plane Force(Global)": {
+      "name_zh": "平面内力(整体)",
+      "description_zh": "平面应力单元整体坐标系下的内力结果。",
+      "source": "glossary"
+    },
+    "Plane Force(Local)": {
+      "name_zh": "平面内力(局部)",
+      "description_zh": "平面应力单元局部坐标系下的内力结果。",
+      "source": "glossary"
+    },
+    "Plane Strain Force(Global)": {
+      "name_zh": "平面应变内力(整体)",
+      "description_zh": "平面应变单元整体坐标系下的内力结果。",
+      "source": "glossary"
+    },
+    "Plane Strain Force(Local)": {
+      "name_zh": "平面应变内力(局部)",
+      "description_zh": "平面应变单元局部坐标系下的内力结果。",
+      "source": "glossary"
+    },
+    "Plane Strain Stress(Global)": {
+      "name_zh": "平面应变应力(整体)",
+      "description_zh": "平面应变单元整体坐标系下的应力结果。",
+      "source": "glossary"
+    },
+    "Plane Strain Stress(Local)": {
+      "name_zh": "平面应变应力(局部)",
+      "description_zh": "平面应变单元局部坐标系下的应力结果。",
+      "source": "glossary"
+    },
+    "Plane Stress(Global)": {
+      "name_zh": "平面应力(整体)",
+      "description_zh": "平面应力单元整体坐标系下的应力结果。",
+      "source": "glossary"
+    },
+    "Plane Stress(Local)": {
+      "name_zh": "平面应力(局部)",
+      "description_zh": "平面应力单元局部坐标系下的应力结果。",
+      "source": "glossary"
+    },
+    "Resultant Forces-View By Max Value Items": {
+      "name_zh": "合力-按最大值查看",
+      "description_zh": "按最大值查看合力结果的视图项。",
+      "source": "glossary"
+    },
+    "Rx": {
+      "name_zh": "Rx",
+      "description_zh": "绕 X 轴转角（或 X 向反力）分量结果。",
+      "source": "glossary"
+    },
+    "Ry": {
+      "name_zh": "Ry",
+      "description_zh": "绕 Y 轴转角（或 Y 向反力）分量结果。",
+      "source": "glossary"
+    },
+    "Rz": {
+      "name_zh": "Rz",
+      "description_zh": "绕 Z 轴转角（或 Z 向反力）分量结果。",
+      "source": "glossary"
+    },
+    "Self-Constraint Beam Force": {
+      "name_zh": "自约束梁内力",
+      "description_zh": "组合截面自约束产生的梁内力结果。",
+      "source": "glossary"
+    },
+    "Self-Constraint Beam Stress": {
+      "name_zh": "自约束梁应力",
+      "description_zh": "组合截面自约束产生的梁应力结果。",
+      "source": "glossary"
+    },
+    "Solid Force(Global)": {
+      "name_zh": "实体内力(整体)",
+      "description_zh": "实体单元整体坐标系下的内力结果。",
+      "source": "glossary"
+    },
+    "Solid Force(Local)": {
+      "name_zh": "实体内力(局部)",
+      "description_zh": "实体单元局部坐标系下的内力结果。",
+      "source": "glossary"
+    },
+    "Solid Plastic Strain(Global)": {
+      "name_zh": "实体塑性应变(整体)",
+      "description_zh": "实体单元整体坐标系下的塑性应变结果。",
+      "source": "glossary"
+    },
+    "Solid Plastic Strain(Local)": {
+      "name_zh": "实体塑性应变(局部)",
+      "description_zh": "实体单元局部坐标系下的塑性应变结果。",
+      "source": "glossary"
+    },
+    "Solid Stress(Global)": {
+      "name_zh": "实体应力(整体)",
+      "description_zh": "实体单元整体坐标系下的应力结果。",
+      "source": "glossary"
+    },
+    "Solid Stress(Local)": {
+      "name_zh": "实体应力(局部)",
+      "description_zh": "实体单元局部坐标系下的应力结果。",
+      "source": "glossary"
+    },
+    "Solid Total Strain(Global)": {
+      "name_zh": "实体总应变(整体)",
+      "description_zh": "实体单元整体坐标系下的总应变结果。",
+      "source": "glossary"
+    },
+    "Solid Total Strain(Local)": {
+      "name_zh": "实体总应变(局部)",
+      "description_zh": "实体单元局部坐标系下的总应变结果。",
+      "source": "glossary"
+    },
+    "Spring": {
+      "name_zh": "弹簧",
+      "description_zh": "弹簧（弹性支承）类型的结果项。",
+      "source": "glossary"
+    },
+    "Tendon Approximate Loss(Force)": {
+      "name_zh": "钢束近似损失（内力）",
+      "description_zh": "以力表示的预应力钢束近似损失结果。",
+      "source": "glossary"
+    },
+    "Tendon Approximate Loss(Stress)": {
+      "name_zh": "钢束近似损失（应力）",
+      "description_zh": "以应力表示的预应力钢束近似损失结果。",
+      "source": "glossary"
+    },
+    "Tendon Arrangement(Tendon Group)": {
+      "name_zh": "钢束布置（钢束组）",
+      "description_zh": "按钢束组输出的钢束布置结果。",
+      "source": "glossary"
+    },
+    "Tendon Coordinates": {
+      "name_zh": "钢束坐标",
+      "description_zh": "预应力钢束各点的坐标结果。",
+      "source": "glossary"
+    },
+    "Tendon Elongation": {
+      "name_zh": "钢束伸长量",
+      "description_zh": "预应力钢束的伸长量结果。",
+      "source": "glossary"
+    },
+    "Tendon Group": {
+      "name_zh": "钢束组",
+      "description_zh": "预应力钢束组的结果数据。",
+      "source": "glossary"
+    },
+    "Tendon Loss(Force)": {
+      "name_zh": "钢束损失（内力）",
+      "description_zh": "以力表示的预应力钢束损失结果。",
+      "source": "glossary"
+    },
+    "Tendon Loss(Stress)": {
+      "name_zh": "钢束损失（应力）",
+      "description_zh": "以应力表示的预应力钢束损失结果。",
+      "source": "glossary"
+    },
+    "Tendon Stress Limit Check": {
+      "name_zh": "钢束应力限值检查",
+      "description_zh": "预应力钢束应力限值的检查结果。",
+      "source": "glossary"
+    },
+    "Truss": {
+      "name_zh": "桁架",
+      "description_zh": "桁架单元结果类别下的结果项。",
+      "source": "glossary"
+    },
+    "Truss Force": {
+      "name_zh": "桁架内力",
+      "description_zh": "桁架单元的轴力结果。",
+      "source": "glossary"
+    },
+    "Truss Stress": {
+      "name_zh": "桁架应力",
+      "description_zh": "桁架单元的应力结果。",
+      "source": "glossary"
+    },
+    "Velocity": {
+      "name_zh": "速度",
+      "description_zh": "时程分析中节点的速度结果。",
+      "source": "glossary"
+    },
+    "Wall": {
+      "name_zh": "墙",
+      "description_zh": "墙单元结果类别下的结果项。",
+      "source": "glossary"
+    },
+    "[RESULTGRAPHIC] Type of Display-Contour": {
+      "name_zh": "显示类型-云图",
+      "description_zh": "以云图（等值面）方式显示结果的显示类型。",
+      "source": "glossary"
+    },
+    "[PM]P-M Interaction Diagram (DB Section)": {
+      "name_zh": "P-M相关曲线（DB截面）",
+      "description_zh": "取自 DB 截面的一般截面轴力-弯矩（P-M）相关曲线。",
+      "source": "glossary"
+    },
+    "[ACTL]Main Control Data": {
+      "name_zh": "主控数据",
+      "description_zh": "分析主控参数（自动约束、迭代次数与收敛容差）的定义。",
+      "source": "glossary"
+    },
+    "[BCCT]Boundary Change Assignment": {
+      "name_zh": "边界变更分配",
+      "description_zh": "定义边界条件随施工阶段或荷载工况变化的分配数据。",
+      "source": "glossary"
+    },
+    "[BUCK]Buckling Analysis Control": {
+      "name_zh": "屈曲分析控制",
+      "description_zh": "屈曲分析控制数据（屈曲模态数与荷载工况）。",
+      "source": "glossary"
+    },
+    "[CAMB]FCM Camber Control": {
+      "name_zh": "FCM预拱度控制",
+      "description_zh": "悬臂法（FCM）施工的预拱度控制数据。",
+      "source": "glossary"
+    },
+    "[CCFC]Convection : Convection Coefficient Functions": {
+      "name_zh": "对流系数函数",
+      "description_zh": "水化热分析用的对流系数函数。",
+      "source": "glossary"
+    },
+    "[CJFG]Concurrent Joint Force Group": {
+      "name_zh": "同时节点力组",
+      "description_zh": "定义移动荷载分析中同时发生内力的节点力组。",
+      "source": "glossary"
+    },
+    "[CLWP]Plate Cutting Line Diagram": {
+      "name_zh": "板切割线图",
+      "description_zh": "板单元切割线图的数据与显示设置。",
+      "source": "glossary"
+    },
+    "[CMCS]Camber for Construction Stage": {
+      "name_zh": "施工阶段预拱度",
+      "description_zh": "按施工阶段定义的预拱度数据。",
+      "source": "glossary"
+    },
+    "[CO_F]Floor Load Color": {
+      "name_zh": "楼面荷载颜色",
+      "description_zh": "楼面荷载在图形中的显示颜色设置。",
+      "source": "glossary"
+    },
+    "[CO_M]Material Color": {
+      "name_zh": "材料颜色",
+      "description_zh": "各材料在图形中的显示颜色设置。",
+      "source": "glossary"
+    },
+    "[CO_S]Section Color": {
+      "name_zh": "截面颜色",
+      "description_zh": "各截面在图形中的显示颜色设置。",
+      "source": "glossary"
+    },
+    "[CO_T]Thickness Color": {
+      "name_zh": "厚度颜色",
+      "description_zh": "各厚度在图形中的显示颜色设置。",
+      "source": "glossary"
+    },
+    "[CRGR]Concurrent Reaction Group": {
+      "name_zh": "同时反力组",
+      "description_zh": "定义移动荷载分析中同时发生反力的节点组。",
+      "source": "glossary"
+    },
+    "[CRPC]Creep Coefficient for Construction Stage": {
+      "name_zh": "施工阶段徐变系数",
+      "description_zh": "按施工阶段定义混凝土的徐变系数。",
+      "source": "glossary"
+    },
+    "[CSCS]Composite Section for Construction Stage": {
+      "name_zh": "施工阶段组合截面",
+      "description_zh": "定义施工阶段中的组合截面（分阶段形成）。",
+      "source": "glossary"
+    },
+    "[CUTL]Cutting Line": {
+      "name_zh": "切割线",
+      "description_zh": "定义用于查看板单元内力的切割线位置。",
+      "source": "glossary"
+    },
+    "[DCON]RC Design Code": {
+      "name_zh": "RC设计规范",
+      "description_zh": "钢筋混凝土设计所依据的规范选项。",
+      "source": "glossary"
+    },
+    "[DYFG]Railway Dynamic Factor - EUROCODE": {
+      "name_zh": "铁路动力系数-EUROCODE",
+      "description_zh": "按欧洲规范定义的铁路列车荷载动力系数。",
+      "source": "glossary"
+    },
+    "[DYLA]Dynamic Load Allowance": {
+      "name_zh": "动力荷载增大系数",
+      "description_zh": "移动荷载的动力荷载增大系数（冲击系数）定义。",
+      "source": "glossary"
+    },
+    "[DYNF]Railway Dynamic Factor by Element- EUROCODE": {
+      "name_zh": "单元铁路动力系数-EUROCODE",
+      "description_zh": "按欧洲规范、按单元指定的铁路动力系数。",
+      "source": "glossary"
+    },
+    "[EFCT]Small Displacement/Initial Force Control Data": {
+      "name_zh": "小位移/初始力控制数据",
+      "description_zh": "小位移分析中初始力（几何刚度初始荷载）的控制数据。",
+      "source": "glossary"
+    },
+    "[EIGV]Eigenvalue Analysis Control": {
+      "name_zh": "特征值分析控制",
+      "description_zh": "特征值（振型）分析控制数据。",
+      "source": "glossary"
+    },
+    "[ETFC]Ambient Temperature Functions": {
+      "name_zh": "环境温度函数",
+      "description_zh": "水化热分析用的环境温度随时间变化的函数。",
+      "source": "glossary"
+    },
+    "[GCMB]General Camber Control": {
+      "name_zh": "一般预拱度控制",
+      "description_zh": "一般预拱度控制数据。",
+      "source": "glossary"
+    },
+    "[GSBG]Bridge Girder Diagrams": {
+      "name_zh": "桥梁主梁图",
+      "description_zh": "桥梁主梁内力与应力图形的数据与显示设置。",
+      "source": "glossary"
+    },
+    "[HAHS]Heat Source/Assign Heat Source": {
+      "name_zh": "热源/分配热源",
+      "description_zh": "定义热源并把热源分配到指定单元。",
+      "source": "glossary"
+    },
+    "[HECB]Convection/Element Convection Boundary": {
+      "name_zh": "对流/单元对流边界",
+      "description_zh": "定义对流边界条件并分配到单元。",
+      "source": "glossary"
+    },
+    "[HHCT]Heat of Hydration Analysis Control": {
+      "name_zh": "水化热分析控制",
+      "description_zh": "水化热分析控制数据（分析时长与步长）。",
+      "source": "glossary"
+    },
+    "[HHND]Heat of Hydaration Result Graph": {
+      "name_zh": "水化热结果图形",
+      "description_zh": "水化热分析结果的图形输出设置。",
+      "source": "glossary"
+    },
+    "[HPCE]Pipe Cooling": {
+      "name_zh": "管冷",
+      "description_zh": "冷却水管的布置与冷却水特性数据。",
+      "source": "glossary"
+    },
+    "[HSFC]Heat Source/Heat Source Functions": {
+      "name_zh": "热源/热源函数",
+      "description_zh": "定义水化热分析用的热源（放热）函数。",
+      "source": "glossary"
+    },
+    "[HSPT]Prescribed Temperature": {
+      "name_zh": "指定温度",
+      "description_zh": "水化热分析中强制指定的节点温度边界。",
+      "source": "glossary"
+    },
+    "[HSTG]Define Construction Stage for Hydration": {
+      "name_zh": "定义水化热施工阶段",
+      "description_zh": "定义水化热分析所用的施工阶段。",
+      "source": "glossary"
+    },
+    "[IELC]Ignore Elements for Load Cases": {
+      "name_zh": "忽略荷载工况的单元",
+      "description_zh": "指定在某些荷载工况中不参与受力的单元。",
+      "source": "glossary"
+    },
+    "[IFGS]Large Displacement/Initial Forces for Geometric Stiffness": {
+      "name_zh": "大位移/几何刚度初始力",
+      "description_zh": "大位移分析中作为几何刚度初始状态的初始力数据。",
+      "source": "glossary"
+    },
+    "[IMPF]Additional Impact Factor": {
+      "name_zh": "附加冲击系数",
+      "description_zh": "在规范冲击系数之外附加的冲击（动力）系数。",
+      "source": "glossary"
+    },
+    "[INMF]Small Displacement/Initial Element Force": {
+      "name_zh": "小位移/初始单元力",
+      "description_zh": "小位移分析中施加在单元上的初始内力。",
+      "source": "glossary"
+    },
+    "[LDSQ]Load Sequence for Nonlinear": {
+      "name_zh": "非线性荷载顺序",
+      "description_zh": "非线性分析中荷载工况的施加顺序。",
+      "source": "glossary"
+    },
+    "[MATD]Modify Concrete Materials": {
+      "name_zh": "修改混凝土材料",
+      "description_zh": "修改混凝土材料的设计用特性值。",
+      "source": "glossary"
+    },
+    "[MLSP] Lane Support - Negative Moments at Interior Piers": {
+      "name_zh": "车道支承-中墩负弯矩",
+      "description_zh": "移动荷载分析中车道支承处中墩负弯矩的取值设置。",
+      "source": "glossary"
+    },
+    "[MLSR]Lane Support Reactions at Interior Piers": {
+      "name_zh": "车道支承-中墩反力",
+      "description_zh": "移动荷载分析中车道支承处中墩反力的取值设置。",
+      "source": "glossary"
+    },
+    "[MVCT]Moving Load Analysis Control": {
+      "name_zh": "移动荷载分析控制",
+      "description_zh": "移动荷载分析控制数据。",
+      "source": "glossary"
+    },
+    "[MVCTbs] Moving Load Analysis Control(BS)": {
+      "name_zh": "移动荷载分析控制(BS)",
+      "description_zh": "按英国规范（BS）的移动荷载分析控制数据。",
+      "source": "glossary"
+    },
+    "[MVCTch]Moving Load Analysis Control(China)": {
+      "name_zh": "移动荷载分析控制(China)",
+      "description_zh": "按中国规范的移动荷载分析控制数据。",
+      "source": "glossary"
+    },
+    "[MVCTid]Moving Load Analysis Control(India)": {
+      "name_zh": "移动荷载分析控制(India)",
+      "description_zh": "按印度规范的移动荷载分析控制数据。",
+      "source": "glossary"
+    },
+    "[MVCTTR]Moving Load Analysis Control(Transverse)": {
+      "name_zh": "移动荷载分析控制(Transverse)",
+      "description_zh": "横向移动荷载分析的控制数据。",
+      "source": "glossary"
+    },
+    "[MVHC]Vehicles Classes": {
+      "name_zh": "车辆类型",
+      "description_zh": "定义移动荷载用的车辆类型（轴重与轴距）。",
+      "source": "glossary"
+    },
+    "[MVLD]Moving Load Cases": {
+      "name_zh": "移动荷载工况",
+      "description_zh": "移动荷载工况的定义数据。",
+      "source": "glossary"
+    },
+    "[MVLDbs]Moving Load Cases(BS)": {
+      "name_zh": "移动荷载工况(BS)",
+      "description_zh": "按英国规范（BS）定义的移动荷载工况。",
+      "source": "glossary"
+    },
+    "[MVLDch]Moving Load Cases(China)": {
+      "name_zh": "移动荷载工况(China)",
+      "description_zh": "按中国规范定义的移动荷载工况。",
+      "source": "glossary"
+    },
+    "[MVLDeu]Moving Load Cases - EUROCODE": {
+      "name_zh": "移动荷载工况-EUROCODE",
+      "description_zh": "按欧洲规范定义的移动荷载工况。",
+      "source": "glossary"
+    },
+    "[MVLDid]Moving Load Cases(India)": {
+      "name_zh": "移动荷载工况(India)",
+      "description_zh": "按印度规范定义的移动荷载工况。",
+      "source": "glossary"
+    },
+    "[MVLDpl] Moving Load Cases(Plond)": {
+      "name_zh": "移动荷载工况(Plond)",
+      "description_zh": "按波兰规范定义的移动荷载工况。",
+      "source": "glossary"
+    },
+    "[MVLDtr]Moving Load Case(Transverse)": {
+      "name_zh": "移动荷载工况(Transverse)",
+      "description_zh": "横向移动荷载工况的定义数据。",
+      "source": "glossary"
+    },
+    "[NLCT]Nonlinear Analysis Control Data": {
+      "name_zh": "非线性分析控制数据",
+      "description_zh": "非线性分析控制数据（迭代与收敛条件）。",
+      "source": "glossary"
+    },
+    "[PDEL]P-Delta Analysis Control": {
+      "name_zh": "P-Delta分析控制",
+      "description_zh": "P-Delta（二阶）分析的控制数据。",
+      "source": "glossary"
+    },
+    "[PLCB]Pre-composite Section": {
+      "name_zh": "组合前截面",
+      "description_zh": "组合截面在形成组合作用之前的截面数据。",
+      "source": "glossary"
+    },
+    "[RCHK]Rebar Input for Beam Section": {
+      "name_zh": "梁截面钢筋输入",
+      "description_zh": "输入梁截面的钢筋布置数据。",
+      "source": "glossary"
+    },
+    "[SINF]Plate Element for Influence Surface": {
+      "name_zh": "影响面用板单元",
+      "description_zh": "指定用于生成影响面的板单元。",
+      "source": "glossary"
+    },
+    "[SMCT]Settlement Analysis Control Data": {
+      "name_zh": "沉降分析控制数据",
+      "description_zh": "支座沉降分析的控制数据。",
+      "source": "glossary"
+    },
+    "[SMLC]Settlement Load Cases": {
+      "name_zh": "沉降荷载工况",
+      "description_zh": "支座沉降荷载工况的定义数据。",
+      "source": "glossary"
+    },
+    "[SMPT]Settlement Group": {
+      "name_zh": "沉降组",
+      "description_zh": "把承受相同沉降的支承节点编成沉降组。",
+      "source": "glossary"
+    },
+    "[SPFC]Response Spectrum Functions": {
+      "name_zh": "反应谱函数",
+      "description_zh": "反应谱分析用的设计反应谱函数。",
+      "source": "glossary"
+    },
+    "[SPLC]Response Spectrum Load Cases": {
+      "name_zh": "反应谱荷载工况",
+      "description_zh": "反应谱荷载工况的定义数据。",
+      "source": "glossary"
+    },
+    "[STAG]Define Construction Stage": {
+      "name_zh": "定义施工阶段",
+      "description_zh": "定义施工阶段及其激活/钝化范围。",
+      "source": "glossary"
+    },
+    "[STBK]CS Loads : Set-Back Loads for Nonlinear Construction Stage": {
+      "name_zh": "施工阶段荷载：非线性施工阶段退回荷载",
+      "description_zh": "非线性施工阶段分析中退回（卸除）的荷载。",
+      "source": "glossary"
+    },
+    "[STCT]Construction Stage Analysis Control Data": {
+      "name_zh": "施工阶段分析控制数据",
+      "description_zh": "施工阶段分析控制数据。",
+      "source": "glossary"
+    },
+    "[THFC]Time History Functions": {
+      "name_zh": "时程函数",
+      "description_zh": "时程分析用的时间函数。",
+      "source": "glossary"
+    },
+    "[THGA]Ground Acceleration": {
+      "name_zh": "地面加速度",
+      "description_zh": "时程分析用的地面加速度数据。",
+      "source": "glossary"
+    },
+    "[THGC]Time History Global Control": {
+      "name_zh": "时程分析整体控制",
+      "description_zh": "时程分析整体控制数据。",
+      "source": "glossary"
+    },
+    "[THIS]Time History Load Cases": {
+      "name_zh": "时程荷载工况",
+      "description_zh": "时程荷载工况的定义数据。",
+      "source": "glossary"
+    },
+    "[THMS]Multiple Support Excitation": {
+      "name_zh": "多点激励",
+      "description_zh": "多点激励（各支承输入不同地震动）的定义数据。",
+      "source": "glossary"
+    },
+    "[THNL]Dynamic Nodal Loads": {
+      "name_zh": "动力节点荷载",
+      "description_zh": "节点上的动力（时程）荷载。",
+      "source": "glossary"
+    },
+    "[THRG]General Link Result": {
+      "name_zh": "一般连接结果",
+      "description_zh": "时程分析中一般连接单元的结果。",
+      "source": "glossary"
+    },
+    "[THRI]Inelastic Hinge": {
+      "name_zh": "非弹性铰",
+      "description_zh": "时程分析中非弹性铰的结果。",
+      "source": "glossary"
+    },
+    "[THRS]Seismic Control Devices": {
+      "name_zh": "地震控制装置",
+      "description_zh": "时程分析中减隔震装置的结果。",
+      "source": "glossary"
+    },
+    "[THSL]Time Varying Static Loads": {
+      "name_zh": "时变静力荷载",
+      "description_zh": "随时间变化的静力荷载。",
+      "source": "glossary"
+    },
+    "[TMLD]CS-Loads : Time Loads for Construction Stage": {
+      "name_zh": "施工阶段荷载：施工阶段时间荷载",
+      "description_zh": "施工阶段中按时间定义的荷载。",
+      "source": "glossary"
+    },
+    "[UFTR] Define Header and Footer": {
+      "name_zh": "定义页眉和页脚",
+      "description_zh": "定义计算书输出用的页眉与页脚内容。",
+      "source": "glossary"
+    },
+    "[ULFC]Cable Control/Unknown Load Factor Constraints": {
+      "name_zh": "索控制/未知荷载系数约束",
+      "description_zh": "索控制（未知荷载系数法）的约束条件定义。",
+      "source": "glossary"
+    },
+    "[UTBL] User Defined Table": {
+      "name_zh": "用户定义表格",
+      "description_zh": "用户自定义表格的数据定义。",
+      "source": "glossary"
+    },
+    "[WVLD]Wave Loads": {
+      "name_zh": "波浪荷载",
+      "description_zh": "作用在结构上的波浪荷载参数。",
+      "source": "glossary"
+    },
+    "[Anal] Perform Analysis": {
+      "name_zh": "执行分析",
+      "description_zh": "执行模型的分析计算。",
+      "source": "glossary"
+    },
+    "[TABLE]Get Result Table from Smart Report Table": {
+      "name_zh": "从智能报告表格获取结果表格",
+      "description_zh": "按智能报告表格标识提取对应的结果表格。",
+      "source": "glossary"
+    },
+    "边界组[BNGR]Boundary Group": {
+      "name_zh": "边界组",
+      "description_zh": "边界组：把边界条件按施工阶段或变更条件分组。",
+      "source": "manual"
+    },
+    "自重[BODF]Self Weight": {
+      "name_zh": "自重",
+      "description_zh": "把单元自重转换为指定方向的荷载并分配到荷载工况。",
+      "source": "manual"
+    },
+    "梁截面温度[BTMP]Beam Section Temp.": {
+      "name_zh": "梁截面温度",
+      "description_zh": "梁截面沿截面高度方向的温度分布荷载。",
+      "source": "manual"
+    },
+    "修改一般连接特性值[CGLP]Change General Link Properties": {
+      "name_zh": "修改一般连接特性值",
+      "description_zh": "修改已分配给模型的一般连接所引用的特性值。",
+      "source": "manual"
+    },
+    "定义标签方向[CLDR]Define Constraints Label Direction": {
+      "name_zh": "定义标签方向",
+      "description_zh": "定义约束（支承）标签在图形中显示的方向。",
+      "source": "manual"
+    },
+    "节点荷载[CNLD]Nodal Loads": {
+      "name_zh": "节点荷载",
+      "description_zh": "作用在节点上的集中力与集中弯矩荷载。",
+      "source": "manual"
+    },
+    "一般支承[CONS]Define Supports": {
+      "name_zh": "一般支承",
+      "description_zh": "定义节点的一般支承条件（各自由度约束标志）。",
+      "source": "manual"
+    },
+    "设置 Settings": {
+      "name_zh": "设置",
+      "description_zh": "程序或模型的通用设置项。",
+      "source": "manual"
+    },
+    "区域-单元[DOEL]Domain-Element": {
+      "name_zh": "区域-单元",
+      "description_zh": "把单元分配到指定的区域（Domain）。",
+      "source": "manual"
+    },
+    "修改特性[EDMP]Change Property": {
+      "name_zh": "修改特性",
+      "description_zh": "把已建模单元的材料或截面特性批量修改为另一特性。",
+      "source": "manual"
+    },
+    "单元[ELEM]Element": {
+      "name_zh": "单元",
+      "description_zh": "单元数据：节点连接关系、材料与截面分配。",
+      "source": "manual"
+    },
+    "弹性连接[ELNK]Elastic Link": {
+      "name_zh": "弹性连接",
+      "description_zh": "弹性连接单元：两节点之间各自由度的弹性刚度。",
+      "source": "manual"
+    },
+    "塑性材料[EPMT]Plastic Material": {
+      "name_zh": "塑性材料",
+      "description_zh": "塑性材料特性值（用于非线性分析）。",
+      "source": "manual"
+    },
+    "单元温度[ETMP]Element Temp.": {
+      "name_zh": "单元温度",
+      "description_zh": "分配给单元的节点温度值。",
+      "source": "manual"
+    },
+    "有效宽度系数[EWSF]Effective Width Scale Factor": {
+      "name_zh": "有效宽度系数",
+      "description_zh": "梁单元翼缘有效宽度的修改系数。",
+      "source": "manual"
+    },
+    "体外力类型荷载[EXLD]External Type Load Case for Pretension": {
+      "name_zh": "体外力类型荷载",
+      "description_zh": "以体外力方式施加初拉力的荷载工况定义。",
+      "source": "manual"
+    },
+    "分配楼面荷载[FBLA]Assign Floor Loads": {
+      "name_zh": "分配楼面荷载",
+      "description_zh": "把楼面荷载类型分配到指定楼层的板或梁上。",
+      "source": "manual"
+    },
+    "定义楼面荷载类型[FBLD]Define Floor Load Type": {
+      "name_zh": "定义楼面荷载类型",
+      "description_zh": "定义楼面荷载类型：面荷载值与梁上分配方式。",
+      "source": "manual"
+    },
+    "纤维截面分割[FIBR]Fiber Division of Section": {
+      "name_zh": "纤维截面分割",
+      "description_zh": "把截面分割为纤维，供纤维模型的非线性分析使用。",
+      "source": "manual"
+    },
+    "非线性材料特性[FIMP]Inelastic Material Properties": {
+      "name_zh": "非线性材料特性",
+      "description_zh": "非线性（弹塑性）材料特性值。",
+      "source": "manual"
+    },
+    "装修材料荷载[FMLD]Finishing Material Loads": {
+      "name_zh": "装修材料荷载",
+      "description_zh": "按单元分配的装修材料附加恒荷载。",
+      "source": "manual"
+    },
+    "释放梁端约束[FRLS]Beam End Release": {
+      "name_zh": "释放梁端约束",
+      "description_zh": "释放梁单元两端的部分或全部自由度约束。",
+      "source": "manual"
+    },
+    "组阻尼[GRDP]Group Damping": {
+      "name_zh": "组阻尼",
+      "description_zh": "按结构组指定各振型的阻尼比。",
+      "source": "manual"
+    },
+    "结构组[GRUP]Structure Group": {
+      "name_zh": "结构组",
+      "description_zh": "结构组：把节点与单元按施工阶段或显示需要分组。",
+      "source": "manual"
+    },
+    "分配一般弹性支承[GSPR]Assign General Spring Supports": {
+      "name_zh": "分配一般弹性支承",
+      "description_zh": "把一般弹性支承类型分配到节点上。",
+      "source": "manual"
+    },
+    "定义一般弹性支承[GSTP]Define General Spring Type": {
+      "name_zh": "定义一般弹性支承",
+      "description_zh": "一般弹性支承类型：各自由度的弹簧刚度值。",
+      "source": "manual"
+    },
+    "温度梯度[GTMP]Temperature Gradient": {
+      "name_zh": "温度梯度",
+      "description_zh": "梁截面或板厚度方向的温度梯度荷载。",
+      "source": "manual"
+    },
+    "非弹性特性控制数据[IEHC]Inealstic Hinge Control Data": {
+      "name_zh": "非弹性特性控制数据",
+      "description_zh": "非弹性铰（集中铰）分析的控制数据。",
+      "source": "manual"
+    },
+    "分配非弹性铰特性值[IEHG]Assign Inelastic Hinge Properties": {
+      "name_zh": "分配非弹性铰特性值",
+      "description_zh": "把非弹性铰特性值分配到指定位置。",
+      "source": "manual"
+    },
+    "忽略非线性分析初始荷载的单元[IEPI]Ignore Elements for NL. Analysis Intial Load": {
+      "name_zh": "忽略非线性分析初始荷载的单元",
+      "description_zh": "指定在非线性分析初始荷载中不参与受力的单元。",
+      "source": "manual"
+    },
+    "纤维模型的弹塑性材料特性[IMFM]Inelastic Material Properties for Fiber Model": {
+      "name_zh": "纤维模型的弹塑性材料特性",
+      "description_zh": "纤维模型用弹塑性材料特性（骨架曲线与滞回规则）。",
+      "source": "manual"
+    },
+    "混凝土设计[LCOM-CONC]Load Combinations (Concrete Design)": {
+      "name_zh": "混凝土设计",
+      "description_zh": "混凝土设计用荷载组合。",
+      "source": "manual"
+    },
+    "一般[LCOM-GEN]Load Combinations (General)": {
+      "name_zh": "一般",
+      "description_zh": "一般（通用）荷载组合。",
+      "source": "manual"
+    },
+    "地震[LCOM-SEISMIC]Load Combinations (Seismic)": {
+      "name_zh": "地震",
+      "description_zh": "地震荷载组合。",
+      "source": "manual"
+    },
+    "SRC设计[LCOM-SRC]Load Combinations (SRC Design)": {
+      "name_zh": "SRC设计",
+      "description_zh": "SRC 设计用荷载组合。",
+      "source": "manual"
+    },
+    "钢结构设计[LCOM-STEEL]Load Combinations (Steel Design)": {
+      "name_zh": "钢结构设计",
+      "description_zh": "钢结构设计用荷载组合。",
+      "source": "manual"
+    },
+    "组合钢梁设计[LCOM-STLCOMP]Load Combinations (Composite Steel Girder Design)": {
+      "name_zh": "组合钢梁设计",
+      "description_zh": "组合钢梁设计用荷载组合。",
+      "source": "manual"
+    },
+    "荷载组[LDGR]Define Load Group": {
+      "name_zh": "荷载组",
+      "description_zh": "荷载组：把荷载工况按用途分组。",
+      "source": "manual"
+    },
+    "交通车道线-China[LLANch]Traffic Line Lanes - China": {
+      "name_zh": "交通车道线-China",
+      "description_zh": "按中国规范定义的车道线数据。",
+      "source": "manual"
+    },
+    "移动荷载优化[LLANop]Traffic Line Lanes - Moving Load Optimizaion": {
+      "name_zh": "移动荷载优化",
+      "description_zh": "用于移动荷载优化的车道线数据。",
+      "source": "manual"
+    },
+    "交通车道线-横向移动荷载[LLANtr]Traffic Line Lane - Transverse": {
+      "name_zh": "交通车道线-横向移动荷载",
+      "description_zh": "横向移动荷载分析用的车道线数据。",
+      "source": "manual"
+    },
+    "荷载转换为质量[LTOM]Loads to Masses": {
+      "name_zh": "荷载转换为质量",
+      "description_zh": "把指定荷载工况的荷载按比例转换为动力分析用的质量。",
+      "source": "manual"
+    },
+    "定义区域[MADO]Define Domain": {
+      "name_zh": "定义区域",
+      "description_zh": "定义区域（Domain）：把节点或单元划入一个命名区域。",
+      "source": "manual"
+    },
+    "材料特性值[MATL]Material Data": {
+      "name_zh": "材料特性值",
+      "description_zh": "材料特性值：弹性模量、泊松比、容重与线膨胀系数。",
+      "source": "manual"
+    },
+    "线性约束[MCON]Linear Constraints": {
+      "name_zh": "线性约束",
+      "description_zh": "定义节点自由度之间的线性约束方程。",
+      "source": "manual"
+    },
+    "变形-内力函数[MLFC]Force-Deformation Function": {
+      "name_zh": "变形-内力函数",
+      "description_zh": "定义非弹性铰或连接单元的内力-变形关系函数。",
+      "source": "manual"
+    },
+    "移动荷载规范[MVCD]Moving Load Code": {
+      "name_zh": "移动荷载规范",
+      "description_zh": "移动荷载分析所依据的规范。",
+      "source": "manual"
+    },
+    "车辆-China[MVHL]Vehicles - China": {
+      "name_zh": "车辆-China",
+      "description_zh": "按中国规范定义的车辆荷载数据。",
+      "source": "manual"
+    },
+    "车辆-横向移动荷载[MVHLtr]Vehicles - Transverse": {
+      "name_zh": "车辆-横向移动荷载",
+      "description_zh": "横向移动荷载分析用的车辆定义数据。",
+      "source": "manual"
+    },
+    "节点体力[NBOF]Nodal Body Force": {
+      "name_zh": "节点体力",
+      "description_zh": "作用在节点上的体力（体积荷载）。",
+      "source": "manual"
+    },
+    "一般连接特性值[NLLP]General Link Property": {
+      "name_zh": "一般连接特性值",
+      "description_zh": "一般连接特性值：连接类型与各自由度的力-变形关系。",
+      "source": "manual"
+    },
+    "一般连接[NLNK]General Link": {
+      "name_zh": "一般连接",
+      "description_zh": "一般连接单元：在两节点之间建立非线性连接。",
+      "source": "manual"
+    },
+    "节点质量[NMAS]Nodal Masses": {
+      "name_zh": "节点质量",
+      "description_zh": "分配给节点的集中质量与质量惯性矩。",
+      "source": "manual"
+    },
+    "节点[NODE]Node": {
+      "name_zh": "节点",
+      "description_zh": "节点数据：坐标与节点编号。",
+      "source": "manual"
+    },
+    "命名的平面[NPLN]Named Plane": {
+      "name_zh": "命名的平面",
+      "description_zh": "定义命名的平面，供建模与结果查看引用。",
+      "source": "manual"
+    },
+    "节点弹性支承[NSPR]Point Spring": {
+      "name_zh": "节点弹性支承",
+      "description_zh": "节点弹性支承：节点各自由度的弹簧刚度。",
+      "source": "manual"
+    },
+    "节点温度[NTMP]Nodal Temp.": {
+      "name_zh": "节点温度",
+      "description_zh": "分配给节点的温度值。",
+      "source": "manual"
+    },
+    "定义用户坐标系[NUCS]Named UCS": {
+      "name_zh": "定义用户坐标系",
+      "description_zh": "定义命名的用户坐标系（UCS）。",
+      "source": "manual"
+    },
+    "梁端刚域[OFFS]Beam End Offsets": {
+      "name_zh": "梁端刚域",
+      "description_zh": "定义梁单元端部的刚域（偏心）长度。",
+      "source": "manual"
+    },
+    "分配Pushover铰特性[PHGE]Assign Pushover Hinge Properties": {
+      "name_zh": "分配Pushover铰特性",
+      "description_zh": "把 Pushover 铰特性值分配到指定单元。",
+      "source": "manual"
+    },
+    "项目信息[PJCF]Project Information": {
+      "name_zh": "项目信息",
+      "description_zh": "工程项目的说明信息（工程名、设计者与备注）。",
+      "source": "manual"
+    },
+    "分配平面荷载[PNLA]Assign Plane Loads": {
+      "name_zh": "分配平面荷载",
+      "description_zh": "把平面荷载类型分配到指定平面。",
+      "source": "manual"
+    },
+    "定义平面荷载类型[PNLD]Define Plane Load Type": {
+      "name_zh": "定义平面荷载类型",
+      "description_zh": "定义平面荷载类型：作用在平面上的面荷载值。",
+      "source": "manual"
+    },
+    "整体控制[POGD]Global Control": {
+      "name_zh": "整体控制",
+      "description_zh": "Pushover 分析的整体控制参数。",
+      "source": "manual"
+    },
+    "Pushover荷载工况[POLC]Pushover Load Cases": {
+      "name_zh": "Pushover荷载工况",
+      "description_zh": "Pushover 荷载工况的定义数据。",
+      "source": "manual"
+    },
+    "指定压力荷载[PRES]Assign Pressure Loads": {
+      "name_zh": "指定压力荷载",
+      "description_zh": "把压力荷载分配到板或实体单元表面。",
+      "source": "manual"
+    },
+    "释放板端约束[PRLS]Plate End Release": {
+      "name_zh": "释放板端约束",
+      "description_zh": "释放板单元边界的部分或全部自由度约束。",
+      "source": "manual"
+    },
+    "梁单元预应力荷载[PRST]Prestress Beam Loads": {
+      "name_zh": "梁单元预应力荷载",
+      "description_zh": "梁单元上的预应力荷载（张拉力与损失参数）。",
+      "source": "manual"
+    },
+    "定义压力荷载类型[PSLT]Define Pressure Load Type": {
+      "name_zh": "定义压力荷载类型",
+      "description_zh": "定义压力荷载类型：压力大小与作用方向。",
+      "source": "manual"
+    },
+    "板刚度修改系数[PSSF]Plate Stiffness Scale Factor": {
+      "name_zh": "板刚度修改系数",
+      "description_zh": "板单元刚度的修改系数。",
+      "source": "manual"
+    },
+    "初拉力[PTNS]Pretension Loads": {
+      "name_zh": "初拉力",
+      "description_zh": "索或桁架单元的初拉力荷载。",
+      "source": "manual"
+    },
+    "刚域效果[PZEF]Panel Zone Effects": {
+      "name_zh": "刚域效果",
+      "description_zh": "定义梁柱节点区（刚域）的刚度效果。",
+      "source": "manual"
+    },
+    "钢筋[RPSC]Reinforcements": {
+      "name_zh": "钢筋",
+      "description_zh": "构件的钢筋（配筋）数据。",
+      "source": "manual"
+    },
+    "定义子区域[SBDO]Define Sub-Domain": {
+      "name_zh": "定义子区域",
+      "description_zh": "定义子区域（Sub-Domain），隶属某个主区域。",
+      "source": "manual"
+    },
+    "滞回阻尼器(MSS)[SDHY]Hysteretic Isolator(MSS)": {
+      "name_zh": "滞回阻尼器(MSS)",
+      "description_zh": "多弹簧剪切型（MSS）滞回阻尼器的特性数据。",
+      "source": "manual"
+    },
+    "隔震器(MSS)[SDIS]Isolator(MSS)": {
+      "name_zh": "隔震器(MSS)",
+      "description_zh": "多弹簧剪切型（MSS）隔震器的特性数据。",
+      "source": "manual"
+    },
+    "强制位移[SDSP]Specified Displacements of Support": {
+      "name_zh": "强制位移",
+      "description_zh": "在支承节点上施加强制位移（支座位移）荷载。",
+      "source": "manual"
+    },
+    "钢阻尼器[SDST]Steel Damper": {
+      "name_zh": "钢阻尼器",
+      "description_zh": "钢阻尼器的力学特性数据。",
+      "source": "manual"
+    },
+    "粘弹性阻尼器[SDVE]Viscoelastic Damper": {
+      "name_zh": "粘弹性阻尼器",
+      "description_zh": "粘弹性阻尼器的力学特性数据。",
+      "source": "manual"
+    },
+    "黏滞阻尼器/油阻尼器[SDVI]Viscous Damper/Oil Damper": {
+      "name_zh": "黏滞阻尼器/油阻尼器",
+      "description_zh": "黏滞（油）阻尼器的力学特性数据。",
+      "source": "manual"
+    },
+    "刚度[SECF]Stiffness": {
+      "name_zh": "刚度",
+      "description_zh": "截面或单元的刚度数据。",
+      "source": "manual"
+    },
+    "截面特性值（共同）[SECT]Section Properteis(Common)": {
+      "name_zh": "截面特性值（共同）",
+      "description_zh": "各截面类型共用的截面特性值。",
+      "source": "manual"
+    },
+    "节点局部坐标轴[SKEW]Node Local Axis": {
+      "name_zh": "节点局部坐标轴",
+      "description_zh": "定义节点的局部坐标轴方向（节点坐标系）。",
+      "source": "manual"
+    },
+    "交通车道面[SLAN]Traffic Surface Lanes": {
+      "name_zh": "交通车道面",
+      "description_zh": "由板单元组成的车道面定义。",
+      "source": "manual"
+    },
+    "交通车道面-China[SLANch]Traffic Surface Lanes - China": {
+      "name_zh": "交通车道面-China",
+      "description_zh": "按中国规范定义的车道面数据。",
+      "source": "manual"
+    },
+    "移动荷载优化[SLANop]Traffic Surface Lanes - Moving Load Optimization": {
+      "name_zh": "移动荷载优化",
+      "description_zh": "用于移动荷载优化的车道面数据。",
+      "source": "manual"
+    },
+    "跨度信息[SPAN]Span Information": {
+      "name_zh": "跨度信息",
+      "description_zh": "桥梁跨度信息：各跨的起止节点与跨径。",
+      "source": "manual"
+    },
+    "面弹性支承[SSPS]Surface Spring": {
+      "name_zh": "面弹性支承",
+      "description_zh": "面弹性支承：板或实体单元表面的分布弹簧刚度。",
+      "source": "manual"
+    },
+    "静力荷载工况[STLD]Static Load Cases": {
+      "name_zh": "静力荷载工况",
+      "description_zh": "静力荷载工况的定义数据（名称与类型）。",
+      "source": "manual"
+    },
+    "系统温度[STMP]System Temp.": {
+      "name_zh": "系统温度",
+      "description_zh": "作用于整个结构的系统温度（整体升降温）荷载。",
+      "source": "manual"
+    },
+    "应力点[STRPSSM]Stress Points": {
+      "name_zh": "应力点",
+      "description_zh": "截面上应力输出的位置（应力点）设置。",
+      "source": "manual"
+    },
+    "结构类型[STYP]Structure Type": {
+      "name_zh": "结构类型",
+      "description_zh": "结构类型设置（建筑、桥梁等），影响分析选项。",
+      "source": "manual"
+    },
+    "组合截面钢束的位置[TDCS]Tendon Location for Composite Section": {
+      "name_zh": "组合截面钢束的位置",
+      "description_zh": "定义预应力钢束在组合截面中的位置。",
+      "source": "manual"
+    },
+    "钢束组[TDGR]Tendon Group": {
+      "name_zh": "钢束组",
+      "description_zh": "钢束组：把预应力钢束按用途分组。",
+      "source": "manual"
+    },
+    "抗压强度[TDME]Comp. Strength": {
+      "name_zh": "抗压强度",
+      "description_zh": "混凝土抗压强度随时间发展的函数数据。",
+      "source": "manual"
+    },
+    "用户定义[TDMF]User Define": {
+      "name_zh": "用户定义",
+      "description_zh": "用户自定义的时间依存性材料函数。",
+      "source": "manual"
+    },
+    "徐变/收缩[TDMT]Creep/Shrinkage": {
+      "name_zh": "徐变/收缩",
+      "description_zh": "混凝土徐变与收缩特性数据。",
+      "source": "manual"
+    },
+    "钢束形状[TDNA]Tendon Profile": {
+      "name_zh": "钢束形状",
+      "description_zh": "预应力钢束的几何形状（坐标与曲线类型）。",
+      "source": "manual"
+    },
+    "钢束特性[TDNT]Tendon Property": {
+      "name_zh": "钢束特性",
+      "description_zh": "预应力钢束特性值（面积、弹性模量与张拉控制应力）。",
+      "source": "manual"
+    },
+    "钢束预应力[TDPL]Tendon Prestress": {
+      "name_zh": "钢束预应力",
+      "description_zh": "分配给钢束的预应力荷载（张拉力与损失参数）。",
+      "source": "manual"
+    },
+    "数值[THIK]Thickness-Value": {
+      "name_zh": "数值",
+      "description_zh": "板单元厚度数值（厚度值）的定义。",
+      "source": "manual"
+    },
+    "时间依存性材料连接[TMAT]Time Dependent Material Link": {
+      "name_zh": "时间依存性材料连接",
+      "description_zh": "把时间依存性材料特性与单元材料相关联。",
+      "source": "manual"
+    },
+    "变截面组[TSGR]Tapered Group": {
+      "name_zh": "变截面组",
+      "description_zh": "变截面组：把若干变截面归入一个组。",
+      "source": "manual"
+    },
+    "单位系统[UNIT]Unit System": {
+      "name_zh": "单位系统",
+      "description_zh": "模型的单位系统设置（力、长度与温度单位）。",
+      "source": "manual"
+    },
+    "合力截面 - 定义虚梁[VBEM]Section for Resultant Forces - Define Virtual Beam": {
+      "name_zh": "合力截面 - 定义虚梁",
+      "description_zh": "定义用于计算合力的虚梁（Virtual Beam）。",
+      "source": "manual"
+    },
+    "合力截面 - 定义虚拟截面[VSEC]Section for Resultant Forces - Define Virtual Section": {
+      "name_zh": "合力截面 - 定义虚拟截面",
+      "description_zh": "定义用于计算合力的虚拟截面。",
+      "source": "manual"
+    },
+    "关闭项目[CLOSE]Close Project": {
+      "name_zh": "关闭项目",
+      "description_zh": "关闭当前打开的模型文件（项目）。",
+      "source": "manual"
+    },
+    "导出[EXPORT]Export to Json": {
+      "name_zh": "导出",
+      "description_zh": "把当前模型导出为 JSON 格式文件。",
+      "source": "manual"
+    },
+    "导出mct/mgt[EXPORTMXT]Export to mct/mgt": {
+      "name_zh": "导出mct/mgt",
+      "description_zh": "把当前模型导出为 MCT/MGT 文本格式文件。",
+      "source": "manual"
+    },
+    "导入[IMPORT]Import to Json": {
+      "name_zh": "导入",
+      "description_zh": "从 JSON 文件导入模型数据。",
+      "source": "manual"
+    },
+    "导入mct/mgt[IMPORTMXT]Import to mct/mgt": {
+      "name_zh": "导入mct/mgt",
+      "description_zh": "从 MCT/MGT 文本文件导入模型数据。",
+      "source": "manual"
+    },
+    "新项目[NEW]New Project": {
+      "name_zh": "新项目",
+      "description_zh": "新建空白工程。",
+      "source": "manual"
+    },
+    "打开项目[OPEN]Open Project...": {
+      "name_zh": "打开项目",
+      "description_zh": "打开已有的模型文件。",
+      "source": "manual"
+    },
+    "保存[SAVE]Save": {
+      "name_zh": "保存",
+      "description_zh": "保存当前模型文件。",
+      "source": "manual"
+    },
+    "另存为[SAVEAS]Save As...": {
+      "name_zh": "另存为",
+      "description_zh": "把当前模型另存为新的文件。",
+      "source": "manual"
+    },
+    "自动网格[AUTOMESH] Auto-Mesh Planar Area": {
+      "name_zh": "自动网格",
+      "description_zh": "对平面区域自动划分网格并生成板单元。",
+      "source": "manual"
+    },
+    "分割单元[DIVIDEELEM] Divide Elements": {
+      "name_zh": "分割单元",
+      "description_zh": "按指定份数或长度分割已有单元。",
+      "source": "manual"
+    },
+    "梁荷载(连续)[LINEBMLD] Line Beam Load": {
+      "name_zh": "梁荷载(连续)",
+      "description_zh": "连续梁（多跨线梁）上的分布荷载。",
+      "source": "manual"
+    },
+    "项目状态[PROJECTSTATUS]Project Status": {
+      "name_zh": "项目状态",
+      "description_zh": "查询当前工程的状态（是否已分析、是否有结果等）。",
+      "source": "manual"
+    },
+    "获取截面特性值˙[SECTPROP]Show Calculation Results": {
+      "name_zh": "获取截面特性值",
+      "description_zh": "触发并返回截面特性值的计算结果。",
+      "source": "manual"
+    },
+    "使用荷载组合[USLC]Using Load Combinations": {
+      "name_zh": "使用荷载组合",
+      "description_zh": "指定分析或设计所使用的荷载组合。",
+      "source": "manual"
+    },
+    "激活[ACTIVE]Active": {
+      "name_zh": "激活",
+      "description_zh": "激活（打开）指定的模型文件或视图。",
+      "source": "manual"
+    },
+    "视点[ANGLE]View Point": {
+      "name_zh": "视点",
+      "description_zh": "设置模型视图的视点（观察角度）。",
+      "source": "manual"
+    },
+    "截图[CAPTURE]Capture": {
+      "name_zh": "截图",
+      "description_zh": "截取当前视图的图像。",
+      "source": "manual"
+    },
+    "显示[DISPLAY]Display": {
+      "name_zh": "显示",
+      "description_zh": "控制模型中各对象的显示开关。",
+      "source": "manual"
+    },
+    "选择[SELECT] Select": {
+      "name_zh": "选择",
+      "description_zh": "按条件选择模型中的节点或单元。",
+      "source": "manual"
+    },
+    "应力（7th自由度）Beam Stress(7th DOF)": {
+      "name_zh": "应力（7th自由度）",
+      "description_zh": "考虑第 7 自由度（翘曲）的梁单元应力结果。",
+      "source": "manual"
+    },
+    "应力（7th自由度）（PSC）Beam Stress(7th DOF)(PSC)": {
+      "name_zh": "应力（7th自由度）（PSC）",
+      "description_zh": "PSC 梁考虑第 7 自由度的应力结果。",
+      "source": "manual"
+    },
+    "内力 - 按最大值查看Beam Force - View By Max Value Items": {
+      "name_zh": "内力 - 按最大值查看",
+      "description_zh": "按各单元最大值查看梁内力的结果视图。",
+      "source": "manual"
+    },
+    "内力（预应力）Beam Forces(Static Prestress)": {
+      "name_zh": "内力（预应力）",
+      "description_zh": "静力预应力作用下的梁内力结果。",
+      "source": "manual"
+    },
+    "应力Beam Stress": {
+      "name_zh": "应力",
+      "description_zh": "梁单元的应力结果。",
+      "source": "manual"
+    },
+    "应力（等效）Beam Stress(Equivalent)": {
+      "name_zh": "应力（等效）",
+      "description_zh": "梁单元的等效（组合）应力结果。",
+      "source": "manual"
+    },
+    "应力 - 按最大值查看Beam Stress - View By Max Value Items": {
+      "name_zh": "应力 - 按最大值查看",
+      "description_zh": "按各单元最大值查看梁应力的结果视图。",
+      "source": "manual"
+    },
+    "信息Cable Configuration": {
+      "name_zh": "信息",
+      "description_zh": "索单元的几何形态（索形）结果。",
+      "source": "manual"
+    },
+    "索效应Cable Efficiency": {
+      "name_zh": "索效应",
+      "description_zh": "索单元的索效率结果。",
+      "source": "manual"
+    },
+    "内力Cable Force": {
+      "name_zh": "内力",
+      "description_zh": "索单元张力的结果。",
+      "source": "manual"
+    },
+    "位移（整体）Displacements(Global)": {
+      "name_zh": "位移（整体）",
+      "description_zh": "整体坐标系下的节点位移结果。",
+      "source": "manual"
+    },
+    "位移（局部）Displacements(Local)": {
+      "name_zh": "位移（局部）",
+      "description_zh": "局部坐标系下的节点位移结果。",
+      "source": "manual"
+    },
+    "单元重量表格[TABLE]Element Weight Table": {
+      "name_zh": "单元重量表格",
+      "description_zh": "各单元重量的结果表格。",
+      "source": "manual"
+    },
+    "荷载统计表格[LOAD_SUMMARY]Load Summery Table": {
+      "name_zh": "荷载统计表格",
+      "description_zh": "各荷载工况荷载值的统计表格。",
+      "source": "manual"
+    },
+    "质量统计表格[MASS_SUMMARY]Mass Summary Table": {
+      "name_zh": "质量统计表格",
+      "description_zh": "结构质量的统计表格。",
+      "source": "manual"
+    },
+    "节点体力[NODALBODYFORCE]Nodal Body Force Table": {
+      "name_zh": "节点体力",
+      "description_zh": "节点体力荷载的结果表格。",
+      "source": "manual"
+    },
+    "内力（整体）Plate Force(Global)": {
+      "name_zh": "内力（整体）",
+      "description_zh": "整体坐标系下板单元的单位宽度内力结果。",
+      "source": "manual"
+    },
+    "内力（局部）Plate Force(Local)": {
+      "name_zh": "内力（局部）",
+      "description_zh": "局部坐标系下板单元的单位宽度内力结果。",
+      "source": "manual"
+    },
+    "内力（单位长度：局部）Plate Force(Unit Length:Local)": {
+      "name_zh": "内力（单位长度：局部）",
+      "description_zh": "按单位长度输出的板单元局部坐标系内力结果。",
+      "source": "manual"
+    },
+    "内力（单位长度：局部）- 按最大值查看Plate Force(Unit Length:Local) - View By Max Value Items": {
+      "name_zh": "内力（单位长度：局部）- 按最大值查看",
+      "description_zh": "按最大值查看板单元单位长度局部内力的结果视图。",
+      "source": "manual"
+    },
+    "内力（单位长度：用户）Plate Force(Unit Length:UCS)": {
+      "name_zh": "内力（单位长度：用户）",
+      "description_zh": "按单位长度输出、以用户坐标系表示的板单元内力结果。",
+      "source": "manual"
+    },
+    "内力（单位长度：用户）- 按最大值查看Plate Force(Unit Length:UCS) - View By Max Value Items": {
+      "name_zh": "内力（单位长度：用户）- 按最大值查看",
+      "description_zh": "按最大值查看板单元单位长度用户坐标系内力的结果视图。",
+      "source": "manual"
+    },
+    "应变（整体：板塑性应变）Plate Plastic Strain(Global)": {
+      "name_zh": "应变（整体：板塑性应变）",
+      "description_zh": "整体坐标系下板单元塑性应变的结果。",
+      "source": "manual"
+    },
+    "应变（局部：板塑性应变）Plate Plastic Strain(Local)": {
+      "name_zh": "应变（局部：板塑性应变）",
+      "description_zh": "局部坐标系下板单元塑性应变的结果。",
+      "source": "manual"
+    },
+    "应力（整体）Plate Stress(Global)": {
+      "name_zh": "应力（整体）",
+      "description_zh": "整体坐标系下板单元的应力结果。",
+      "source": "manual"
+    },
+    "应力（局部）Plate Stress(Local)": {
+      "name_zh": "应力（局部）",
+      "description_zh": "局部坐标系下板单元的应力结果。",
+      "source": "manual"
+    },
+    "应变（整体：板总体应变）Plate Total Strain(Global)": {
+      "name_zh": "应变（整体：板总体应变）",
+      "description_zh": "整体坐标系下板单元总应变的结果。",
+      "source": "manual"
+    },
+    "应变（局部：板总应变）Plate Total Strain(Local)": {
+      "name_zh": "应变（局部：板总应变）",
+      "description_zh": "局部坐标系下板单元总应变的结果。",
+      "source": "manual"
+    },
+    "应力（PSC）Beam Stress(PSC)": {
+      "name_zh": "应力（PSC）",
+      "description_zh": "PSC 梁单元的应力结果。",
+      "source": "manual"
+    },
+    "反力（整体）Reaction(Global)": {
+      "name_zh": "反力（整体）",
+      "description_zh": "整体坐标系下的支座反力结果。",
+      "source": "manual"
+    },
+    "反力（局部）Reaction(Local)": {
+      "name_zh": "反力（局部）",
+      "description_zh": "局部坐标系下的支座反力结果。",
+      "source": "manual"
+    },
+    "反力（局部-面弹性支承）Reaction(Local-Surface Spring)": {
+      "name_zh": "反力（局部-面弹性支承）",
+      "description_zh": "面弹性支承处以局部坐标系表示的反力结果。",
+      "source": "manual"
+    },
+    "Relative Acceleration": {
+      "name_zh": "相对加速度",
+      "description_zh": "时程分析中节点相对于地面的加速度结果。",
+      "source": "glossary"
+    },
+    "结果表格Result Tables": {
+      "name_zh": "结果表格",
+      "description_zh": "结果表格的读取入口。",
+      "source": "manual"
+    },
+    "内力Truss Force": {
+      "name_zh": "内力",
+      "description_zh": "桁架单元的轴力结果。",
+      "source": "manual"
+    },
+    "应力Truss Stress": {
+      "name_zh": "应力",
+      "description_zh": "桁架单元的应力结果。",
+      "source": "manual"
+    },
+    "内力（单位长度：W-A弯矩）Plate Force(Unit Length:W-A Moment)": {
+      "name_zh": "内力（单位长度：W-A弯矩）",
+      "description_zh": "按单位长度输出的板单元墙-板（W-A）弯矩结果。",
+      "source": "manual"
+    },
+    "参数-盖梁验算": {
+      "name_zh": "参数-盖梁验算",
+      "description_zh": "盖梁（横梁）验算所用的参数设置。",
+      "source": "manual"
+    },
+    "倾覆数据": {
+      "name_zh": "倾覆数据",
+      "description_zh": "桥梁抗倾覆验算所用的数据。",
+      "source": "manual"
+    },
+    "参数-裂缝宽度系数": {
+      "name_zh": "参数-裂缝宽度系数",
+      "description_zh": "裂缝宽度验算所用的系数参数。",
+      "source": "manual"
+    },
+    "规范设置": {
+      "name_zh": "规范设置",
+      "description_zh": "设计验算所依据的规范及其选项设置。",
+      "source": "manual"
+    },
+    "单元": {
+      "name_zh": "单元",
+      "description_zh": "单元对象的操作入口（查询或选择单元）。",
+      "source": "manual"
+    },
+    "荷载组合": {
+      "name_zh": "荷载组合",
+      "description_zh": "荷载组合对象的操作入口。",
+      "source": "manual"
+    },
+    "参数-自由长度": {
+      "name_zh": "参数-自由长度",
+      "description_zh": "构件验算所用的自由（计算）长度参数。",
+      "source": "manual"
+    },
+    "构件": {
+      "name_zh": "构件",
+      "description_zh": "构件（Member）对象的操作入口。",
+      "source": "manual"
+    },
+    "模块": {
+      "name_zh": "模块",
+      "description_zh": "功能模块的操作入口。",
+      "source": "manual"
+    },
+    "节点": {
+      "name_zh": "节点",
+      "description_zh": "节点对象的操作入口（查询或选择节点）。",
+      "source": "manual"
+    },
+    "跨度": {
+      "name_zh": "跨度",
+      "description_zh": "桥梁跨度对象的操作入口。",
+      "source": "manual"
+    },
+    "整体计算书设置": {
+      "name_zh": "整体计算书设置",
+      "description_zh": "整体计算书输出的内容与格式设置。",
+      "source": "manual"
+    },
+    "激活文件": {
+      "name_zh": "激活文件",
+      "description_zh": "激活（打开）指定的模型文件。",
+      "source": "manual"
+    },
+    "关闭激活文档": {
+      "name_zh": "关闭激活文档",
+      "description_zh": "关闭当前激活的文档。",
+      "source": "manual"
+    },
+    "关闭所有文档": {
+      "name_zh": "关闭所有文档",
+      "description_zh": "关闭所有已打开的文档。",
+      "source": "manual"
+    },
+    "退出程序": {
+      "name_zh": "退出程序",
+      "description_zh": "退出应用程序。",
+      "source": "manual"
+    },
+    "导出文件至mct": {
+      "name_zh": "导出文件至mct",
+      "description_zh": "把模型导出为 MCT 文本文件。",
+      "source": "manual"
+    },
+    "导入Cml文件": {
+      "name_zh": "导入Cml文件",
+      "description_zh": "从 CML 文件导入模型数据。",
+      "source": "manual"
+    },
+    "导入Cml、mrb文件": {
+      "name_zh": "导入Cml、mrb文件",
+      "description_zh": "从 CML 与 MRB 文件导入模型数据。",
+      "source": "manual"
+    },
+    "导入mrb文件": {
+      "name_zh": "导入mrb文件",
+      "description_zh": "从 MRB 文件导入模型数据。",
+      "source": "manual"
+    },
+    "打开文件": {
+      "name_zh": "打开文件",
+      "description_zh": "打开模型文件。",
+      "source": "manual"
+    },
+    "更新文件至Civil NX": {
+      "name_zh": "更新文件至Civil NX",
+      "description_zh": "把当前模型文件更新（回写）到 Civil NX。",
+      "source": "manual"
+    },
+    "保存激活文档": {
+      "name_zh": "保存激活文档",
+      "description_zh": "保存当前激活的文档。",
+      "source": "manual"
+    },
+    "另存为": {
+      "name_zh": "另存为",
+      "description_zh": "把当前文档另存为新的文件。",
+      "source": "manual"
+    },
+    "单位": {
+      "name_zh": "单位",
+      "description_zh": "模型的单位设置。",
+      "source": "manual"
+    },
+    "更新Cml、mrb文件": {
+      "name_zh": "更新Cml、mrb文件",
+      "description_zh": "更新（回写）CML 与 MRB 文件。",
+      "source": "manual"
+    },
+    "自动生成倾覆参数": {
+      "name_zh": "自动生成倾覆参数",
+      "description_zh": "自动生成抗倾覆验算所需的参数。",
+      "source": "manual"
+    },
+    "运行设计": {
+      "name_zh": "运行设计",
+      "description_zh": "执行设计（验算与配筋）计算。",
+      "source": "manual"
+    },
+    "生成详细计算书": {
+      "name_zh": "生成详细计算书",
+      "description_zh": "生成详细的构件设计计算书。",
+      "source": "manual"
+    },
+    "自动生成有效截面": {
+      "name_zh": "自动生成有效截面",
+      "description_zh": "按规范自动生成有效截面（有效宽度）。",
+      "source": "manual"
+    },
+    "自动生成荷载组合": {
+      "name_zh": "自动生成荷载组合",
+      "description_zh": "按规范自动生成荷载组合。",
+      "source": "manual"
+    },
+    "生成整体计算书": {
+      "name_zh": "生成整体计算书",
+      "description_zh": "生成整体（总体）设计计算书。",
+      "source": "manual"
+    },
+    "表格提取": {
+      "name_zh": "表格提取",
+      "description_zh": "从模型或结果中提取表格数据。",
+      "source": "manual"
+    },
+    "激活": {
+      "name_zh": "激活",
+      "description_zh": "激活指定的模型或视图。",
+      "source": "manual"
+    },
+    "视角": {
+      "name_zh": "视角",
+      "description_zh": "设置模型视图的观察角度。",
+      "source": "manual"
+    },
+    "截图": {
+      "name_zh": "截图",
+      "description_zh": "截取当前视图的图像。",
+      "source": "manual"
+    },
+    "显示": {
+      "name_zh": "显示",
+      "description_zh": "控制模型中各对象的显示开关。",
+      "source": "manual"
+    },
+    "创建模型 Create Model": {
+      "name_zh": "创建模型",
+      "description_zh": "创建新的模型对象。",
+      "source": "manual"
+    },
+    "导出模型文件 Export Model File": {
+      "name_zh": "导出模型文件",
+      "description_zh": "把模型导出为文件。",
+      "source": "manual"
+    },
+    "更新模型数据 Update Model": {
+      "name_zh": "更新模型数据",
+      "description_zh": "把数据更新（写回）到模型。",
+      "source": "manual"
+    },
+    "更新分析结果 Update Analysis Results": {
+      "name_zh": "更新分析结果",
+      "description_zh": "更新（刷新）分析结果数据。",
+      "source": "manual"
+    },
+    "巧用URL中的“Info”": {
+      "name_zh": "巧用URL中的“Info”",
+      "description_zh": "手册中关于在 URL 中使用 Info 段落的说明性章节。",
+      "source": "manual"
+    },
+    "MIDAS API 里的 base URL & API Key": {
+      "name_zh": "MIDAS API 里的 base URL & API Key",
+      "description_zh": "手册中关于 MIDAS API 的 base URL 与 API Key 的说明性章节。",
+      "source": "manual"
+    },
+    "后续拓展（自行尝试）": {
+      "name_zh": "后续拓展（自行尝试）",
+      "description_zh": "手册中给出后续练习方向的说明性章节。",
+      "source": "manual"
+    },
+    "接口的通用形态": {
+      "name_zh": "接口的通用形态",
+      "description_zh": "手册中说明接口通用请求形态的说明性章节。",
+      "source": "manual"
+    }
+  }
+}

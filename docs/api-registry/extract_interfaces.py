@@ -16,6 +16,12 @@ Inputs
     The 27 chapter files.  They define the ``feature`` vocabulary, and each one
     lists the URIs it owns, so ``feature`` is attributed from the chapter files
     rather than from a hand-written chapter-name table.
+``docs/api-registry/title_zh.json``
+    The Chinese annotation glossary — ``{unwrapped title: {name_zh,
+    description_zh, source}}``.  **Optional on purpose**: a missing or malformed
+    file degrades to ``null`` annotations and the run continues
+    (:func:`load_title_zh`), because the extraction must not depend on curated data
+    that another task owns.
 
 Outputs
 -------
@@ -58,6 +64,17 @@ Design notes
   (:func:`verify_output`), and then checks the collection against the manuals'
   own ``JSON Schema`` marker counts (:func:`verify_collection`) — a wrong-but-
   plausible count is worse than a crash.  Either failure is a non-zero exit.
+* **Every row carries a Chinese annotation when one exists.**  The registry is an
+  **API catalogue**: the manuals' Chinese and English sections document the *same*
+  endpoints, so the section a row was read from says nothing about who can use it.
+  What matters is that every API can be found and understood by a Chinese-speaking
+  user and by the LLM, so each row carries ``title`` (the index cell's markdown
+  link, unwrapped) and ``description`` (``name_zh + "：" + description_zh``, or
+  ``name_zh`` alone, or ``null``), with the glossary's own ``source`` preserved as
+  ``metadata_json.annotation_source``.  Nothing is invented: an absent or
+  unmatched title emits ``null``, and :func:`verify_annotations` fails the run when
+  a *present, complete* glossary silently matched almost nothing — the same
+  silent-zero lesson as ``index_rows=0``.
 
 Usage:  ``.venv\\Scripts\\python.exe docs\\api-registry\\extract_interfaces.py``
 No third-party dependencies.  Python 3.12, full annotations.
@@ -69,6 +86,7 @@ import json
 import os
 import re
 import sys
+from collections.abc import Mapping
 
 # The pipeline runs from ``docs/api-registry``; the backend package root has to be
 # importable for ``app.core.constants``.  Importing the constants (rather than
@@ -102,6 +120,11 @@ CHAPTER_DIR = os.path.join(_REPO, "MIDAS-API-main", "docs", "manual")
 
 OUT_JSON = os.path.join(_HERE, "interfaces.json")
 OUT_REPORT = os.path.join(_HERE, "EXTRACTION_REPORT.md")
+
+#: The Chinese annotation glossary (see the module docstring).  It is **curated
+#: data owned by another task**, so it is read if it is there and skipped if it is
+#: not — :func:`load_title_zh` never raises and never blocks the run.
+TITLE_ZH_PATH = os.path.join(_HERE, "title_zh.json")
 
 # ---------------------------------------------------------------------------
 # closed sets this pipeline may emit
@@ -534,6 +557,13 @@ _TABLE_TYPE_NON_LITERALS: frozenset[str] = frozenset(
     {"string", "object", "array", "number", "integer", "boolean", "null"}
 )
 
+#: The markdown link an index table's ``接口名称`` cell holds —
+#: ``[Main Control Data](#main-control-data)``.  This is the **exact** expression
+#: ``title_zh.json`` used to key its entries (the glossary's own ``$comment``), so
+#: the lookup has to unwrap with it and nothing else: a different rule matches
+#: nothing, and it does so silently.
+_LINK_TITLE_RE = re.compile(r"\[(.*?)\]\([^)]*\)\s*$")
+
 #: Em-dash family used by the manuals for "no value".
 DASHES: frozenset[str] = frozenset({"—", "–", "-", ""})
 
@@ -579,6 +609,25 @@ SCHEMA_ATTACHMENT_FLOOR: float = 0.75
 #: rather than against the floor: two entries without a URI in a three-entry
 #: section are not evidence of a broken collector.
 SCHEMA_ATTACHMENT_MIN_HEADINGS: int = 8
+
+#: The full-width colon that joins the Chinese name to its description.  A
+#: half-width ``:`` would be a different string, and the annotation is meant to be
+#: read as one Chinese sentence (``主控数据：分析主控参数……``).
+ANNOTATION_JOIN = "："
+
+#: The glossary's own ``source`` vocabulary (``title_zh.json``'s ``$comment``:
+#: ``manual`` = the manual ships Chinese, ``glossary`` = this file supplied it).
+#: Reported, never validated: the vocabulary belongs to the glossary, and inventing
+#: a failure for a value it adds would make this pipeline its gatekeeper.
+ANNOTATION_SOURCES: tuple[str, ...] = ("manual", "glossary")
+
+#: Floor for the annotation self-check, as a share of the rows **and** of the
+#: distinct titles.  It is deliberately low (half): a complete glossary should
+#: match nearly everything, so a shortfall this large means the lookup rule and the
+#: glossary disagree — the ``index_rows=0`` failure in a new place, where the count
+#: is wrong without looking wrong.  A *draft* glossary (fewer entries than its own
+#: ``meta.titles_total``) is reported and exempt: it is incomplete, not broken.
+ANNOTATION_COVERAGE_FLOOR: float = 0.5
 
 
 # ---------------------------------------------------------------------------
@@ -865,6 +914,280 @@ def needs_table_type(uri: str) -> bool:
     if family == "design":
         return resource == "table"
     return False
+
+
+# ---------------------------------------------------------------------------
+# the Chinese annotation glossary (title_zh.json)
+# ---------------------------------------------------------------------------
+def _nonempty(value: object) -> str | None:
+    """Stripped string, or ``None`` when absent / blank / not a string."""
+    if not isinstance(value, str):
+        return None
+    stripped = value.strip()
+    return stripped or None
+
+
+def title_candidates(text: object) -> tuple[str, ...]:
+    """Lookup keys for one manual title, most faithful first.
+
+    The index table writes a title as a markdown link
+    (``[Main Control Data](#main-control-data)``) while a body heading writes it
+    bare, and ``title_zh.json`` keys its entries by the **unwrapped** form using
+    ``re.match(r"\\[(.*?)\\]\\([^)]*\\)\\s*$", t)`` — the glossary's own rule, which
+    is why it is the first candidate here and nothing else is.  The second
+    candidate only tolerates the manual's occasional padding inside the link text
+    (``[ Nodal ](#nodal)``); it cannot turn a different spelling into a match.
+
+    The expression is anchored with ``\\s*$``, so a title that merely *contains* a
+    link (``See [Nodal](#nodal) for details``) is not a link title and is looked up
+    as it stands.  Returns ``()`` when there is nothing usable.
+    """
+    if not isinstance(text, str):
+        return ()
+    value = text.strip()
+    if not value:
+        return ()
+    match = _LINK_TITLE_RE.match(value)
+    if match is None:
+        return (value,)
+    raw = match.group(1)
+    stripped = raw.strip()
+    return (raw,) if raw == stripped else (raw, stripped)
+
+
+def unwrap_title(text: object) -> str | None:
+    """The row's own ``title``: a manual title with its markdown link removed.
+
+    ``[Main Control Data](#main-control-data)`` -> ``Main Control Data``;
+    ``梁荷载(单元）[BMLD]Beam Loads`` (already bare) -> itself.  ``None`` when there
+    is nothing usable — an entry whose title cell is empty has no title, and
+    inventing one would be worse than the gap.
+    """
+    candidates = title_candidates(text)
+    return candidates[-1] if candidates else None
+
+
+def _empty_glossary(status: str, detail: str) -> dict[str, object]:
+    """A glossary that carries no titles, with the reason it carries none."""
+    return {
+        "status": status,
+        "detail": detail,
+        "path": None,
+        "titles": {},
+        "declared_total": None,
+        "complete": False,
+        "entries_without_name": 0,
+    }
+
+
+def load_title_zh(path: str = TITLE_ZH_PATH) -> dict[str, object]:
+    """Read the Chinese annotation glossary; **never raise**, never block the run.
+
+    Returns ``{"status", "detail", "path", "titles", "declared_total", "complete",
+    "entries_without_name"}``.  ``status`` is ``"ok"`` / ``"missing"`` /
+    ``"malformed"``, and the last two yield an empty glossary: every row is then
+    emitted with ``description: null`` and the pipeline continues.  That is
+    deliberate — the glossary is curated data owned by another task, and the
+    extraction must produce the same row set with or without it.
+
+    The *reason* is carried rather than swallowed so a malformed file cannot be
+    mistaken for 「nothing matched」, which is the silent case
+    :func:`verify_annotations` exists for.  An entry without a ``name_zh`` is
+    unusable (「都没有时留空，**不得**编造」) and is counted, not matched.
+
+    ``complete`` compares the usable entry count against the glossary's own
+    ``meta.titles_total``; a file that declares no total is taken at face value, so
+    the coverage floor still applies to it.
+    """
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            payload = json.load(handle)
+    except FileNotFoundError:
+        return _empty_glossary("missing", f"{path}: not found")
+    except (OSError, ValueError) as error:
+        return _empty_glossary("malformed", f"{path}: {error}")
+    if not isinstance(payload, dict):
+        return _empty_glossary("malformed", f"{path}: top level is not an object")
+    titles = payload.get("titles")
+    if not isinstance(titles, dict):
+        return _empty_glossary("malformed", f"{path}: 'titles' is not an object")
+
+    cleaned: dict[str, dict[str, object]] = {}
+    without_name = 0
+    for key, entry in titles.items():
+        if not isinstance(key, str) or not isinstance(entry, dict):
+            without_name += 1
+            continue
+        if _nonempty(entry.get("name_zh")) is None:
+            without_name += 1
+            continue
+        cleaned[key] = dict(entry)
+
+    meta = payload.get("meta")
+    declared: int | None = None
+    if isinstance(meta, dict) and isinstance(meta.get("titles_total"), int):
+        declared = int(meta["titles_total"])
+    detail = f"{path}: {len(cleaned)} usable titles"
+    if declared is not None:
+        detail += f" of {declared} declared"
+    return {
+        "status": "ok",
+        "detail": detail,
+        "path": path,
+        "titles": cleaned,
+        "declared_total": declared,
+        "complete": declared is None or len(cleaned) >= declared,
+        "entries_without_name": without_name,
+    }
+
+
+def annotation_for(
+    title: object, glossary: Mapping[str, Mapping[str, object]]
+) -> tuple[str | None, str | None, str | None]:
+    """``(description, source, matched key)`` for one manual title.
+
+    ``description`` is ``name_zh + "：" + description_zh`` when both exist,
+    ``name_zh`` alone when only that exists, and ``None`` otherwise — **never
+    invented**.  ``source`` is the glossary entry's own value (``manual`` /
+    ``glossary``), preserved so a reviewer can tell a name the manual ships from one
+    the glossary supplied (总纲 §4.2.13: ``capabilities.description`` is the
+    annotation's home).  ``matched key`` is the glossary key that actually matched,
+    which is not always the row's own ``title`` — see :func:`build_rows`.
+    """
+    for key in title_candidates(title):
+        entry = glossary.get(key)
+        # A glossary entry that is not an object is unusable, not fatal: the file is
+        # curated elsewhere, and one bad entry must not stop the whole extraction.
+        if not isinstance(entry, Mapping):
+            continue
+        name_zh = _nonempty(entry.get("name_zh"))
+        if name_zh is None:
+            return None, None, None
+        source = _nonempty(entry.get("source"))
+        description_zh = _nonempty(entry.get("description_zh"))
+        if description_zh is None:
+            return name_zh, source, key
+        return f"{name_zh}{ANNOTATION_JOIN}{description_zh}", source, key
+    return None, None, None
+
+
+def annotation_report(
+    rows: list[dict[str, object]], glossary: Mapping[str, object]
+) -> dict[str, object]:
+    """Every annotation number the report prints, computed from the rows.
+
+    Two counts matter, and they are not the same count: **rows** annotated (a
+    title shared by GET/POST/PUT/DELETE counts four times) and **distinct titles**
+    annotated (a whole product's titles can be missing while the row count still
+    looks healthy).  ``entries_never_used`` is the third signal — a complete
+    glossary whose entries are never looked up means the keys and the rows disagree
+    about how a title is spelled, which is the bug this section must make visible.
+    """
+    titles = glossary.get("titles")
+    entries: Mapping[str, object] = titles if isinstance(titles, dict) else {}
+
+    by_source: collections.Counter[str] = collections.Counter()
+    distinct: set[str] = set()
+    annotated_titles: set[str] = set()
+    matched_keys: set[str] = set()
+    for row in rows:
+        metadata = row.get("metadata_json")
+        meta = metadata if isinstance(metadata, dict) else {}
+        source = _nonempty(meta.get("annotation_source"))
+        if row.get("description") is None:
+            by_source["<none>"] += 1
+        else:
+            by_source[source or "<source missing>"] += 1
+        title = _nonempty(row.get("title"))
+        if title is not None:
+            distinct.add(title)
+            if row.get("description") is not None:
+                annotated_titles.add(title)
+        key = _nonempty(meta.get("annotation_key"))
+        if key is not None:
+            matched_keys.add(key)
+
+    total = len(rows)
+    annotated = total - by_source.get("<none>", 0)
+    #: The number of **distinct** titles, not the number of rows carrying one: the
+    #: per-title view is what catches a whole product's titles going missing while
+    #: the row count still looks healthy.
+    title_total = len(distinct)
+    rows_by_source: dict[str, int] = {
+        name: by_source.get(name, 0) for name in ANNOTATION_SOURCES
+    }
+    rows_by_source["<none>"] = by_source.get("<none>", 0)
+    for name, count in sorted(by_source.items()):
+        rows_by_source.setdefault(name, count)
+    unused = sorted(str(key) for key in entries if key not in matched_keys)
+    unmatched = sorted(title for title in distinct if title not in annotated_titles)
+    return {
+        "glossary_status": glossary.get("status"),
+        "glossary_detail": glossary.get("detail"),
+        "glossary_path": glossary.get("path"),
+        "glossary_titles": len(entries),
+        "glossary_declared_total": glossary.get("declared_total"),
+        "glossary_complete": bool(glossary.get("complete")),
+        "glossary_entries_without_name": glossary.get("entries_without_name", 0),
+        "rows": total,
+        "rows_annotated": annotated,
+        "rows_annotated_pct": round(100.0 * annotated / total, 1) if total else 0.0,
+        "rows_by_source": rows_by_source,
+        "distinct_titles": title_total,
+        "titles_annotated": len(annotated_titles),
+        "titles_annotated_pct": (
+            round(100.0 * len(annotated_titles) / title_total, 1) if title_total else 0.0
+        ),
+        "unmatched_title_examples": unmatched[:40],
+        "entries_never_used": len(unused),
+        "entries_never_used_examples": unused[:40],
+    }
+
+
+def verify_annotations(report: Mapping[str, object]) -> list[str]:
+    """Fail loudly when a *present, complete* glossary silently matched nothing.
+
+    The previous silent-zero lesson applies verbatim here: a glossary of hundreds of
+    curated titles plus an unwrap rule that disagrees with the glossary's own would
+    emit thousands of ``null`` annotations, and every count in the file would still
+    look plausible — the ``index_rows=0`` / ``anomalies=0`` shape, and the 2-schemas-
+    against-619-markers shape, in a new place.  So a match rate below
+    :data:`ANNOTATION_COVERAGE_FLOOR` is returned as a problem, which makes
+    :func:`main` exit non-zero **instead of** writing the report.
+
+    A missing, malformed or still-being-filled glossary is **not** a problem: the
+    pipeline must run without it (the module docstring), and the report names the
+    state.  Only a complete glossary that matches almost nothing is evidence of a
+    bug in this file.
+    """
+    problems: list[str] = []
+    if report.get("glossary_status") != "ok":
+        return problems
+    if not report.get("glossary_complete"):
+        return problems
+    rows = int(report.get("rows") or 0)
+    annotated = int(report.get("rows_annotated") or 0)
+    if rows and annotated < rows * ANNOTATION_COVERAGE_FLOOR:
+        problems.append(
+            "annotation: the complete glossary "
+            f"({report.get('glossary_titles')} titles) annotated only {annotated} of "
+            f"{rows} rows ({report.get('rows_annotated_pct')}% < floor "
+            f"{ANNOTATION_COVERAGE_FLOOR:.0%}) — the unwrap rule and the glossary's "
+            "keys disagree, which is the silent-zero failure this check exists for"
+        )
+    title_total = int(report.get("distinct_titles") or 0)
+    annotated_titles = int(report.get("titles_annotated") or 0)
+    if title_total and annotated_titles < title_total * ANNOTATION_COVERAGE_FLOOR:
+        problems.append(
+            f"annotation: only {annotated_titles} of {title_total} distinct titles "
+            f"matched the glossary ({report.get('titles_annotated_pct')}% < floor "
+            f"{ANNOTATION_COVERAGE_FLOOR:.0%}); the first unmatched: "
+            + ", ".join(
+                f"`{title}`"
+                for title in list(report.get("unmatched_title_examples") or [])[:5]
+            )
+        )
+    return problems
 
 
 # ---------------------------------------------------------------------------
@@ -1794,6 +2117,7 @@ def build_rows(
     records: list[dict[str, object]],
     index: ManualIndex,
     uri_feature: dict[str, str],
+    glossary: Mapping[str, Mapping[str, object]] | None = None,
 ) -> tuple[
     list[dict[str, object]],
     list[dict[str, object]],
@@ -1819,6 +2143,15 @@ def build_rows(
        `(adapter_code, interface_code)` is unique by construction rather than by
        a numeric suffix.  A record with no URI cannot be dispatched and is
        returned as a *merge* record instead of a row.
+
+    ``glossary`` is the Chinese annotation table (``title_zh.json`` -> ``titles``);
+    it is **optional**, so a missing file yields ``description: null`` on every row
+    rather than a failure.  Each row carries the unwrapped ``title`` of its primary
+    record and the annotation the glossary has for it, looked up on the record's
+    ``source_title`` first and on its ``body_title`` second — the body heading is
+    where a body-only entry (the Gen manual's unindexed design section) keeps its
+    title, and an index cell that is empty would otherwise lose the annotation the
+    body could supply.
     """
     adapter = ADAPTER_CODES[key]
     rows: list[dict[str, object]] = []
@@ -1881,6 +2214,21 @@ def build_rows(
         domain = CAPABILITY_FEATURE_DOMAIN.get(str(feature)) if feature else None
         provenance_counter[provenance] += 1
 
+        # The Chinese annotation (总纲 §4.2.13).  ``title`` is the primary record's
+        # own title unwrapped with the glossary's own rule; the annotation is looked
+        # up on the index cell first and on the body heading second, because a
+        # body-only entry (the Gen manual's unindexed design section) keeps its title
+        # there.  ``annotation_key`` records which glossary key matched, so the report
+        # can name an entry the rows never used.
+        title = unwrap_title(primary["title"]) or unwrap_title(primary.get("body_title"))
+        annotation, annotation_source, annotation_key = annotation_for(
+            primary["title"], glossary or {}
+        )
+        if annotation is None:
+            annotation, annotation_source, annotation_key = annotation_for(
+                primary.get("body_title"), glossary or {}
+            )
+
         segments = [part for part in uri.split("/") if part]
         path_slug = ".".join(slugify(part) for part in segments[1:]) or slugify(family)
         base_code = f"{adapter}.{family}.{path_slug}"
@@ -1936,6 +2284,13 @@ def build_rows(
                     "response_root_key": root_key,
                     "operation": operation,
                     "resource": resource,
+                    # The Chinese annotation (总纲 §4.2.13): ``title`` is the manual's
+                    # own title with its markdown link removed, ``description`` is
+                    # ``name_zh + "：" + description_zh`` (or ``name_zh`` alone, or
+                    # ``null`` when the glossary has nothing for this title — never an
+                    # invented string).
+                    "title": title,
+                    "description": annotation,
                     "product_scope": EMITTED_PRODUCT_SCOPE,
                     "domain": domain,
                     "feature": feature,
@@ -1950,6 +2305,12 @@ def build_rows(
                         "source_title": primary["title"],
                         "source_code": primary["code"],
                         "source_kind": primary["source"],
+                        # The Chinese annotation's provenance: ``manual`` (the manual
+                        # ships the Chinese) or ``glossary`` (``title_zh.json``
+                        # supplied it), plus the glossary key that matched.  ``None``
+                        # means the row carries no annotation at all.
+                        "annotation_source": annotation_source,
+                        "annotation_key": annotation_key,
                         "indexed": primary["indexed"],
                         "uri_recovered": primary.get("uri_recovered"),
                         "body_line": primary.get("body_line"),
@@ -3274,8 +3635,113 @@ def write_report(
     )
     add("")
 
-    # ---- 11. validation -----------------------------------------------
-    add("## 11. Self-validation")
+    # ---- 11. the Chinese annotation ------------------------------------
+    add("## 11. The Chinese annotation (`title_zh.json`)")
+    add("")
+    annotations = report_data["annotations"]  # type: ignore[assignment]
+    add(
+        "The registry is an **API catalogue**, and the manuals' Chinese and English "
+        "sections document the *same* endpoints — so the language of the section a row "
+        "was read from says nothing about who can use it.  What matters is that every "
+        "API can be found and understood by a Chinese-speaking user and by the LLM "
+        "(总纲 §4.2.13: `capabilities.description` is the annotation's documented "
+        "home).  Every row therefore carries:"
+    )
+    add("")
+    add(
+        "- `title` — the `接口名称` cell's markdown link with the link removed, "
+        "unwrapped with the **same** expression the glossary used to key its entries "
+        "(`re.match(r\"\\[(.*?)\\]\\([^)]*\\)\\s*$\", t)`);"
+    )
+    add(
+        "- `description` — `name_zh + \"：\" + description_zh` when both exist, "
+        "`name_zh` alone when only that exists, and `null` otherwise.  Nothing is "
+        "invented: a title the glossary does not carry leaves it `null`;"
+    )
+    add(
+        "- `metadata_json.annotation_source` — `manual` (the manual ships the Chinese) "
+        "or `glossary` (`title_zh.json` supplied it), so a reviewer can tell the two "
+        "apart, plus `metadata_json.annotation_key`, the glossary key that matched."
+    )
+    add("")
+    _table(
+        add,
+        ("item", "value"),
+        [
+            ("glossary file", f"`{annotations['glossary_path'] or TITLE_ZH_PATH}`"),
+            (
+                "status",
+                f"`{annotations['glossary_status']}` — {annotations['glossary_detail']}",
+            ),
+            (
+                "titles usable / declared",
+                f"{annotations['glossary_titles']} / "
+                f"{annotations['glossary_declared_total']}",
+            ),
+            ("glossary complete", "yes" if annotations["glossary_complete"] else "no"),
+            ("entries without `name_zh`", annotations["glossary_entries_without_name"]),
+            (
+                "rows annotated",
+                f"{annotations['rows_annotated']} / {annotations['rows']} "
+                f"({annotations['rows_annotated_pct']}%)",
+            ),
+            (
+                "distinct titles annotated",
+                f"{annotations['titles_annotated']} / {annotations['distinct_titles']} "
+                f"({annotations['titles_annotated_pct']}%)",
+            ),
+            ("glossary entries never used", annotations["entries_never_used"]),
+        ],
+    )
+    add("")
+    add("Annotated rows per `source`:")
+    add("")
+    _table(
+        add,
+        ("source", "rows"),
+        [
+            (f"`{name}`", count)
+            for name, count in annotations["rows_by_source"].items()
+        ],
+    )
+    add("")
+    add(
+        "`<none>` is the honest answer, not a defect: a title the glossary does not "
+        "carry leaves the annotation `null`, and the seeder then leaves "
+        "`capabilities.description` alone rather than writing a blank over a curated "
+        "value.  A **missing or malformed** glossary produces the same kind of answer — "
+        "this pipeline emits the identical row set without it, because the glossary is "
+        "curated data that another task owns."
+    )
+    add("")
+    unmatched_examples = annotations["unmatched_title_examples"]
+    if unmatched_examples:
+        add(
+            f"Titles with no glossary entry (**{annotations['distinct_titles'] - annotations['titles_annotated']}** "
+            f"distinct titles; first {len(unmatched_examples)}):"
+        )
+        add("")
+        add("```text")
+        for title in unmatched_examples:
+            add(title)
+        add("```")
+        add("")
+    unused_examples = annotations["entries_never_used_examples"]
+    if unused_examples:
+        add(
+            f"Glossary entries no row ever looked up (**{annotations['entries_never_used']}**; "
+            f"first {len(unused_examples)}) — a large number here means the glossary's "
+            "keys and the rows' titles are spelled differently:"
+        )
+        add("")
+        add("```text")
+        for key in unused_examples:
+            add(key)
+        add("```")
+        add("")
+
+    # ---- 12. validation -----------------------------------------------
+    add("## 12. Self-validation")
     add("")
     checks = report_data["verification"]  # type: ignore[assignment]
     if checks:
@@ -3291,7 +3757,10 @@ def write_report(
             "required field present, `product_scope` in the closed set, every "
             "`feature` in the closed set and consistent with `domain`, "
             "`(adapter_code, interface_code)` unique, every `request_schema_json` "
-            "parseable as a JSON object, and every row's `method` in the HTTP set."
+            "parseable as a JSON object, every row's `method` in the HTTP set, and "
+            "`title` / `description` present on every row — with a non-empty "
+            "`metadata_json.annotation_source` and a matched `annotation_key` "
+            "whenever the row carries an annotation."
         )
         add("")
         add(
@@ -3328,6 +3797,17 @@ def write_report(
             + ".  A shortfall exits non-zero **instead of** writing this report, so a "
             "wrong count can never be mistaken for a clean run."
         )
+        add("")
+        add(
+            "It also checked the **Chinese annotation** against the glossary: when "
+            "`title_zh.json` is present and complete, at least "
+            f"**{ANNOTATION_COVERAGE_FLOOR:.0%}** of the rows and of the distinct titles "
+            "must carry an annotation.  A complete glossary that matches almost nothing "
+            "means the unwrap rule and the glossary's keys disagree — the same "
+            "silent-zero shape as `index_rows=0`, in a new place.  A missing, malformed "
+            "or still-being-filled glossary is reported in §11 and does **not** fail the "
+            "run: this pipeline must emit the same rows without it."
+        )
     add("")
 
 
@@ -3356,6 +3836,11 @@ REQUIRED_ROW_FIELDS: tuple[str, ...] = (
     "response_root_key",
     "operation",
     "resource",
+    # 总纲 §4.2.13 — the unwrapped title and the Chinese annotation.  Both must be
+    # *present* (either may be ``null``): a row that lost them is a regression in
+    # this file, and a missing key is exactly the silent gap this list catches.
+    "title",
+    "description",
     "product_scope",
     "domain",
     "feature",
@@ -3503,6 +3988,17 @@ def verify_output(path: str) -> list[str]:
         operation = row.get("operation")
         if operation not in OPERATIONS:
             problems.append(f"row {index}: operation {operation!r}")
+        title = row.get("title")
+        if title is not None and (not isinstance(title, str) or not title.strip()):
+            problems.append(f"row {index}: title {title!r} is neither a string nor null")
+        description = row.get("description")
+        if description is not None and (
+            not isinstance(description, str) or not description.strip()
+        ):
+            problems.append(
+                f"row {index}: description {description!r} is neither a non-empty "
+                "string nor null"
+            )
         wrapper = row.get("request_wrapper")
         if wrapper not in (None, WRAPPER_ASSIGN, WRAPPER_ARGUMENT):
             problems.append(f"row {index}: request_wrapper {wrapper!r}")
@@ -3530,6 +4026,36 @@ def verify_output(path: str) -> list[str]:
                 json.dumps(metadata)
             except (TypeError, ValueError) as error:
                 problems.append(f"row {index}: metadata_json not serialisable: {error}")
+            # The annotation's provenance (总纲 §4.2.13).  ``description`` and the
+            # glossary key that produced it are one fact, so they must agree: a key
+            # with no description would mean an annotation was claimed and then lost.
+            # The ``source`` *value* is the glossary's vocabulary and is only
+            # reported (never validated here): inventing a failure for a value it
+            # adds would make this pipeline its gatekeeper.
+            annotation_source = metadata.get("annotation_source")
+            if annotation_source is not None and (
+                not isinstance(annotation_source, str) or not annotation_source.strip()
+            ):
+                problems.append(
+                    f"row {index}: metadata_json.annotation_source "
+                    f"{annotation_source!r} is neither a non-empty string nor null"
+                )
+            annotation_key = metadata.get("annotation_key")
+            if annotation_key is not None and not isinstance(annotation_key, str):
+                problems.append(
+                    f"row {index}: metadata_json.annotation_key {annotation_key!r}"
+                )
+            if (description is None) != (annotation_key is None):
+                problems.append(
+                    f"row {index}: description {description!r} and "
+                    f"metadata_json.annotation_key {annotation_key!r} disagree about "
+                    "whether this row is annotated"
+                )
+            if description is None and annotation_source is not None:
+                problems.append(
+                    f"row {index}: metadata_json.annotation_source "
+                    f"{annotation_source!r} on a row with no annotation"
+                )
     # ``(adapter, endpoint, method)`` is *not* unique on purpose: the shared table
     # URIs legitimately carry one row per ``TABLE_TYPE``.  The count is reported so
     # the exception stays visible instead of looking like a bug.
@@ -3550,6 +4076,16 @@ def main() -> int:
             raise SystemExit(f"{INVENTORY_PATH}: missing key {key!r}")
     uri_feature, file_feature = load_chapter_feature_map()
 
+    # The Chinese annotation glossary is read **once**, and a missing or malformed
+    # file is a degradation rather than a failure (see :func:`load_title_zh`): the
+    # row set must be the same with or without it.
+    glossary = load_title_zh()
+    titles_zh: dict[str, dict[str, object]] = glossary["titles"]  # type: ignore[assignment]
+    print(
+        f"annotation glossary: {glossary['status']} — {glossary['detail']}",
+        file=sys.stderr,
+    )
+
     manuals: dict[str, dict[str, object]] = {}
     recon: dict[str, dict[str, object]] = {}
     all_rows: list[dict[str, object]] = []
@@ -3563,7 +4099,7 @@ def main() -> int:
         recovered = attach_recovered_uris(index)
         records = entry_records(index)
         rows, merges, unknown, prov, qualified = build_rows(
-            key, records, index, uri_feature
+            key, records, index, uri_feature, titles_zh
         )
         all_rows.extend(rows)
         all_merges.extend(merges)
@@ -3652,6 +4188,32 @@ def main() -> int:
         )
 
     stats = coverage(all_rows)
+    annotations = annotation_report(all_rows, glossary)
+    print(
+        "annotation: rows_annotated={annotated}/{rows} ({rows_pct}%) "
+        "titles_annotated={titles}/{distinct} ({titles_pct}%) "
+        "by_source={by_source} entries_never_used={unused}".format(
+            annotated=annotations["rows_annotated"],
+            rows=annotations["rows"],
+            rows_pct=annotations["rows_annotated_pct"],
+            titles=annotations["titles_annotated"],
+            distinct=annotations["distinct_titles"],
+            titles_pct=annotations["titles_annotated_pct"],
+            by_source=annotations["rows_by_source"],
+            unused=annotations["entries_never_used"],
+        ),
+        file=sys.stderr,
+    )
+    if annotations["glossary_status"] != "ok" or not annotations["glossary_complete"]:
+        print(
+            "annotation WARNING: the glossary is not a complete, readable table "
+            f"({annotations['glossary_status']}, "
+            f"{annotations['glossary_titles']} of "
+            f"{annotations['glossary_declared_total']} declared titles) — the rows "
+            "carry null annotations and the coverage floor is not enforced.  This is "
+            "reported, not fatal: the pipeline must run without the glossary.",
+            file=sys.stderr,
+        )
     payload = {
         "meta": {
             "generator": "docs/api-registry/extract_interfaces.py",
@@ -3664,6 +4226,15 @@ def main() -> int:
                 "always 'unknown' — the manuals' product labels are unreliable "
                 "(《MIDAS API 对接规范》§3.5 第 15 条); real values come from live probing"
             ),
+            "annotation_policy": (
+                "总纲 §4.2.13 — every row carries 'title' (the 接口名称 cell's markdown "
+                "link, unwrapped with the glossary's own rule) and 'description' "
+                "(name_zh + '：' + description_zh, or name_zh alone, or null).  A title "
+                "the glossary does not carry leaves 'description' null: nothing is "
+                "invented, and 'metadata_json.annotation_source' names the provenance"
+            ),
+            "title_zh_path": TITLE_ZH_PATH,
+            "annotations": annotations,
             "row_identity": "(endpoint, method); interface_code folds the method in",
             "interface_code_shape": (
                 "{adapter}.{family}.{path…}[.{table_type}].{operation}"
@@ -3699,6 +4270,7 @@ def main() -> int:
 
     problems = verify_output(OUT_JSON)
     problems.extend(verify_collection(manuals))
+    problems.extend(verify_annotations(annotations))
     if problems:
         print(f"OUTPUT VERIFICATION FAILED ({len(problems)} problems):", file=sys.stderr)
         for problem in problems[:60]:
@@ -3723,6 +4295,7 @@ def main() -> int:
             "operation_table": build_operation_table(),
             "shared_endpoints": dict(_SHARED_ENDPOINTS),
             "qualified": all_qualified,
+            "annotations": annotations,
             "verification": problems,
         }
     )
