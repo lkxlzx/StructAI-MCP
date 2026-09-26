@@ -636,15 +636,42 @@ DB 驱动的能力表会静默丢掉整个 `midas_task` 工具。
   platform-owned 那一半 —— `(NULL, 'task.get')` 可被插入两次而无人察觉。
   部分唯一索引补上这一半（SQLite 与 PostgreSQL 均支持部分索引）。
 
-> **⚠️ 代码侧待修（已知偏离）：** `app/mcp/capabilities.py` 的 `_TABLE` 目前**只按
-> `code` 键控**，且 `CapabilityResolver` 在调用方指定的 adapter 与能力的
-> `adapter_code` 不一致时直接以 `CAPABILITY_NOT_SUPPORTED` 拒绝
-> （`capability.py` §16.2）。这意味着**当前代码结构上无法表达「同一能力属于多个
-> 产品」** —— 给 civil 再加一行 `node.list` 会覆盖 gen 那行。
+> **✅ 已落地（本轮）：** `_TABLE` 已改为按 `(adapter_code, code)` 键控，
+> `CapabilityResolver.resolve(adapter_code, …)` 按 adapter 查找（能返回即匹配），
+> 那条方向相反的守卫**已删除**。实机确证：三产品各注册一行 `node.list` 后，
+> 每行只服务自己的产品（§4.9）。
 >
-> 该项是**阶段 3（能力表入库）的前置条件**，需将 `_TABLE` 改为按
-> `(adapter_code, code)` 键控，并相应调整解析与查询接口。**本规范先行记录该
-> 偏离**，以免实现落后于 schema 而无人察觉。
+> 记录此条以说明**规范先行**的价值：schema 先于实现定下键控，实现落后被显式登记，
+> 而不是等它在生产里以「静默走错产品」的形式暴露。
+
+### 4.2.13 数据库表达不了的能力字段（`constraints_json` 扩展约定）
+
+能力表入库后，`capabilities` / `tool_interfaces` 的列**不能**表达 `Capability` 的全部字段。
+实测缺口与落位如下 —— **这是一条新约定，此前 `capabilities.constraints_json`
+在整个仓库没有任何消费者**：
+
+| `Capability` 字段 | 无对应列，落位于 |
+|---|---|
+| `dispatch` | `constraints_json.dispatch`（能力级）→ `metadata_json.dispatch`（接口级）→ **推导** |
+| `adapter_action` / `task_type` | `constraints_json` → `metadata_json` |
+| `notes` | `constraints_json.notes` → `capabilities.description` → `metadata_json.notes` |
+| `request_schema`（**无接口行的能力**） | `constraints_json.request_schema` |
+
+**裁决一：`constraints_json` 是能力级的扩展容器。** 不认识的键**忽略而非报错**
+（它是扩展位，不是封闭结构）。真实的约束键与扩展键**共存**，加载器不得清空。
+
+**裁决二：每能力专属的值必须放 `constraints_json`，绝不放 `metadata_json`。**
+`tool_interfaces` 的一行可被**多个能力共享**（实测 `result.table` 服务 4 个能力），
+接口级的值因此是共享的；把能力级的值写进去会**互相覆盖**。
+
+**裁决三：结构性缺口必须记录，不得靠 `metadata_json` 绕过。**
+有 12 个平台侧 `midas_query` 能力**没有接口行**（`tool_interfaces` 要求
+`method`/`endpoint` 非空），因此它们的 `request_schema` 无处可放 —— 这正是
+`constraints_json.request_schema` 存在的原因。**若未来新增同类能力，同样走这里。**
+
+**裁决四：加载器只 upsert，从不 prune。** 数据库里没有的行**保留静态声明**，
+这样 `reset_capabilities()` 仍有意义、离线套件仍不依赖数据库。
+因此「数据库能取代代码」成立于**数据库包含的行**；prune 模式未实现（破坏性）。
 
 ## 4.3 统一响应信封
 
@@ -1003,6 +1030,70 @@ assistant:execute   → engineer 及以上，且必须通过 §5 高风险确认
 
 §4.9.2 用到的四个码**全部已在 §4.4 封闭集合内**，本框架不新增任何错误码、
 不新增 ID 前缀、不新增权限码。
+
+### 4.9.5 闸 4（产品范围）的判定细节
+
+**裁决：闸 4 在解析链中位于最后一步**，即 `CapabilityResolver.resolve()` 返回前的
+最后一件事。理由：它需要**已选定的实例**（闸 1 之后才存在），且必须在任何
+payload 校验与适配器调用**之前**。因此一个被返回的 `Capability` 已通过闸 1–4；
+权限（§4.8.2）仍在其后的授权器接缝里。
+
+**实例产品的判定**：两个来源，依次为
+
+1. 已注册适配器对象的 `product` 属性（`MidasNxAdapter.product` → `MidasProduct`）。
+   **不得**解析 `AdapterMetadata.name`——那是字符串猜测。
+2. `adapter_code` 的约定形式 `f"midas_{product.value}"`（§4.9.1）。
+   两者都经 `PRODUCT_SCOPE_BY_PRODUCT` 映射，**不得**假定二者同名：
+   `midas_cdn` → `"cdn"` → **`"designer"`**。
+
+**判不出实例产品时的处理，取决于这道闸有没有判定要做：**
+
+| `product_scope` | 有判定要做？ | 判不出产品时 |
+|---|---|---|
+| `gen` / `civil` / `designer` | 是 | **拒绝**（`instance_product_undeterminable`） |
+| `both` / `unknown` | 否（容纳一切产品） | **放行 + 警告** |
+
+> **裁决：不得把「判不出产品」一律当作拒绝。**
+> `both`/`unknown` 本就容纳一切产品，不因判不出产品而拒绝——否则一个
+> `adapter_code` 不合约定且无 `product` 属性的自定义适配器会**全线不可用**，
+> 连出厂即为 `unknown` 的全部行都调不通。但配置缺陷仍须可见，故改为**警告**：
+> 一旦该能力的 `product_scope` 收敛为具体产品，该适配器将无法调用它。
+>
+> **让缺陷以警告可见，好过让它以「什么都调不通」可见**，且不放松任何真正需要判定的场合。
+
+**闸 4 的拒绝原因（封闭集合，实现须逐字使用）：**
+
+| `reason` | 含义 |
+|---|---|
+| `product_scope_mismatch` | 能力的 `product_scope` 与本实例产品不符 |
+| `instance_product_undeterminable` | 有判定要做，但判不出实例产品 |
+| `product_scope_unrecognised` | 防御性：`product_scope` 取值不在封闭集合内（**不得**因此放行） |
+
+拒绝时 `details` 恰好五个键：
+`{reason, capability, product_scope, instance_product, adapter_code}`。
+错误码一律 `CAPABILITY_NOT_SUPPORTED`。
+
+**`unknown` 的警告文案（规范原文，实现须逐字使用）：**
+
+> 能力 {code} 的产品适用范围尚未对实机验证（product_scope='unknown'）：按《总纲》§4.2.11 的裁决**乐观放行**（unverified 警告）；若本次调用失败，可能表示该能力在 {product} 上并不存在 —— 手册的产品标注不可信（《对接规范》§3.5 第 15 条：手册声明「Civil 专属」的 47 个端点中，32 个在 Gen NX 上同样应答）。
+
+> **注意：该文案中 `{code}` / `{product}` 两侧没有反引号。** 规范与实现必须逐字一致，
+> 否则一致性检查会把「文案漂移」误报成「未实现」，久而久之没人再信任检查。
+
+**警告必须到达全部四个 Tool。** 闸 4 在解析器里对四个 Tool 一视同仁，但解析器
+**不能**写信封——只有 dispatcher 在 `resolve()` **之后**建 `DispatchContext` 时能写。
+因此这条警告由 **dispatcher 统一提取一次**，**不得**在四个 Tool 模块里各写一遍
+（漏掉任何一个 Tool 都不符合 §4.2.11）。
+
+### 4.9.6 闸 4 与检索：`domain` / `feature` 过滤
+
+`midas_query target=capabilities` 必须支持按 `domain`（8）与 `feature`（27）过滤，
+两者取值都取自 §4.2.11 的封闭集合，越界一律 `VALIDATION_ERROR`。
+
+**裁决：过滤参数是**检索能力**，不是可选装饰。** 抽取产出实测约 2,497 行、
+688 个唯一端点——**LLM 无法在 688 个端点里做选择，但可以先选 8 个域、再选 27 个功能**。
+因此 `domain`/`feature` 必须出现在对外发布的过滤 schema 里（含 `enum` 与说明），
+而不是只存在于数据库列中。
 
 ---
 

@@ -1277,6 +1277,57 @@ adapter=midas_cdn     -> GET https://moa-engineers.midasit.cn/cdn/db/NODE
    「返回另一个产品的数据且 `success=True`」——只看信封抓不到，必须断言 URL。
 
 > 完整方案见 `docs/多产品多租户路由框架_v1.0.md`；裁决见总纲 §4.9。
+### 11.5.16 🔴 云端中继是**转发**的：`client does not exist` 与会话判据
+
+**观测。** 三产品连通验证（§11.1.2）之后，Civil NX 与 Civil Designer 的**所有**数据端点开始返回：
+
+```
+GET https://moa-engineers.midasit.cn:443/civil/db/NODE
+ -> 404  {"error":{"message":"client does not exist"}}
+```
+
+`/db/UNIT`、`/db/PJCF` 同样 404。而**几十分钟前同样的 URL 是 200**。
+
+**这不是配置错误，也不是我们的代码问题。** 云端中继（`moa-engineers.midasit.cn`）是
+**转发**的：它把请求转给一个**用该 MAPI-Key 注册到云端的、正在运行的 MIDAS 实例**。
+那个实例下线（关闭软件／断网／会话过期）后，中继上就没有可转发的目标，
+于是对**一切**路径返回 `404 client does not exist`。
+
+**对会话判据的影响 —— 这一条要紧：**
+
+| 判据 | 本机回环（`localhost:3030`） | 云端中继（`moa-engineers…`） |
+|---|---|---|
+| 目标进程不在 | TCP 连接被拒 / 超时（**传输层失败**） | **HTTP 404 + JSON 错误体**（应用层失败） |
+| `/mapikey/verify` | 连接失败 | **`status: "disconnected"`**（能应答，但报未连接） |
+| `/db/*` | 连接失败 | `404 client does not exist` |
+
+**实测确认我们的实现是对的**（§11.5.14 那条「服务端无法区分会话冻结与网络黑洞」的修正在此仍然成立）：
+
+```
+Civil NX（云端中继）
+  health_check : MIDAS_CONNECTION_FAILED  "MIDAS 产品未连接（status='disconnected'）"
+  probe_alive  : INTERFACE_NOT_FOUND      "GET /db/UNIT: client does not exist"
+  diagnosis    : state=service_down  confirmed=True  usable=False
+```
+
+`health_check` 读 `/mapikey/verify` 的 `status` 字段，**在云端接入下确实能识别「目标实例不在」**，
+而且 `confirmed=True` —— 因为中继明确回答了，不是黑洞。这与回环接入下的
+`ConnectError`/`ReadTimeout` 是**两条不同的判据路径**，但归到同一个 `service_down` 状态，
+方向是对的。
+
+**三条可复用的结论：**
+
+1. **云端接入下「实例不在」是应用层错误，不是传输层错误。** 不要把它当作网络问题重试 ——
+   `404 client does not exist` 重试一万次也是 404。
+2. **`/mapikey/verify` 在云端接入下是可靠的在线判据**（回环接入下它只证明进程在，
+   不证明项目已打开，见 §11.5.12）。
+3. **实机验证必须确认目标实例在线**，否则会得到一片与代码无关的失败。
+   本次就出现了这种情况：路由、能力解析、派发全部正确，失败发生在中继转发那一步。
+
+> **注意与 §11.5.14 的区别**：那条讲的是**回环**接入下服务端无法区分「会话冻结」与
+> 「网络黑洞」。本条讲的是**云端**接入下中继会明确告诉你目标不在。两者不矛盾：
+> 判据不同，结论相同（`service_down`），但云端那条是 `confirmed=True`。
+
 ## 11.6 ✅ 已解决：位移为零是建模错误，不是 MIDAS 异常
 
 ### 根因：`/db/CNLD` 的 `Assign` 外层键才是节点号

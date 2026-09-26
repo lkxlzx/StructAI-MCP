@@ -3391,8 +3391,35 @@ POST /...
 >
 > **同一 `capability_code` 可按 adapter 各存一行** —— `node.list` 在 gen / civil /
 > designer 上各一行，互不覆盖。这是多产品扩展所需的键。
-> ⚠️ 代码中的 `_TABLE` 目前只按 `code` 键控，**尚不能表达这一点**；将其改为按
-> `(adapter_code, code)` 键控是阶段 3（能力表入库）的前置项。
+> ✅ **已落地（本轮）**：代码中的 `_TABLE` 已改为按 `(adapter_code, code)` 键控，
+> 那条「调用方 adapter 与能力 adapter 不一致即拒绝」的守卫**已删除** ——
+> 查找本身按 adapter 做，能返回即匹配。实机确证见总纲 §4.9。
+
+### 16.1.1 解析顺序（闸 1–4）
+
+**路由链是「实例 → 适配器 → 能力」，不是反向**（总纲 §4.9.1）。
+`resolve()` 内部的顺序，以及每道闸失败时的错误码：
+
+| 顺序 | 闸 | 检查 | 失败码 |
+|---|---|---|---|
+| 1 | — | 定位 Tool 与能力（按 `adapter_code` 键控） | `CAPABILITY_NOT_SUPPORTED` |
+| 2 | 闸 3 | 该能力是否 `enabled` | `CAPABILITY_NOT_SUPPORTED` |
+| 3 | — | adapter 已注册 / 可用 / （可选）已连接 | `ADAPTER_NOT_FOUND` / `ADAPTER_UNAVAILABLE` |
+| 4 | **闸 4** | `product_scope` 是否容纳本实例产品（总纲 §4.9.5） | `CAPABILITY_NOT_SUPPORTED` |
+| — | 闸 5 | 权限（总纲 §4.8.2）—— 在 dispatcher 的授权器接缝，不在本函数内 | `PERMISSION_DENIED` |
+
+**闸 4 必须是本函数返回前的最后一步**：它需要已选定的实例（闸 1 之后才存在），
+且必须在任何 payload 校验与适配器调用之前。因此**一个被返回的 `Capability`
+已通过闸 1–4**。
+
+**闸 1（选实例）不在本函数内** —— 它在 `app/mcp/routing.py::select_adapter_code`，
+产出 `adapter_code` 后交给本函数。能力解析因此**不可能再反推实例**（总纲 §4.9.1）。
+
+> **闸 4 的 `unverified` 警告必须到达全部四个 Tool。** 本函数可以判定，
+> 但**不能**写信封；只有 dispatcher 在 `resolve()` **之后**建 `DispatchContext`
+> 时能写。故该警告由 **dispatcher 统一提取一次**
+> （`CapabilityResolver.product_scope_warnings`），**不得**在四个 Tool 模块里各写一遍。
+> 漏掉任何一个 Tool 都不符合总纲 §4.2.11。
 
 ## 16.2 解析失败的错误码
 
@@ -3405,6 +3432,65 @@ POST /...
 | 二级 Interface 未映射 | `INTERFACE_NOT_FOUND` |
 
 > 解析失败时**禁止**回退到「直连 Endpoint」或「跳过能力校验」。
+
+## 16.3 能力表入库（DB 加载器与播种器）
+
+能力表的**静态声明**是出厂默认与离线套件的依赖；**数据库**是运行时的真源。
+两者的桥由两个模块构成，**职责不重叠**：
+
+| 模块 | 方向 | 职责 |
+|---|---|---|
+| `app/db/seed_interfaces.py` | `interfaces.json` → DB | 把抽取产出**分类**成 `(tool, resource, action)` 并写 `tools`/`tool_interfaces`/`capabilities` |
+| `app/mcp/capability_loader.py` | DB → 内存能力表 | 读回上述三表，构造 `Capability`，交给 `register_capability` |
+
+### 16.3.1 加载器（`capability_loader`）
+
+* 主入口 `load_capabilities(...)` 是 **async**；同步调用点必须用 `load_capabilities_now(...)`
+  （Session 在工作线程**内部**打开，`Session` 非线程安全）。
+* **只 upsert，从不 prune**（总纲 §4.2.13 裁决四）。
+* **单行失败绝不抛出**：计数、跳过、继续。跳过原因取自封闭集合
+  （`capability_disabled` / `interface_disabled` / `tool_row_missing` / `unknown_tool` /
+  `underivable_dispatch` / `missing_required_field` / `duplicate_slot` /
+  `registration_rejected` / `malformed_row`）。
+* **`dispatch` 没有对应的数据库列**，按总纲 §4.2.13 的优先级取：
+  `constraints_json.dispatch` → `metadata_json.dispatch` → **推导** → 推不出则跳过并计数。
+  **推导不出时不得猜一个值。**
+
+> **验收判据（已达成）：** 把静态声明的 155 行 `midas_gen` 灌进数据库再读回，
+> **逐字段 diff 每一行必须零差异**。种子数据须刻意省略会让该测试成为同义反复的东西
+> （`tool_interfaces.tool_id` 置 NULL、`metadata_json` 不含 outer-key 键、
+> 任何地方都不放 `dispatch` 键），从而强制 `tool` 只能来自 `capabilities.tool_id`、
+> outer-key 只能靠推导、`dispatch` 只能靠规则表复现。
+
+### 16.3.2 播种器（`seed_interfaces`）
+
+**这是 API 层到 MCP 层的映射，是本项目里唯一需要「设计」而非「转换」的一步。**
+映射必须**显式**（一张可评审的表）、**从封闭集合派生**、
+**映射不了的行跳过并计数**，**绝不猜**。跳过原因取自封闭集合
+（`unsupported_operation` / `unsupported_method` / `execute_endpoint_unmapped` /
+`unknown_family` / `missing_required_field` / `malformed_row`）。
+
+两条实测得出的映射约束：
+
+1. **`midas_execute` 按端点映射，不按 operation 映射。**
+   加载器的 `derive_dispatch` 规则从封闭的 `EXECUTE_DISPATCH_TABLE` 判定它，
+   而抽取产出的 operation 集合（`create|read|update|delete|execute|query`）
+   与那张表的 action **零重叠**。因此播种器按端点查表，
+   且**不使用 `constraints_json.dispatch` 覆盖** —— 那会让播种器断言一个
+   加载器的规则表**推导不出**的 dispatch。
+2. **`resource` 必须复用静态声明自己的别名**（运行时从 `capability_rows()` 派生），
+   否则 `node.get`/`load.create` 落不到静态槽位上。`/post/TABLE` 这类**共享 URI**
+   必须用抽取时铸进 `interface_code` 的 `TABLE_TYPE` slug 作 resource，
+   否则 296 行会塌缩成一个能力。
+
+> **⚠️ 已知缺口：抽取的 `request_schema_json` 不是 MCP 的 payload schema。**
+> 实测 604 个里 594 个是**手册的请求示例**，而 §6.2/§9.3 校验的是 MCP payload。
+> 把示例当 schema 会让**每一个不等于那个示例的调用**都被拒。
+> 因此播种器**不写该列**（保持 NULL），把值留在
+> `metadata_json.extraction_request_schema`。
+> **后果：播种行在 `request_schema` 上比静态声明宽松。** 这是**有意的**——
+> 宁可宽松，不可用一个示例冒充 schema。要严格对齐，需要一次**真正的 payload schema 抽取**，
+> 不是播种器能补的。
 
 ---
 

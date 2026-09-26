@@ -13,8 +13,10 @@ Authoritative sources
   危险语义), §4.1 (``Assign`` 外层键语义), §5 (``/info`` 自省), §11.5 (写操作实机
   结论), §11.6 (CNLD 外层键是节点号).
 * 《StructAI 架构边界与融合规范 v1.0 总纲》(**总纲**) §0.4 (唯一真源),
-  §4.1.3 (ID 前缀封闭集合), §4.2.1 (``tasks.status``), §4.3.2 (MCP 信封),
-  §4.4 (错误码封闭集合), §4.6.1 (MCP 单数资源名), §4.8.2 (权限码封闭集合).
+  §4.1.3 (ID 前缀封闭集合), §4.2.1 (``tasks.status``), §4.2.11 (能力三层分类
+  ``product_scope`` / ``domain`` / ``feature``，含 ``unknown`` 乐观放行的裁决),
+  §4.3.2 (MCP 信封), §4.4 (错误码封闭集合), §4.6.1 (MCP 单数资源名),
+  §4.8.2 (权限码封闭集合), §4.9.2 (四道闸).
 
 Why this table exists
 ---------------------
@@ -65,6 +67,8 @@ from app.adapters.errors import AdapterError
 from app.adapters.midas_gen.adapter import outer_key_means as _adapter_outer_key_means
 from app.adapters.midas_gen.adapter import resource_of
 from app.core.constants import (
+    CAPABILITY_DOMAIN_VALUES,
+    CAPABILITY_FEATURE_VALUES,
     MIDAS_CLIENT_STATUS_VALUES,
     MCP_SERVER_STATUS_VALUES,
     PROJECT_STATUS_VALUES,
@@ -328,6 +332,21 @@ class Capability:
     #: that carry several logical operations (``/post/TABLE``) encode the
     #: discriminator (V2.1 §17.4).
     interface_code: str = ""
+    # --- three-layer classification (总纲 §4.2.11) --------------------------
+    #: ``tool_interfaces.product_scope`` — which MIDAS product serves this
+    #: capability: ``gen`` / ``civil`` / ``designer`` / ``both`` / ``unknown``.
+    #: The default is ``unknown``, which means "not yet verified against a live
+    #: instance" — an explicit state, not a guess, because the manuals' product
+    #: labels are unreliable (对接规范 §3.5 第 15 条: of 47 endpoints declared
+    #: "Civil-only", 32 answer on Gen too).  ``unknown`` is admitted
+    #: **optimistically**, carrying an ``unverified`` warning (总纲 §4.2.11).
+    product_scope: str = "unknown"
+    #: ``tool_interfaces.domain`` — business domain, the frontend's first-level
+    #: menu and the LLM's first filter (总纲 §4.2.11).
+    domain: str | None = None
+    #: ``tool_interfaces.feature`` — manual chapter, the frontend's second-level
+    #: menu and the LLM's second filter (总纲 §4.2.11).
+    feature: str | None = None
     #: Free-text provenance / warning shown to callers.
     notes: str = ""
 
@@ -396,6 +415,17 @@ _QUERY_FILTERS: Final[dict[str, dict[str, Any]]] = {
     },
     "capabilities": {
         "title": "capabilities filter",
+        # 总纲 §4.2.11：三层分类是**检索**手段，不只是元数据。683 个端点里挑一个
+        # 不可行，但「先选 8 个 domain 之一、再选 27 个 feature 之一」可行 ——
+        # 两级筛选各是一次廉价判断，因此 domain/feature 是**封闭集合**上的枚举，
+        # 让 LLM 直接从 schema 读到合法取值，而不是猜。
+        "description": (
+            "按三层分类筛选能力（总纲 §4.2.11）：product_scope → domain → feature。"
+            "domain 是 8 个业务域，feature 是 27 个手册章节（每个 feature 恰好属于一个"
+            "domain）。检索路径是**两级**的：683 个端点无法一次挑出，但先按 domain（8 选 1）"
+            "再按 feature（27 选 1）可以；两个取值都是封闭集合，越界取值一律 "
+            "VALIDATION_ERROR。"
+        ),
         "type": "object",
         "additionalProperties": False,
         "properties": {
@@ -405,6 +435,21 @@ _QUERY_FILTERS: Final[dict[str, dict[str, Any]]] = {
             "enabled": {"type": "boolean"},
             "software": {"type": "string"},
             "version": {"type": "string"},
+            "domain": {
+                "type": "string",
+                "enum": list(CAPABILITY_DOMAIN_VALUES),
+                "description": (
+                    "业务域（总纲 §4.2.11 封闭 8 值）：前端一级菜单、LLM 第一层筛选。"
+                ),
+            },
+            "feature": {
+                "type": "string",
+                "enum": list(CAPABILITY_FEATURE_VALUES),
+                "description": (
+                    "手册章节（总纲 §4.2.11 封闭 27 值，api_chapters/01..27）："
+                    "前端二级菜单、LLM 第二层筛选；每个 feature 恰好属于一个 domain。"
+                ),
+            },
         },
     },
     "model": {
@@ -1393,6 +1438,11 @@ def capability_payload(capability: Capability) -> dict[str, Any]:
 
     ``request_schema`` is deliberately **excluded**: it is a second-validation
     artefact (V2.1 §6.2), not something the model needs in a capability listing.
+
+    The three-layer classification (总纲 §4.2.11) **is** included, because it is
+    the only way a caller can narrow ~683 endpoints: ``domain`` (8 values) then
+    ``feature`` (27) then ``product_scope`` to know whether the endpoint applies
+    to the connected product at all.
     """
     return {
         "code": capability.code,
@@ -1407,6 +1457,14 @@ def capability_payload(capability: Capability) -> dict[str, Any]:
         "response_root_key": capability.response_root_key,
         "outer_key_means": capability.outer_key_means,
         "outer_key_kind": capability.outer_key_kind,
+        # --- three-layer classification (总纲 §4.2.11) --------------------
+        #: ``gen`` / ``civil`` / ``designer`` / ``both`` / ``unknown``; the
+        #: shipped default is ``unknown`` and is admitted optimistically.
+        "product_scope": capability.product_scope,
+        #: Business domain (closed 8) — the LLM's first filter.
+        "domain": capability.domain,
+        #: Manual chapter (closed 27) — the LLM's second filter.
+        "feature": capability.feature,
         "enabled": is_enabled(capability.code),
         "notes": capability.notes,
     }

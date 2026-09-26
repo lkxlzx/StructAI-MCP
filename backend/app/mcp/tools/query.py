@@ -34,6 +34,7 @@ that one table (V2.1 §6.1 + 总纲 §0.4), so they cannot drift.
 from typing import TYPE_CHECKING, Any, Final, Mapping
 
 from app.adapters.base import AdapterResult, QueryRequest
+from app.core.constants import CAPABILITY_DOMAIN_VALUES, CAPABILITY_FEATURE_VALUES
 from app.core.errors import ErrorCode
 from app.mcp.capabilities import (
     DISPATCH_GET_TABLE,
@@ -207,7 +208,20 @@ SCHEMA: dict[str, Any] = build_schema()
 async def handle(
     arguments: Mapping[str, Any], context: DispatchContext
 ) -> AdapterResult:
-    """Route one validated ``midas_query`` call (V2.1 §7)."""
+    """Route one validated ``midas_query`` call (V2.1 §7).
+
+    Gate 4 (总纲 §4.9.2 闸 4 / §4.2.11) is decided by the resolver, not here; what
+    this handler does is **report** it.  A capability whose product applicability
+    has not been verified against a live instance (``product_scope='unknown'``) is
+    admitted **optimistically**, so the caller must receive the ``unverified``
+    warning with the answer — a silently admitted capability is exactly the kind
+    of invisible assumption 总纲 §4.2.11 refuses to make.
+    """
+    # 总纲 §4.3.2: `DispatchContext.warnings` is the one channel the dispatcher
+    # merges into the MCP envelope's `warnings`, so the warning is raised here.
+    for warning in context.resolver.product_scope_warnings(context.capability):
+        context.warn(warning)
+
     capability = context.capability
     dispatch = capability.dispatch
 
@@ -240,12 +254,36 @@ def _capabilities_result(
     Answers from :mod:`app.mcp.capabilities` rather than from the adapter, because
     V2.1 §16.1 makes ``capabilities`` + ``tool_interfaces`` the authoritative
     source and the adapter's ``capabilities()`` mirror is only a cross-check.
+
+    Filters: ``adapter`` / ``resource`` / ``action`` / ``enabled`` as before, plus
+    the two classification layers of 总纲 §4.2.11 — ``domain`` (closed 8) and
+    ``feature`` (closed 27).  They exist for **retrieval**: with ~683 endpoints an
+    LLM cannot pick one out of the list, but it can pick a domain and then a
+    feature — two cheap decisions over two closed sets instead of one impossible
+    one.  Both values are validated here as well as in the published schema,
+    because the fallback validator (used when ``jsonschema`` is absent) does not
+    descend into the ``query`` property's ``anyOf`` branches; an out-of-set value
+    is ``VALIDATION_ERROR``, never a silently empty list.
     """
     query = as_dict(arguments.get("query"))
     wanted_adapter = query.get("adapter") or arguments.get("adapter")
     wanted_resource = query.get("resource")
     wanted_action = query.get("action")
     wanted_enabled = query.get("enabled")
+    wanted_domain = query.get("domain")
+    wanted_feature = query.get("feature")
+
+    for name, value, allowed in (
+        ("domain", wanted_domain, CAPABILITY_DOMAIN_VALUES),
+        ("feature", wanted_feature, CAPABILITY_FEATURE_VALUES),
+    ):
+        if value is not None and value not in allowed:
+            return AdapterResult.failed(
+                ErrorCode.VALIDATION_ERROR,
+                f"未知的 {name}={value!r}；总纲 §4.2.11 的封闭集合：{sorted(allowed)}。"
+                "三层分类 product_scope -> domain -> feature 的三列都是封闭集合，"
+                "越界取值一定是拼写错误（返回空列表会让它看起来像「没有能力」）。",
+            )
 
     rows = []
     for row in capability_rows():
@@ -254,6 +292,10 @@ def _capabilities_result(
         if wanted_resource is not None and row.resource != wanted_resource:
             continue
         if wanted_action is not None and row.action != wanted_action:
+            continue
+        if wanted_domain is not None and row.domain != wanted_domain:
+            continue
+        if wanted_feature is not None and row.feature != wanted_feature:
             continue
         if wanted_enabled is not None and is_enabled(row.code) != bool(wanted_enabled):
             continue

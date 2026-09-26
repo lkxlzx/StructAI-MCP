@@ -579,6 +579,19 @@ class ToolDispatcher:
             arguments=args,
         )
 
+        # Gate 4's advisory warnings belong to **every** tool, not just
+        # ``midas_query``.  The resolver applies the product-scope gate for all
+        # four, but it cannot write to the envelope — only a handler can, and the
+        # dispatcher builds the context *after* ``resolve()``.  So the warnings
+        # are lifted here, once, rather than repeated in each of the four tool
+        # modules (总纲 §4.2.11: ``unknown`` is admitted optimistically **with**
+        # an ``unverified`` warning, so a tool that drops it is not compliant).
+        # ``midas_task`` yields ``[]`` — gate 4 is skipped for platform-owned rows.
+        for scope_warning in self._resolver.product_scope_warnings(
+            capability, target_adapter
+        ):
+            context.warn(scope_warning)
+
         handler = TOOL_HANDLERS.get(tool_name)
         if handler is None:  # pragma: no cover - TOOL_NAMES implies a handler
             return build_envelope(

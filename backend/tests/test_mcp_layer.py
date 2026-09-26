@@ -21,10 +21,13 @@ unreachable
 per-``midas_client_id`` serialization = 1           V2.1 §26.5 / 对接规范 §2.5.2
 no auto-retry after a write timeout                 V2.1 §26.5 / 对接规范 §3.5 第 5 条
 ``target=capabilities`` returns the table           裁决 C-7
+``product_scope`` filters per instance (闸 4)       总纲 §4.9.2 闸 4 / §4.2.11
+``unknown`` is admitted with a warning              总纲 §4.2.11
 =================================================  ==============================
 """
 
 import asyncio
+import dataclasses
 import json
 from typing import Any
 
@@ -34,9 +37,17 @@ from app.adapters.base import AdapterLifecycle, AdapterResult
 from app.adapters.errors import AdapterError
 from app.adapters.mock.adapter import MockAdapter
 from app.adapters.registry import AdapterRegistry
-from app.core.constants import TaskStatus, TaskType
+from app.core.constants import (
+    CAPABILITY_DOMAIN_VALUES,
+    CAPABILITY_FEATURE_VALUES,
+    PRODUCT_SCOPE_BY_PRODUCT,
+    MidasProductScope,
+    TaskStatus,
+    TaskType,
+)
 from app.core.errors import ErrorCode
 from app.core.ids import is_valid_id
+from app.core.midas_config import MidasProduct
 from app.mcp import capabilities as capabilities_module
 from app.mcp import dispatcher as dispatcher_module
 from app.mcp import server as server_module
@@ -51,12 +62,13 @@ from app.mcp.capabilities import (
     Capability,
     actions_for,
     capability_table,
+    query_filter_schemas,
     register_capability,
     reset_capabilities,
     resolve,
     resources_for,
 )
-from app.mcp.capability import CapabilityResolver
+from app.mcp.capability import CapabilityResolver, instance_product_scope
 from app.mcp.context import DispatchContext
 from app.mcp.dispatcher import (
     ENVELOPE_FIELDS,
@@ -160,6 +172,32 @@ def seeded() -> Env:
 
 def issue_text(envelope: dict[str, Any]) -> str:
     return json.dumps(envelope["errors"], ensure_ascii=False)
+
+
+def classified_row(
+    adapter_code: str,
+    code: str = "node.list",
+    *,
+    scope: str = "unknown",
+    domain: str | None = None,
+    feature: str | None = None,
+) -> Capability:
+    """Register one row with an explicit three-layer classification.
+
+    总纲 §4.2.11 ships every row as ``product_scope='unknown'`` / ``domain=None`` /
+    ``feature=None`` — filling them in is the classification loader's job.  A test
+    that needs a *known* scope or domain therefore has to write the row it wants;
+    ``reset_capabilities()`` puts the static declaration back afterwards.
+    """
+    row = dataclasses.replace(
+        capability_table("midas_gen")[code],
+        adapter_code=adapter_code,
+        interface_code=f"{adapter_code}.{code}",
+        product_scope=scope,
+        domain=domain,
+        feature=feature,
+    )
+    return register_capability(row, replace=True)
 
 
 # ===========================================================================
@@ -752,6 +790,258 @@ def test_each_adapter_reaches_its_own_product_url() -> None:
 
 
 # ===========================================================================
+# 5b. 闸 4 —— 产品范围过滤（总纲 §4.9.2 闸 4 / §4.2.11）
+#
+# 两根轴，**不是同一根**：能力的 ``product_scope`` 是 ``gen / civil / designer /
+# both / unknown``，实例的产品是 ``MidasProduct``（``gen / civil / cdn``）。
+# 两者的连接只有一处 —— ``PRODUCT_SCOPE_BY_PRODUCT``（总纲 §4.2.11 的唯一真源）。
+# ===========================================================================
+def test_gate4_refuses_a_civil_capability_on_a_gen_instance() -> None:
+    """``product_scope='civil'``：在 midas_gen 上拒绝，在 midas_civil 上可用。"""
+    registry = AdapterRegistry()
+    registry.register(MockAdapter(code="midas_gen", software="MIDAS Gen"))
+    registry.register(MockAdapter(code="midas_civil", software="MIDAS Civil"))
+    resolver = CapabilityResolver(registry)
+    try:
+        classified_row("midas_gen", scope="civil")
+        classified_row("midas_civil", scope="civil")
+
+        with pytest.raises(AdapterError) as excinfo:
+            resolver.resolve("midas_gen", TOOL_QUERY, "list", "node")
+        error = excinfo.value
+        assert error.code == ErrorCode.CAPABILITY_NOT_SUPPORTED.value
+        # 总纲 §4.4：**不新增错误码**，闸 4 复用 CAPABILITY_NOT_SUPPORTED；
+        # 具体情况全部落在 details 里。
+        assert error.details == {
+            "reason": "product_scope_mismatch",
+            "capability": "node.list",
+            "product_scope": "civil",
+            "instance_product": "gen",
+            "adapter_code": "midas_gen",
+        }
+
+        # …同一个能力在它声明的产品上照常可用。
+        allowed = resolver.resolve("midas_civil", TOOL_QUERY, "list", "node")
+        assert allowed.product_scope == "civil"
+    finally:
+        reset_capabilities()
+
+
+def test_gate4_refusal_reaches_the_envelope_with_the_details() -> None:
+    """闸 4 的拒绝经 dispatcher 变成 ``CAPABILITY_NOT_SUPPORTED`` 信封。
+
+    拒绝发生在**发请求之前**：连 Gen 却调 Civil 专属端点，MIDAS 只会回 404，
+    而 404 在信封里看起来像「端点不存在」，不是「该能力不适用于本产品」。
+    """
+    environment = env()
+    try:
+        classified_row("midas_gen", scope="civil")
+        envelope = environment.call(TOOL_QUERY, {"target": "node", "action": "list"})
+        assert envelope["success"] is False
+        entry = envelope["errors"][0]
+        assert entry["code"] == ErrorCode.CAPABILITY_NOT_SUPPORTED.value
+        assert entry["details"]["reason"] == "product_scope_mismatch"
+        assert entry["details"]["instance_product"] == "gen"
+        assert entry["details"]["adapter_code"] == "midas_gen"
+        assert environment.adapter.request_log == [], "拒绝必须早于任何 MIDAS 调用"
+    finally:
+        reset_capabilities()
+
+
+def test_gate4_both_is_allowed_on_either_product() -> None:
+    """``both`` = 两个及以上产品均可用（总纲 §4.2.11 的取值表）。"""
+    registry = AdapterRegistry()
+    registry.register(MockAdapter(code="midas_gen", software="MIDAS Gen"))
+    registry.register(MockAdapter(code="midas_civil", software="MIDAS Civil"))
+    resolver = CapabilityResolver(registry)
+    try:
+        classified_row("midas_gen", scope="both")
+        classified_row("midas_civil", scope="both")
+        for adapter_code in ("midas_gen", "midas_civil"):
+            assert (
+                resolver.resolve(adapter_code, TOOL_QUERY, "list", "node").product_scope
+                == "both"
+            )
+    finally:
+        reset_capabilities()
+
+
+def test_gate4_designer_scope_matches_midas_cdn_which_is_not_the_same_string() -> None:
+    """**非恒等映射**：``MidasProduct.DESIGNER.value == "cdn"``，scope 却是 ``"designer"``。
+
+    Civil Designer 的 URL 段是 ``cdn``（MIDAS 线上就是这么服务的），而能力分类把它
+    记作 ``designer``（给人看的菜单名）。 把两根轴当成同一根（``product_scope ==
+    adapter 产品值``）会**拒绝掉 Civil Designer 上的每一个 designer 能力** —— 这正是
+    本用例钉住的那条陷阱。
+    """
+    assert MidasProduct.DESIGNER.value == "cdn"
+    assert PRODUCT_SCOPE_BY_PRODUCT["cdn"] == MidasProductScope.DESIGNER.value == "designer"
+    assert PRODUCT_SCOPE_BY_PRODUCT["cdn"] != MidasProduct.DESIGNER.value
+
+    registry = AdapterRegistry()
+    registry.register(MockAdapter(code="midas_cdn", software="MIDAS Civil Designer"))
+    registry.register(MockAdapter(code="midas_gen", software="MIDAS Gen"))
+    resolver = CapabilityResolver(registry)
+    try:
+        classified_row("midas_cdn", scope="designer")
+        classified_row("midas_gen", scope="designer")
+
+        assert instance_product_scope("midas_cdn") == "designer"
+        allowed = resolver.resolve("midas_cdn", TOOL_QUERY, "list", "node")
+        assert allowed.product_scope == "designer"
+
+        with pytest.raises(AdapterError) as excinfo:
+            resolver.resolve("midas_gen", TOOL_QUERY, "list", "node")
+        assert excinfo.value.details["reason"] == "product_scope_mismatch"
+        assert excinfo.value.details["instance_product"] == "gen"
+    finally:
+        reset_capabilities()
+
+
+def test_gate4_reads_the_product_from_the_adapter_when_the_code_cannot_be_parsed() -> None:
+    """来源 1（适配器的 ``product`` 属性）优先于来源 2（``midas_<product>`` 约定）。"""
+
+    class StubAdapter:
+        """一个编码不合约定、但自己知道产品的适配器。"""
+
+        def __init__(self, code: str, product: MidasProduct) -> None:
+            self._code = code
+            self._product = product
+
+        @property
+        def code(self) -> str:
+            return self._code
+
+        @property
+        def software(self) -> str:
+            return "MIDAS Stub"
+
+        @property
+        def product(self) -> MidasProduct:
+            return self._product
+
+    registry = AdapterRegistry()
+    registry.register(StubAdapter("midas_x", MidasProduct.CIVIL))
+    resolver = CapabilityResolver(registry)
+    try:
+        classified_row("midas_x", scope="civil")
+        # 代码约定判不出来 …
+        assert instance_product_scope("midas_x") is None
+        # …但适配器自己说了算。
+        assert instance_product_scope("midas_x", registry.get("midas_x")) == "civil"
+        assert resolver.resolve("midas_x", TOOL_QUERY, "list", "node").code == "node.list"
+    finally:
+        reset_capabilities()
+
+
+def test_gate4_refuses_when_a_decision_is_needed_but_the_product_is_unknown() -> None:
+    """判不出实例产品，而闸 4 **有判定要做** -> 拒绝（总纲 §4.9.2 闸 4）。
+
+    ``midas_x`` 既没有 ``product`` 属性，后缀也不是任何 ``MidasProduct`` 值。
+    能力声明了具体产品（``gen``），闸 4 必须比对，却无从比对 ——
+    **没执行过的安全闸不算通过**，因此 fail closed。
+    """
+    registry = AdapterRegistry()
+    registry.register(MockAdapter(code="midas_x", software="MIDAS X"))
+    resolver = CapabilityResolver(registry)
+    try:
+        classified_row("midas_x", scope="gen")
+        with pytest.raises(AdapterError) as excinfo:
+            resolver.resolve("midas_x", TOOL_QUERY, "list", "node")
+        error = excinfo.value
+        assert error.code == ErrorCode.CAPABILITY_NOT_SUPPORTED.value
+        assert error.details == {
+            "reason": "instance_product_undeterminable",
+            "capability": "node.list",
+            "product_scope": "gen",
+            "instance_product": None,
+            "adapter_code": "midas_x",
+        }
+    finally:
+        reset_capabilities()
+
+
+def test_gate4_allows_when_there_is_no_decision_to_make_and_warns() -> None:
+    """判不出实例产品，但闸 4 **没有判定要做** -> 放行 + 警告。
+
+    ``unknown`` 与 ``both`` 容纳一切产品，本就不需要知道实例产品，所以
+    「判不出产品」在这里不是拒绝的理由 —— 否则一个 code 不合约定的自定义适配器
+    会**全线不可用**，连出厂即为 ``unknown`` 的全部行都调不通。
+
+    但配置缺陷仍须可见，因此改为**警告**：一旦该能力的 ``product_scope`` 收敛为
+    具体产品，本适配器将无法调用它。
+    """
+    registry = AdapterRegistry()
+    registry.register(MockAdapter(code="midas_x", software="MIDAS X"))
+    resolver = CapabilityResolver(registry)
+    try:
+        for scope in ("unknown", "both"):
+            classified_row("midas_x", scope=scope)
+            # 放行：不抛异常
+            assert resolver.resolve("midas_x", TOOL_QUERY, "list", "node").code == "node.list"
+            warnings = resolver.product_scope_warnings(
+                capability_table("midas_x")["node.list"], "midas_x"
+            )
+            assert any("未经过" in w and "配置缺陷" in w for w in warnings), (
+                scope,
+                warnings,
+            )
+    finally:
+        reset_capabilities()
+
+
+def test_gate4_lives_in_the_resolver_so_every_tool_is_gated() -> None:
+    """闸 4 在解析器里，因此四个 Tool 一视同仁 —— 不只是 ``midas_query``。"""
+    registry = AdapterRegistry()
+    registry.register(MockAdapter(code="midas_gen", software="MIDAS Gen"))
+    resolver = CapabilityResolver(registry)
+    try:
+        classified_row("midas_gen", "node.read", scope="civil")
+        with pytest.raises(AdapterError) as excinfo:
+            resolver.resolve("midas_gen", TOOL_MODEL, "read", "node")
+        assert excinfo.value.code == ErrorCode.CAPABILITY_NOT_SUPPORTED.value
+        assert excinfo.value.details["product_scope"] == "civil"
+    finally:
+        reset_capabilities()
+
+
+def test_gate4_unknown_is_admitted_optimistically_with_an_unverified_warning() -> None:
+    """``unknown``（出厂默认）：乐观放行 + 信封 ``unverified`` 警告（总纲 §4.2.11）。
+
+    理由记录在 §4.2.11：1,373 条端点无法一次探测完，而手册的产品标注不可信
+    （对接规范 §3.5 第 15 条：声明「Civil 专属」的 47 个端点中 32 个在 Gen 上也能应答）。
+    在验证完成前把大量能力隐藏起来，比带警告放行更糟 —— 但警告必须真的到达信封。
+    """
+    environment = env()
+    assert capability_table("midas_gen")["node.list"].product_scope == "unknown"
+
+    envelope = environment.call(TOOL_QUERY, {"target": "node", "action": "list"})
+    assert envelope["success"] is True, envelope
+    warnings = envelope["warnings"]
+    assert any(
+        "node.list" in warning
+        and "unverified" in warning
+        and "§4.2.11" in warning
+        and "尚未对实机验证" in warning
+        and "该能力在 gen 上并不存在" in warning
+        for warning in warnings
+    ), warnings
+
+
+def test_gate4_is_skipped_for_platform_owned_capabilities() -> None:
+    """``midas_task`` 没有实例也没有产品：**一个实例都没注册**时也必须可用。"""
+    registry = AdapterRegistry()
+    assert registry.codes() == []
+    dispatcher = ToolDispatcher(registry=registry, task_service=TaskService())
+    envelope = run(dispatcher.dispatch(TOOL_TASK, {"action": "list"}))
+    assert envelope["success"] is True, envelope
+    assert envelope["errors"] == []
+    # 闸 4 不适用 -> 连 unverified 警告也不该有。
+    assert not any("unverified" in warning for warning in envelope["warnings"])
+    assert capability_table(None)["task.list"].adapter_code is None
+
+
+# ===========================================================================
 # 6. the MCP envelope (总纲 §4.3.2 / V2.1 §11)
 # ===========================================================================
 def test_envelope_shape_on_success() -> None:
@@ -1004,6 +1294,118 @@ def test_query_capabilities_honours_the_documented_filter() -> None:
     )
     assert envelope["success"] is True
     assert [row["code"] for row in envelope["data"]["items"]] == ["node.create"]
+
+
+def test_query_capabilities_exposes_the_three_classification_layers() -> None:
+    """总纲 §4.2.11：三层分类必须能从 ``target=capabilities`` 读到。"""
+    environment = env()
+    envelope = environment.call(TOOL_QUERY, {"target": "capabilities", "action": "list"})
+    assert envelope["success"] is True
+    item = next(
+        row for row in envelope["data"]["items"] if row["code"] == "node.list"
+    )
+    assert item["product_scope"] == "unknown"  # 出厂默认，且是一等状态
+    assert item["domain"] is None  # 分类加载器尚未填入
+    assert item["feature"] is None
+
+
+def test_the_published_capabilities_filter_advertises_the_closed_sets() -> None:
+    """枚举必须出现在工具 schema 里：LLM 只能读到它被给出的合法取值。"""
+    branch = query_filter_schemas()["capabilities"]
+    assert branch["properties"]["domain"]["enum"] == list(CAPABILITY_DOMAIN_VALUES)
+    assert branch["properties"]["feature"]["enum"] == list(CAPABILITY_FEATURE_VALUES)
+    assert len(CAPABILITY_DOMAIN_VALUES) == 8
+    assert len(CAPABILITY_FEATURE_VALUES) == 27
+
+
+def test_query_capabilities_filters_by_domain_and_feature() -> None:
+    """两级检索：先 domain（8 选 1）再 feature（27 选 1），而不是在 683 个端点里直接挑。"""
+    environment = env()
+    try:
+        classified_row(
+            "midas_gen", "node.list", domain="model", feature="db_node_element"
+        )
+        classified_row(
+            "midas_gen", "load.list", domain="load", feature="db_static_loads"
+        )
+        classified_row(
+            "midas_gen", "load.create", domain="load", feature="db_static_loads"
+        )
+
+        by_domain = environment.call(
+            TOOL_QUERY,
+            {"target": "capabilities", "action": "list", "query": {"domain": "load"}},
+        )
+        assert by_domain["success"] is True, by_domain
+        assert {row["code"] for row in by_domain["data"]["items"]} == {
+            "load.list",
+            "load.create",
+        }
+
+        by_both = environment.call(
+            TOOL_QUERY,
+            {
+                "target": "capabilities",
+                "action": "search",
+                "query": {"domain": "model", "feature": "db_node_element"},
+            },
+        )
+        assert by_both["success"] is True, by_both
+        assert [row["code"] for row in by_both["data"]["items"]] == ["node.list"]
+
+        # 两个条件都合法但组合为空 -> 空列表，不是错误（区别于越界取值）。
+        empty = environment.call(
+            TOOL_QUERY,
+            {
+                "target": "capabilities",
+                "action": "list",
+                "query": {"domain": "load", "feature": "db_node_element"},
+            },
+        )
+        assert empty["success"] is True, empty
+        assert empty["data"]["items"] == []
+    finally:
+        reset_capabilities()
+
+
+def test_query_capabilities_rejects_an_unknown_domain_or_feature() -> None:
+    """总纲 §4.2.11 的封闭集合：越界取值 -> ``VALIDATION_ERROR``，不是空列表。"""
+    environment = env()
+    for query in ({"domain": "modelling"}, {"feature": "db_nonsense"}):
+        envelope = environment.call(
+            TOOL_QUERY, {"target": "capabilities", "action": "list", "query": query}
+        )
+        assert envelope["success"] is False, query
+        assert envelope["errors"][0]["code"] == ErrorCode.VALIDATION_ERROR.value, query
+
+
+def test_the_capability_filter_handler_validates_the_closed_sets_itself() -> None:
+    """兜底校验器不展开 ``query`` 的 ``anyOf`` 分支，所以处理器必须自己再校验一次。
+
+    ``jsonschema`` 缺失时 :func:`app.mcp.dispatcher.validate_arguments` 退化为浅层
+    校验（只到 ``query`` 这一层），此时唯一的防线就是处理器里的那次检查 ——
+    没有它，一个拼错的 domain 会静默返回空列表，看起来像「平台没有这个能力」。
+    """
+    environment = env()
+    arguments: dict[str, Any] = {
+        "target": "capabilities",
+        "action": "list",
+        "query": {"domain": "modelling"},
+    }
+    context = DispatchContext(
+        request_id="req_20260925_000002",
+        tool=TOOL_QUERY,
+        capability=capability_table("midas_gen")["capabilities.list"],
+        adapter=environment.adapter,
+        registry=environment.registry,
+        tasks=environment.tasks,
+        resolver=environment.resolver,
+        arguments=arguments,
+    )
+    result = query_tool._capabilities_result(arguments, context)
+    assert result.success is False
+    assert result.error_code == ErrorCode.VALIDATION_ERROR.value
+    assert "封闭集合" in (result.error_message or "")
 
 
 def test_query_count_and_get() -> None:
