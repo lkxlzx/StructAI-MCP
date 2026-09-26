@@ -72,6 +72,7 @@ from app.mcp.capabilities import (
     required_permission,
 )
 from app.mcp.capability import CapabilityResolver
+from app.mcp.routing import select_adapter_code
 from app.mcp.context import (
     AuthRequest,
     Authorizer,
@@ -516,10 +517,20 @@ class ToolDispatcher:
                 ],
             )
 
+        # --- Instance / adapter routing (多产品多租户路由框架 §三) ------ #
+        # The chain is **instance -> adapter -> capability**, never the reverse.
+        # This is the only place that decides *where* the call goes, and it
+        # refuses rather than guessing when several products are registered —
+        # a wrong guess would be a silent write to the wrong model.
+        try:
+            target_adapter = select_adapter_code(self._registry, tool_name, adapter_code)
+        except AdapterError as exc:
+            return self._failure(rid, tool_name, exc, None)
+
         # --- Capability Resolver (V2.1 §16) ---------------------------- #
         try:
             capability = self._resolver.resolve(
-                adapter_code, tool_name, action, resource
+                target_adapter, tool_name, action, resource
             )
         except AdapterError as exc:
             return self._failure(rid, tool_name, exc, None)

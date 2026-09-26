@@ -390,6 +390,149 @@ class MidasVisibility(str, Enum):
 MIDAS_VISIBILITY_VALUES = enum_values(MidasVisibility)
 
 
+class MidasProductScope(str, Enum):
+    """``tool_interfaces.product_scope`` — which MIDAS product an endpoint serves.
+
+    Three-layer classification, layer 1 (总纲 §4.2.12 / 对接规范 §7.1).  The
+    frontend filters by it and capability resolution consults it on **every**
+    call, which is why it is a column rather than a ``metadata_json`` field.
+
+    ``UNKNOWN`` is the shipped default and is a **first-class state**, not a
+    placeholder.  The manuals' product labels cannot be trusted — 对接规范 §3.5
+    第 15 条 measured that of 47 endpoints declared "Civil-only", **32 answer on
+    Gen NX as well**.  So an endpoint is ``unknown`` until a live instance says
+    otherwise, and ``unknown`` capabilities are admitted **optimistically** with
+    an ``unverified`` warning rather than hidden.
+    """
+
+    GEN = "gen"
+    CIVIL = "civil"
+    DESIGNER = "designer"
+    BOTH = "both"
+    UNKNOWN = "unknown"
+
+
+MIDAS_PRODUCT_SCOPE_VALUES = enum_values(MidasProductScope)
+
+
+#: ``MidasProduct`` value (the **URL segment**) → ``MidasProductScope`` value.
+#:
+#: The two enums are not the same axis, which is why this exists rather than a
+#: shared enum:
+#:
+#: * :class:`app.core.midas_config.MidasProduct` is a **wire detail** — the path
+#:   segment MIDAS serves the product on, so Civil Designer is ``cdn``.
+#: * :class:`MidasProductScope` is a **capability classification** — read by the
+#:   frontend to build menus, so Civil Designer is ``designer``.
+#:
+#: ``gen`` and ``civil`` happen to agree; only Designer differs. Keeping the map
+#: explicit means a future product cannot be added on one side and silently
+#: missing on the other.
+PRODUCT_SCOPE_BY_PRODUCT: dict[str, str] = {
+    "gen": MidasProductScope.GEN.value,
+    "civil": MidasProductScope.CIVIL.value,
+    "cdn": MidasProductScope.DESIGNER.value,
+}
+
+
+class CapabilityDomain(str, Enum):
+    """``tool_interfaces.domain`` — business domain, classification layer 2.
+
+    Eight values, merged from the 27 manual chapters.  It is the frontend's
+    first-level menu and the LLM's **first** filter: choosing among 8 is trivial
+    where choosing among ~683 endpoints is not.
+    """
+
+    PROJECT = "project"
+    MODEL = "model"
+    LOAD = "load"
+    ANALYSIS = "analysis"
+    RESULT = "result"
+    DESIGN = "design"
+    VIEW = "view"
+    OPERATION = "operation"
+
+
+CAPABILITY_DOMAIN_VALUES = enum_values(CapabilityDomain)
+
+
+class CapabilityFeature(str, Enum):
+    """``tool_interfaces.feature`` — manual chapter, classification layer 3.
+
+    27 values, one per chapter of the MIDAS API manual set (``G:\\MAPI``'s
+    ``api_chapters/01..27``).  The frontend's second-level menu and the LLM's
+    **second** filter.
+    """
+
+    DOC = "doc"
+    DB_PROJECT_STRUCTURE = "db_project_structure"
+    DB_NODE_ELEMENT = "db_node_element"
+    DB_PROPERTIES = "db_properties"
+    DB_BOUNDARY = "db_boundary"
+    DB_STATIC_LOADS = "db_static_loads"
+    DB_TEMPERATURE_PRESTRESS = "db_temperature_prestress"
+    DB_MOVING_LOADS = "db_moving_loads"
+    DB_DYNAMIC_LOADS = "db_dynamic_loads"
+    DB_CONSTRUCTION_STAGE = "db_construction_stage"
+    DB_SETTLEMENT_MISC_LOADS = "db_settlement_misc_loads"
+    DB_ANALYSIS_CONTROL = "db_analysis_control"
+    DB_LOAD_COMBINATIONS = "db_load_combinations"
+    DB_PUSHOVER = "db_pushover"
+    OPE = "ope"
+    VIEW = "view"
+    DB_BRIDGE = "db_bridge"
+    POST_PRE_PROCESS = "post_pre_process"
+    POST_ANALYSIS_RESULT_1 = "post_analysis_result_1"
+    POST_ANALYSIS_RESULT_2 = "post_analysis_result_2"
+    POST_STORY_TABLES = "post_story_tables"
+    POST_TH_HY_PUSHOVER = "post_th_hy_pushover"
+    POST_DESIGN = "post_design"
+    DB_DESIGN = "db_design"
+    DESIGN_STEEL_KDS41302022 = "design_steel_kds41302022"
+    DESIGN_RC_KDS41202022 = "design_rc_kds41202022"
+    DESIGN_SRC_AIKSRC2K = "design_src_aiksrc2k"
+
+
+CAPABILITY_FEATURE_VALUES = enum_values(CapabilityFeature)
+
+
+#: Which :class:`CapabilityDomain` each :class:`CapabilityFeature` belongs to.
+#:
+#: Every feature maps to **exactly one** domain — the three layers are a strict
+#: hierarchy, so a frontend menu never has to guess and a filter never has to
+#: union.  Kept next to the two enums so a new chapter cannot be added without
+#: being placed.
+CAPABILITY_FEATURE_DOMAIN: dict[str, str] = {
+    CapabilityFeature.DOC.value: CapabilityDomain.PROJECT.value,
+    CapabilityFeature.DB_PROJECT_STRUCTURE.value: CapabilityDomain.PROJECT.value,
+    CapabilityFeature.DB_NODE_ELEMENT.value: CapabilityDomain.MODEL.value,
+    CapabilityFeature.DB_PROPERTIES.value: CapabilityDomain.MODEL.value,
+    CapabilityFeature.DB_BOUNDARY.value: CapabilityDomain.MODEL.value,
+    CapabilityFeature.DB_STATIC_LOADS.value: CapabilityDomain.LOAD.value,
+    CapabilityFeature.DB_TEMPERATURE_PRESTRESS.value: CapabilityDomain.LOAD.value,
+    CapabilityFeature.DB_MOVING_LOADS.value: CapabilityDomain.LOAD.value,
+    CapabilityFeature.DB_DYNAMIC_LOADS.value: CapabilityDomain.LOAD.value,
+    CapabilityFeature.DB_CONSTRUCTION_STAGE.value: CapabilityDomain.LOAD.value,
+    CapabilityFeature.DB_SETTLEMENT_MISC_LOADS.value: CapabilityDomain.LOAD.value,
+    CapabilityFeature.DB_ANALYSIS_CONTROL.value: CapabilityDomain.ANALYSIS.value,
+    CapabilityFeature.DB_LOAD_COMBINATIONS.value: CapabilityDomain.ANALYSIS.value,
+    CapabilityFeature.DB_PUSHOVER.value: CapabilityDomain.ANALYSIS.value,
+    CapabilityFeature.OPE.value: CapabilityDomain.OPERATION.value,
+    CapabilityFeature.VIEW.value: CapabilityDomain.VIEW.value,
+    CapabilityFeature.DB_BRIDGE.value: CapabilityDomain.MODEL.value,
+    CapabilityFeature.POST_PRE_PROCESS.value: CapabilityDomain.RESULT.value,
+    CapabilityFeature.POST_ANALYSIS_RESULT_1.value: CapabilityDomain.RESULT.value,
+    CapabilityFeature.POST_ANALYSIS_RESULT_2.value: CapabilityDomain.RESULT.value,
+    CapabilityFeature.POST_STORY_TABLES.value: CapabilityDomain.RESULT.value,
+    CapabilityFeature.POST_TH_HY_PUSHOVER.value: CapabilityDomain.RESULT.value,
+    CapabilityFeature.POST_DESIGN.value: CapabilityDomain.DESIGN.value,
+    CapabilityFeature.DB_DESIGN.value: CapabilityDomain.DESIGN.value,
+    CapabilityFeature.DESIGN_STEEL_KDS41302022.value: CapabilityDomain.DESIGN.value,
+    CapabilityFeature.DESIGN_RC_KDS41202022.value: CapabilityDomain.DESIGN.value,
+    CapabilityFeature.DESIGN_SRC_AIKSRC2K.value: CapabilityDomain.DESIGN.value,
+}
+
+
 class McpServerStatus(str, Enum):
     """``mcp_servers.status`` (总纲 §4.2.5)."""
 

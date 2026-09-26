@@ -16,7 +16,8 @@ from typing import Optional
 from sqlalchemy import ForeignKey, Index, Integer, Text, UniqueConstraint, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base import Base, BoolInt, TimestampMixin
+from app.core.constants import CapabilityDomain, MidasProductScope
+from app.db.base import Base, BoolInt, TimestampMixin, enum_check
 
 __all__ = ["Tool", "ToolInterface", "Schema", "Capability", "CapabilityInterface"]
 
@@ -87,6 +88,34 @@ class ToolInterface(TimestampMixin, Base):
     operation: Mapped[str] = mapped_column(Text, nullable=False)
     #: MCP resource name, singular (总纲 §4.6.1).
     resource: Mapped[str | None] = mapped_column(Text)
+
+    # --- three-layer classification (v1.0, 总纲 §4.2.12 / 对接规范 §7.1) ------
+    #: Which MIDAS product the endpoint applies to — ``gen`` / ``civil`` /
+    #: ``designer`` / ``both`` / ``unknown``.
+    #:
+    #: **These are columns, not ``metadata_json`` fields**, because they are
+    #: filter and grouping keys: ``product_scope`` is consulted on *every*
+    #: capability resolution, and the frontend groups by ``domain``/``feature``.
+    #:
+    #: The default is ``unknown``, and that is deliberate rather than lazy. The
+    #: manuals' product labels are **not trustworthy** — 对接规范 §3.5 第 15 条
+    #: measured that of 47 endpoints declared "Civil-only", **32 answer on Gen NX
+    #: too**. So "not yet verified against a live instance" has to be an explicit
+    #: state instead of an assumed one. Unknown capabilities are admitted
+    #: optimistically, carrying an ``unverified`` warning (总纲 §4.2.12).
+    product_scope: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+        default=MidasProductScope.UNKNOWN.value,
+        server_default=text("'unknown'"),
+    )
+    #: Business domain — the frontend's first-level menu and the LLM's first
+    #: filter. One of the eight values of :class:`CapabilityDomain`.
+    domain: Mapped[str | None] = mapped_column(Text)
+    #: Manual chapter — the frontend's second-level menu and the LLM's second
+    #: filter. One of the 27 values of :class:`CapabilityFeature`.
+    feature: Mapped[str | None] = mapped_column(Text)
+
     request_schema_json: Mapped[str | None] = mapped_column(Text)
     response_schema_json: Mapped[str | None] = mapped_column(Text)
     enabled: Mapped[int] = mapped_column(BoolInt, nullable=False, default=1, server_default=text("1"))
@@ -100,6 +129,24 @@ class ToolInterface(TimestampMixin, Base):
     __table_args__ = (
         Index("ux_tool_interface", "adapter_code", "interface_code", unique=True),
         Index("ix_tool_interfaces_tool", "tool_id"),
+        # Capability resolution filters by product; the frontend groups by
+        # domain -> feature. One composite index serves both.
+        Index("ix_tool_interfaces_scope", "product_scope", "domain", "feature"),
+        # 总纲 §4.2.12's closed sets, generated from the enums so a word-list
+        # change propagates here automatically.
+        #
+        # Why this belongs on the ORM and not only in `001_schema.sql`: the **test
+        # fixtures build their schema with `Base.metadata.create_all`**
+        # (`tests/conftest.py`), so a constraint that lives only in the SQL file
+        # is a constraint the suite never exercises. This is also the project's
+        # existing convention — 30 other enum columns across 11 model modules
+        # already declare `enum_check`, and this table was the lone exception.
+        #
+        # `domain` is nullable and needs no `IS NULL OR`: a CHECK fails only on
+        # FALSE, and `NULL IN (...)` is NULL, which passes. `001_schema.sql`
+        # writes the same bare form so the shipped DDL and the ORM agree.
+        enum_check("product_scope", MidasProductScope),
+        enum_check("domain", CapabilityDomain),
     )
 
     def __repr__(self) -> str:  # pragma: no cover - debug helper
@@ -138,8 +185,23 @@ class Capability(TimestampMixin, Base):
     __tablename__ = "capabilities"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    adapter_code: Mapped[str] = mapped_column(
-        Text, ForeignKey("adapters.code"), nullable=False
+    #: The MCP tool this capability is reached through (``midas_query`` …).
+    #:
+    #: It **cannot** be derived from ``tool_interfaces.tool_id``: measured, the
+    #: ``/post/TABLE`` POST endpoint is shared by ``midas_execute`` **and**
+    #: ``midas_query`` (which is exactly the sharing 裁决 B-3 introduced
+    #: ``capability_interfaces`` for), and the platform-owned capabilities have no
+    #: interface at all.  So the tool is a property of the *capability*.
+    tool_id: Mapped[int] = mapped_column(Integer, ForeignKey("tools.id"), nullable=False)
+    #: Owning adapter; ``None`` for platform-owned capabilities.
+    #:
+    #: ``midas_task``'s seven capabilities are platform-owned — MIDAS exposes no
+    #: task API (对接规范 §2.5.1) — so there is no adapter to point at.  This is
+    #: why the column is nullable, and why ``ux_capability`` alone is not enough:
+    #: SQL treats NULLs as distinct, so ``(NULL, 'task.get')`` could be inserted
+    #: twice.  ``ux_capability_platform`` closes that half.
+    adapter_code: Mapped[str | None] = mapped_column(
+        Text, ForeignKey("adapters.code")
     )
     capability_code: Mapped[str] = mapped_column(Text, nullable=False)
     #: MCP resource name, singular (总纲 §4.6.1).
@@ -155,8 +217,21 @@ class Capability(TimestampMixin, Base):
     constraints_json: Mapped[str | None] = mapped_column(Text)
 
     __table_args__ = (
+        # Same capability_code may exist once per adapter — that is the key the
+        # multi-product extension needs (`node.list` on gen *and* on civil), and
+        # it is the schema's answer to `_TABLE` being keyed by code alone.
         Index("ux_capability", "adapter_code", "capability_code", unique=True),
+        # The platform-owned half: NULLs are distinct in SQL, so the index above
+        # cannot police them. Partial indexes exist on both SQLite and PostgreSQL.
+        Index(
+            "ux_capability_platform",
+            "capability_code",
+            unique=True,
+            sqlite_where=text("adapter_code IS NULL"),
+            postgresql_where=text("adapter_code IS NULL"),
+        ),
         Index("ix_capabilities_resource_action", "resource", "action"),
+        Index("ix_capabilities_tool", "tool_id"),
     )
 
     def __repr__(self) -> str:  # pragma: no cover - debug helper

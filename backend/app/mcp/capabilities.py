@@ -1142,41 +1142,88 @@ _ROWS: Final[tuple[Capability, ...]] = _build_rows()
 #: loads this set from the ``capabilities`` table; tests monkeypatch it.
 DISABLED_CAPABILITIES: frozenset[str] = frozenset()
 
-#: The live table.  ``code`` -> row, in declaration order.
-_TABLE: dict[str, Capability] = {row.code: row for row in _ROWS}
+
+def _key(adapter_code: str | None, code: str) -> tuple[str, str]:
+    """Composite table key.  ``None`` adapter (platform-owned) becomes ``""``.
+
+    Mirrors the SQL: ``ux_capability(adapter_code, capability_code)`` polices the
+    non-NULL half and ``ux_capability_platform`` the NULL half.
+    """
+    return (adapter_code or "", code)
+
+
+#: The live table: ``(adapter_code or "", code) -> row``.
+#:
+#: **The key is composite because the same ``code`` legitimately exists once per
+#: adapter.**  ``node.list`` is served by gen, civil *and* cdn — that is what
+#: ``ux_capability(adapter_code, capability_code)`` is for, and it is what the
+#: multi-product requirement needs.
+#:
+#: This table used to be keyed by ``code`` alone.  The consequence was measured,
+#: not theorised: a **Civil-only deployment could not call anything** (every
+#: capability looked up ``midas_gen``, which was not registered), and with all
+#: three products registered a call without an explicit adapter **silently went
+#: to Gen**.  Both are data-corruption paths, so the key is the fix.
+_TABLE: dict[tuple[str, str], Capability] = {
+    _key(row.adapter_code, row.code): row for row in _ROWS
+}
 
 #: V2.1 §16.2: resolution failure -> closed-set code.  An unknown
 #: ``(tool, action, resource)`` combination is always this one.
 _NOT_SUPPORTED: Final[ErrorCode] = ErrorCode.CAPABILITY_NOT_SUPPORTED
 
 
-def capability_table() -> dict[str, Capability]:
-    """The whole table, ``capability_code -> Capability`` (V2.1 §16.1)."""
-    return dict(_TABLE)
+def capability_table(adapter_code: str | None) -> dict[str, Capability]:
+    """``code -> Capability`` for **one** adapter (V2.1 §16.1).
+
+    ``adapter_code`` is required.  ``None`` selects the **platform-owned** rows
+    (``midas_task``), *not* every adapter — there is deliberately no
+    all-adapters form, because a dict keyed by ``code`` alone cannot hold the
+    same code twice and that limitation is precisely what this change removes.
+    Use :func:`capability_rows` for the whole table.
+    """
+    owner = adapter_code or ""
+    return {code: row for (owner_key, code), row in _TABLE.items() if owner_key == owner}
 
 
 def capability_rows() -> tuple[Capability, ...]:
-    """The table in declaration order."""
+    """Every row, declaration order — across **all** adapters.
+
+    The only correct way to enumerate the whole table: the same ``code`` may
+    appear several times, once per adapter.
+    """
     return tuple(_TABLE.values())
 
 
-def is_enabled(code: str) -> bool:
-    """``capabilities.enabled`` for ``code`` (V2.1 §16.1 / §16.2)."""
+def is_enabled(code: str, adapter_code: str | None = None) -> bool:
+    """``capabilities.enabled`` for ``code`` (V2.1 §16.1 / §16.2).
+
+    ``DISABLED_CAPABILITIES`` holds bare codes, so a code disabled here is
+    disabled for every adapter that serves it.  That is deliberate: the set is a
+    small hardcoded switch, not the DB column, and per-adapter disabling is what
+    ``capabilities.enabled`` in the database is for.
+    """
     return code not in DISABLED_CAPABILITIES
 
 
 def register_capability(capability: Capability, *, replace: bool = False) -> Capability:
     """Add or replace one row (Phase 2: the DB loader calls this).
 
-    Raises ``RESOURCE_CONFLICT`` (总纲 §4.4.2) on a duplicate code unless
+    The slot is ``(capability.adapter_code or "", capability.code)``, so the same
+    code may be registered once **per adapter** — ``node.list`` for gen, civil
+    and cdn are three rows, not one row overwritten twice.
+
+    Raises ``RESOURCE_CONFLICT`` (总纲 §4.4.2) when that slot is taken, unless
     ``replace=True`` — same contract as ``AdapterRegistry.register``.
     """
-    if capability.code in _TABLE and not replace:
+    slot = _key(capability.adapter_code, capability.code)
+    if slot in _TABLE and not replace:
         raise AdapterError(
             ErrorCode.RESOURCE_CONFLICT,
-            f"capability code={capability.code!r} 已存在；重复注册需显式 replace=True"
-            "（V2.1 §16.1：ux_capability 唯一键）",
-            details={"code": capability.code},
+            f"capability code={capability.code!r} 在 adapter="
+            f"{capability.adapter_code!r} 下已存在；重复注册需显式 replace=True"
+            "（V2.1 §16.1：ux_capability 唯一键是 (adapter_code, capability_code)）",
+            details={"code": capability.code, "adapter_code": capability.adapter_code},
         )
     if capability.dispatch not in DISPATCH_HINTS:
         raise AdapterError(
@@ -1184,25 +1231,30 @@ def register_capability(capability: Capability, *, replace: bool = False) -> Cap
             f"未知的 dispatch={capability.dispatch!r}；合法取值：{sorted(DISPATCH_HINTS)}",
             details={"code": capability.code},
         )
-    _TABLE[capability.code] = capability
+    _TABLE[slot] = capability
     return capability
 
 
-def unregister_capability(code: str) -> None:
-    """Drop one row.  Raises ``RESOURCE_NOT_FOUND`` when absent."""
-    if code not in _TABLE:
+def unregister_capability(code: str, adapter_code: str | None = None) -> None:
+    """Drop one row for one adapter.  Raises ``RESOURCE_NOT_FOUND`` when absent.
+
+    ``adapter_code`` defaults to ``None`` — the platform-owned slot — so a caller
+    that means an adapter-served capability must say which.
+    """
+    slot = _key(adapter_code, code)
+    if slot not in _TABLE:
         raise AdapterError(
             ErrorCode.RESOURCE_NOT_FOUND,
-            f"capability code={code!r} 不存在",
-            details={"code": code},
+            f"capability code={code!r} 在 adapter={adapter_code!r} 下不存在",
+            details={"code": code, "adapter_code": adapter_code},
         )
-    del _TABLE[code]
+    del _TABLE[slot]
 
 
 def reset_capabilities() -> None:
     """Rebuild the table from the static declaration (test / reload helper)."""
     _TABLE.clear()
-    _TABLE.update({row.code: row for row in _ROWS})
+    _TABLE.update({_key(row.adapter_code, row.code): row for row in _ROWS})
 
 
 # ---------------------------------------------------------------------------
@@ -1234,11 +1286,23 @@ def _default_execute_resources() -> dict[str, str]:
 _EXECUTE_DEFAULT_RESOURCE: Final[dict[str, str]] = _default_execute_resources()
 
 
-def resolve(tool: str, action: str, resource: str | None = None) -> Capability:
-    """Resolve one ``(tool, action, resource)`` to its :class:`Capability`.
+def resolve(
+    tool: str,
+    action: str,
+    resource: str | None = None,
+    *,
+    adapter_code: str | None = None,
+) -> Capability:
+    """Resolve one ``(tool, action, resource)`` **for one adapter**.
 
     ``resource`` carries the ``target`` value for ``midas_query`` (裁决 C-7) and
     may be ``None`` for ``midas_execute`` / ``midas_task``.
+
+    ``adapter_code`` is the adapter the **call must go to** — derived from the
+    selected ``midas_clients`` row, never from the capability.  Routing runs
+    instance → adapter → capability; this function is the third step, so it can
+    only answer "does *this* adapter serve that combination?".  ``None`` selects
+    the platform-owned rows (``midas_task``).
 
     Raises ``CAPABILITY_NOT_SUPPORTED`` (总纲 §4.4.4) — V2.1 §16.2 forbids
     falling back to a direct endpoint call or skipping the capability check.
@@ -1262,41 +1326,61 @@ def resolve(tool: str, action: str, resource: str | None = None) -> Capability:
             details={"tool": tool, "action": action, "resource": resource},
         )
 
-    row = _TABLE.get(code)
+    row = _TABLE.get(_key(adapter_code, code))
     if row is None or row.tool != tool_name:
         raise AdapterError(
             _NOT_SUPPORTED,
-            f"({tool_name}, action={action!r}, resource={resource!r}) 没有对应的 Capability；"
+            f"adapter={adapter_code!r} 下没有 ({tool_name}, action={action!r}, "
+            f"resource={resource!r}) 对应的 Capability；"
             "V2.1 §16.2 规定解析失败一律返回 CAPABILITY_NOT_SUPPORTED，"
             "**禁止**回退到「直连 Endpoint」或「跳过能力校验」。"
-            f"该 tool 的合法组合：{resources_for(tool_name)} × {actions_for(tool_name)}",
+            f"该 adapter 的合法组合：{resources_for(tool_name, adapter_code=adapter_code)}"
+            f" × {actions_for(tool_name, adapter_code=adapter_code)}",
             details={
                 "tool": tool_name,
                 "action": action,
                 "resource": resource,
                 "code": code,
+                "adapter_code": adapter_code,
             },
         )
     return row
 
 
-def resources_for(tool: str) -> list[str]:
-    """Distinct resources of ``tool``, sorted (feeds the schema's resource enum)."""
-    return sorted({row.resource for row in _TABLE.values() if row.tool == tool})
+def resources_for(tool: str, *, adapter_code: str | None = None) -> list[str]:
+    """Distinct resources of ``tool``, sorted (feeds the schema's resource enum).
+
+    ``adapter_code=None`` spans every adapter — the schema enums describe what
+    the *tool* accepts, and the per-adapter narrowing happens at resolution.
+    Pass an adapter to see exactly what that instance supports.
+    """
+    owner = None if adapter_code is None else (adapter_code or "")
+    return sorted(
+        {
+            row.resource
+            for (owner_key, _code), row in _TABLE.items()
+            if row.tool == tool and (owner is None or owner_key == owner)
+        }
+    )
 
 
-def actions_for(tool: str, resource: str | None = None) -> list[str]:
+def actions_for(
+    tool: str, resource: str | None = None, *, adapter_code: str | None = None
+) -> list[str]:
     """Distinct actions of ``tool`` (optionally one resource), sorted.
 
     ``resource=None`` returns the union across resources — exactly the tool's
     ``action`` enum in V2.1 §7.2 / §8.2 / §9.2 / §10.2.
     """
     wanted = _normalise(resource)
+    owner = None if adapter_code is None else (adapter_code or "")
     return sorted(
         {
             row.action
-            for row in _TABLE.values()
-            if row.tool == tool and (resource is None or row.resource == wanted)
+            for (owner_key, _code), row in _TABLE.items()
+            if row.tool == tool
+            and (owner is None or owner_key == owner)
+            and (resource is None or row.resource == wanted)
         }
     )
 

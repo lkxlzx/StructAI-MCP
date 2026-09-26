@@ -41,6 +41,7 @@ from app.mcp import capabilities as capabilities_module
 from app.mcp import dispatcher as dispatcher_module
 from app.mcp import server as server_module
 from app.mcp.capabilities import (
+    capability_rows,
     DISPATCH_DELETE,
     TOOL_EXECUTE,
     TOOL_MODEL,
@@ -248,7 +249,7 @@ def test_capabilities_is_a_target_never_an_action() -> None:
 
 def test_outer_key_means_is_derived_from_the_live_verified_guard() -> None:
     """对接规范 §4.1 / §11.6 — and the adapter stays the single source of truth."""
-    table = capability_table()
+    table = capability_table("midas_gen")
     for code, (means, kind) in VERIFIED_OUTER_KEYS.items():
         assert table[code].outer_key_means == means, code
         assert table[code].outer_key_kind == kind, code
@@ -260,9 +261,17 @@ def test_outer_key_means_is_derived_from_the_live_verified_guard() -> None:
 
 
 def test_capability_codes_and_interfaces_are_unique() -> None:
-    table = capability_table()
-    assert len(table) == len(set(table))
-    for row in table.values():
+    """Uniqueness is per ``(adapter_code, capability_code)`` — 裁决 B-3.
+
+    The same ``code`` legitimately exists once per adapter (``node.list`` for gen,
+    civil and cdn), so the check is on the composite key, not on the code alone.
+    That composite key is exactly what the table used to lack, and its absence is
+    why a second adapter's row silently overwrote the first.
+    """
+    rows = capability_rows()
+    keys = [(row.adapter_code, row.code) for row in rows]
+    assert len(keys) == len(set(keys)), "duplicate (adapter_code, code)"
+    for row in rows:
         assert row.interface_code, row.code
         assert row.dispatch in capabilities_module.DISPATCH_HINTS, row.code
         # Every /db/* capability has a root key (V2.1 §17.3) and speaks the
@@ -277,7 +286,7 @@ def test_capability_codes_and_interfaces_are_unique() -> None:
 
 def test_every_delete_capability_uses_the_per_id_dispatch() -> None:
     """对接规范 §3.5 第 1 条: the ``Assign``-body DELETE must not be reachable."""
-    for row in capability_table().values():
+    for row in capability_rows():
         if row.action == "delete" and row.tool == TOOL_MODEL:
             assert row.dispatch == DISPATCH_DELETE, row.code
             assert row.method == "DELETE", row.code
@@ -360,7 +369,10 @@ def test_a_newly_registered_capability_appears_in_the_generated_enum() -> None:
         assert "weld" in rebuilt["properties"]["resource"]["enum"]
         assert rebuilt["properties"]["resource"]["enum"] == resources_for(TOOL_MODEL)
         # ... and it is routable, without touching any tool code.
-        assert resolve(TOOL_MODEL, "create", "weld").code == "weld.create"
+        assert (
+            resolve(TOOL_MODEL, "create", "weld", adapter_code="midas_gen").code
+            == "weld.create"
+        )
     finally:
         reset_capabilities()
     assert model_tool.build_schema()["properties"]["resource"]["enum"] == before
@@ -368,7 +380,7 @@ def test_a_newly_registered_capability_appears_in_the_generated_enum() -> None:
 
 def test_register_capability_refuses_a_duplicate_code() -> None:
     with pytest.raises(AdapterError) as excinfo:
-        register_capability(capability_table()["node.create"])
+        register_capability(capability_table("midas_gen")["node.create"])
     assert excinfo.value.code == ErrorCode.RESOURCE_CONFLICT.value
 
 
@@ -471,7 +483,7 @@ def test_the_fallback_validator_also_enforces_additional_properties(
 
     # The §6.2 payload check must survive the fallback too — including the
     # nullable half of ``{"anyOf": [{"type": "null"}, <filter>]}``.
-    capability = capability_table()["node.list"]
+    capability = capability_table("midas_gen")["node.list"]
     assert dispatcher_module.validate_payload(capability, None) == []
     assert dispatcher_module.validate_payload(capability, {"group": "W2"}) == []
     payload_issues = dispatcher_module.validate_payload(capability, {"nope": 1})
@@ -480,7 +492,7 @@ def test_the_fallback_validator_also_enforces_additional_properties(
 
 def test_the_payload_second_validation_narrows_to_the_target() -> None:
     """V2.1 §6.2 裁决 B-4: the resolved Capability owns the field set."""
-    capability = capability_table()["node.list"]
+    capability = capability_table("midas_gen")["node.list"]
     assert dispatcher_module.validate_payload(capability, {"x_min": 0}) == []
     issues = dispatcher_module.validate_payload(capability, {"no_such_filter": 1})
     assert issues, "node filter must reject an undefined field"
@@ -580,13 +592,163 @@ def test_resolver_refuses_a_disabled_capability(
     assert envelope["errors"][0]["code"] == ErrorCode.CAPABILITY_NOT_SUPPORTED.value
 
 
-def test_resolver_refuses_an_adapter_mismatch() -> None:
+def test_an_unregistered_adapter_is_refused() -> None:
+    """Routing runs **instance -> adapter -> capability** (多产品路由框架 §三).
+
+    ``env()`` registers only ``midas_gen``, so asking for ``midas_civil`` names
+    something that does not exist — ``ADAPTER_NOT_FOUND``, not
+    ``CAPABILITY_NOT_SUPPORTED``.  The distinction matters: one means "no such
+    instance is registered", the other means "that instance cannot do this".
+    """
     environment = env()
     envelope = environment.call(
         TOOL_QUERY, {"target": "node", "action": "list", "adapter": "midas_civil"}
     )
     assert envelope["success"] is False
+    assert envelope["errors"][0]["code"] == ErrorCode.ADAPTER_NOT_FOUND.value
+
+
+def test_a_registered_adapter_that_lacks_the_capability_is_refused() -> None:
+    """A registered instance that simply does not serve this capability.
+
+    This is the shape the old ``adapter mismatch`` test was reaching for, now
+    expressed the right way round: the adapter is selected **first**, and the
+    capability is then resolved *within* it.  ``midas_civil`` is registered but
+    the declaration holds no civil rows, so the combination does not exist.
+    """
+    environment = env()
+    environment.registry.register(
+        MockAdapter(code="midas_civil", software="MIDAS Civil")
+    )
+    envelope = environment.call(
+        TOOL_QUERY, {"target": "node", "action": "list", "adapter": "midas_civil"}
+    )
+    assert envelope["success"] is False
     assert envelope["errors"][0]["code"] == ErrorCode.CAPABILITY_NOT_SUPPORTED.value
+
+
+def test_several_adapters_without_a_choice_is_refused() -> None:
+    """**The safety row** — ambiguity must never be resolved by guessing.
+
+    With two products registered and no ``adapter`` given, picking one would be a
+    guess, and a wrong guess is a *successful* write to the wrong model.  So the
+    dispatcher refuses with ``VALIDATION_ERROR`` and names the choices.
+
+    This replaces today's silent fallback to ``midas_gen`` — the path that let a
+    caller believe it was driving Civil while it was actually driving Gen.
+    """
+    environment = env()
+    environment.registry.register(
+        MockAdapter(code="midas_civil", software="MIDAS Civil")
+    )
+    envelope = environment.call(TOOL_QUERY, {"target": "node", "action": "list"})
+    assert envelope["success"] is False
+    error = envelope["errors"][0]
+    assert error["code"] == ErrorCode.VALIDATION_ERROR.value
+    assert error["details"]["reason"] == "ambiguous_instance"
+    assert set(error["details"]["registered"]) == {"midas_gen", "midas_civil"}
+
+
+def test_each_adapter_reaches_its_own_product_url() -> None:
+    """**The anti-cross-contamination guard.**
+
+    Three adapters, three different base URLs, the same capability code declared
+    for each.  Every call must reach exactly **its own** URL and touch no other
+    adapter.  This is the property that makes "同时连接不同用户的不同产品" safe:
+    the routing key is the adapter, so ``node.list`` on civil cannot resolve to
+    the gen instance.
+
+    A regression here would not raise — it would return another product's data
+    with ``success=True``, which is why the assertion is on the recorded URLs and
+    not merely on the envelope.
+    """
+    import dataclasses
+
+    import httpx
+
+    from app.adapters.midas_gen.adapter import MidasNxAdapter
+    from app.core.midas_config import MidasConnection, MidasProduct
+
+    class Recorder(httpx.AsyncBaseTransport):
+        """Records the URL and answers from a canned body — no real network.
+
+        The point under test is *which URL* a call reaches, so the transport must
+        not depend on an instance being up; a canned ``/db/NODE`` body keeps the
+        test offline and deterministic.
+        """
+
+        def __init__(self) -> None:
+            self.calls: list[str] = []
+
+        async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
+            self.calls.append(str(request.url))
+            return httpx.Response(200, json={"NODE": {"1": {"X": 0.0, "Y": 0.0, "Z": 0.0}}})
+
+        async def aclose(self) -> None:
+            return None
+
+    products = {
+        "gen": (MidasProduct.GEN, "http://localhost:3030"),
+        "civil": (MidasProduct.CIVIL, "http://localhost:3030"),
+        "cdn": (MidasProduct.DESIGNER, "http://localhost:3030"),
+    }
+    registry = AdapterRegistry()
+    recorders: dict[str, Recorder] = {}
+    for name, (product, base) in products.items():
+        recorder = Recorder()
+        recorders[name] = recorder
+        registry.register(
+            MidasNxAdapter(
+                MidasConnection(
+                    name=name,
+                    software=f"MIDAS {name}",
+                    product=product,
+                    base_url=base,
+                    mapi_key="k",
+                    verify_tls=False,
+                ),
+                transport=recorder,
+            )
+        )
+
+    # Declare the same capability for all three adapters — the multi-product
+    # shape the extraction pipeline will produce.
+    base_row = capability_table("midas_gen")["node.list"]
+    for name in ("civil", "cdn"):
+        register_capability(
+            dataclasses.replace(
+                base_row,
+                adapter_code=f"midas_{name}",
+                interface_code=f"midas_{name}.db.node.list",
+            )
+        )
+
+    dispatcher = ToolDispatcher(registry=registry, task_service=TaskService())
+    try:
+        for name, (product, _base) in products.items():
+            for recorder in recorders.values():
+                recorder.calls.clear()
+
+            envelope = run(
+                dispatcher.dispatch(
+                    TOOL_QUERY,
+                    {"target": "node", "action": "list", "adapter": f"midas_{name}"},
+                )
+            )
+            assert envelope["success"] is True, envelope
+
+            expected = f"/{product.value}/db/NODE"
+            assert recorders[name].calls, f"{name}: no request reached its adapter"
+            assert all(expected in url for url in recorders[name].calls), (
+                name,
+                recorders[name].calls,
+            )
+            # …and no other adapter was touched
+            for other, recorder in recorders.items():
+                if other != name:
+                    assert recorder.calls == [], (name, other, recorder.calls)
+    finally:
+        reset_capabilities()
 
 
 # ===========================================================================
@@ -650,7 +812,7 @@ def test_normalization_only_reads_to_llm_payload() -> None:
     context = DispatchContext(
         request_id="req_20260925_000001",
         tool=TOOL_QUERY,
-        capability=capability_table()["node.list"],
+        capability=capability_table("midas_gen")["node.list"],
         adapter=environment.adapter,
         registry=environment.registry,
         tasks=environment.tasks,
@@ -821,7 +983,7 @@ def test_query_capabilities_returns_the_capability_list() -> None:
     envelope = environment.call(TOOL_QUERY, {"target": "capabilities", "action": "list"})
     assert envelope["success"] is True
     data = envelope["data"]
-    assert data["total"] == len(capability_table())
+    assert data["total"] == len(capability_rows())
     codes = {row["code"] for row in data["items"]}
     assert {"node.create", "node.list", "task.get", "model.calculate"} <= codes
     assert data["adapters"] == ["midas_gen"]
@@ -1047,7 +1209,7 @@ def test_execute_command_is_routed_to_the_raw_channel() -> None:
     exercised in ``tests/live/test_mcp_live.py``.
     """
     environment = seeded()
-    assert capability_table()["command.command"].effective_adapter_action == "raw"
+    assert capability_table("midas_gen")["command.command"].effective_adapter_action == "raw"
     envelope = environment.call(
         TOOL_EXECUTE,
         {
@@ -1430,7 +1592,7 @@ def test_task_tool_does_not_touch_any_adapter() -> None:
     environment = env()
     environment.call(TOOL_TASK, {"action": "list"})
     assert environment.adapter.request_log == []
-    assert capability_table()["task.get"].adapter_code is None
+    assert capability_table(None)["task.get"].adapter_code is None
 
 
 # ===========================================================================

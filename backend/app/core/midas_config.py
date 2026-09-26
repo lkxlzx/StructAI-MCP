@@ -43,7 +43,7 @@ __all__ = [
 #: Relative to the backend root unless an absolute path is given.
 DEFAULT_CONFIG_PATH = "config/midas.json"
 
-_PRODUCT_SUFFIXES = {"gen": "gen", "civil": "civil"}
+_PRODUCT_SUFFIXES = {"gen": "gen", "civil": "civil", "cdn": "cdn"}
 
 
 class MidasConfigError(RuntimeError):
@@ -54,11 +54,22 @@ class MidasProduct(str, Enum):
     """Which MIDAS NX product an instance is running.
 
     The product is a *path segment* of the base URL, not a separate host:
-    ``{base_url}/gen`` and ``{base_url}/civil``.
+    ``{base_url}/gen``, ``{base_url}/civil`` and ``{base_url}/cdn``.
+
+    Note the deliberate naming split for Civil Designer: the **URL segment is
+    ``cdn``** (that is what the API expects and what the cloud endpoint serves),
+    while :class:`app.core.constants.MidasProductScope` labels the product
+    ``designer`` for humans.  Two names for two different things — a wire path
+    versus a capability classification — so the mapping between them is explicit
+    (:data:`app.core.constants.PRODUCT_SCOPE_BY_PRODUCT`) rather than a guess.
+
+    ``code`` derives from the value (``f"midas_{product.value}"``), so this
+    member also yields the adapter code ``midas_cdn``.
     """
 
     GEN = "gen"
     CIVIL = "civil"
+    DESIGNER = "cdn"
 
 
 # ``MidasVisibility`` is owned by :mod:`app.core.constants` (总纲 §0.3 唯一真源原则)

@@ -450,7 +450,13 @@ async def model_snapshot(
     ]
 
     for name in ("unit", "structure_type"):
-        capability = resolve(TOOL_QUERY, "list", name)
+        # Internal resolution must use the **same adapter the outer call was
+        # routed to** — otherwise the snapshot would silently read a different
+        # product than the one the caller asked for.  `context.capability` is
+        # that resolved row, so its adapter_code is the routing key here.
+        capability = resolve(
+            TOOL_QUERY, "list", name, adapter_code=context.capability.adapter_code
+        )
         result = await adapter.query(
             QueryRequest(
                 request_id=context.request_id,
@@ -475,7 +481,9 @@ async def model_snapshot(
             )
 
     for name in _SNAPSHOT_COUNTS:
-        capability = resolve(TOOL_QUERY, "count", name)
+        capability = resolve(
+            TOOL_QUERY, "count", name, adapter_code=context.capability.adapter_code
+        )
         result = await adapter.query(
             QueryRequest(
                 request_id=context.request_id,

@@ -608,6 +608,28 @@ CREATE TABLE IF NOT EXISTS tool_interfaces (
     response_root_key   TEXT,
     operation         TEXT NOT NULL,
     resource          TEXT,
+    -- V2.1 增补（总纲 §4.2.11）：能力三层分类。
+    --   product_scope = 该端点适用于哪个 MIDAS 产品
+    --   domain        = 业务域（前端一级菜单 / LLM 第一层筛选）
+    --   feature       = 手册章节（前端二级菜单 / LLM 第二层筛选）
+    -- 三者为**列而非 metadata_json 字段**：product_scope 在每次能力解析时都要
+    -- 过滤，domain/feature 是前端分组依据，索引友好是硬要求。
+    --
+    -- product_scope 默认 'unknown' 是一等状态：手册的产品标注不可信
+    -- （对接规范 §3.5 第 15 条：47 条声明 Civil 专属的端点中 32 条在 Gen 上
+    -- 也能应答），因此「尚未实机验证」必须可表达。unknown 的能力**乐观放行**，
+    -- 但信封 warnings 带 unverified 提示（总纲 §4.2.11 裁决）。
+    product_scope     TEXT NOT NULL DEFAULT 'unknown'
+                      CHECK(product_scope IN ('gen','civil','designer','both','unknown')),
+    -- domain 可空（未归域）。**不写 IS NULL OR**：CHECK 仅在 FALSE 时失败，
+    -- 而 NULL IN (...) 求值为 NULL，三值逻辑下通过。刻意与 ORM 的 enum_check
+    -- 同形，否则 SQLite（本 DDL）与 PostgreSQL（create_all）约束不一致。
+    domain            TEXT
+                      CHECK(domain IN (
+                          'project','model','load','analysis',
+                          'result','design','view','operation'
+                      )),
+    feature           TEXT,
     request_schema_json TEXT,
     response_schema_json TEXT,
     enabled           INTEGER NOT NULL DEFAULT 1,
@@ -625,6 +647,11 @@ ON tool_interfaces(adapter_code, interface_code);
 
 CREATE INDEX IF NOT EXISTS ix_tool_interfaces_tool
 ON tool_interfaces(tool_id);
+
+-- 总纲 §4.2.11：三层分类的复合索引。能力解析按产品过滤，前端按 域→章 分组，
+-- 一个索引同时服务两者。
+CREATE INDEX IF NOT EXISTS ix_tool_interfaces_scope
+ON tool_interfaces(product_scope, domain, feature);
 
 -- =========================================================
 -- 9. Schema Registry
@@ -654,9 +681,18 @@ ON schemas(schema_type);
 -- 10. Capability Registry
 -- =========================================================
 
+-- v1.0 修订两处（在表仍为空时改，零迁移成本）：
+--   * 新增 tool_id —— `Capability.tool`（MCP 工具名）此前在库里**没有归宿**。
+--     它**不能**从 tool_interfaces.tool_id 推导：实测 /post/TABLE 的 POST 被
+--     midas_execute 与 midas_query 共用（B-3 引入 capability_interfaces 正是
+--     为了这种共用），而 platform-owned 的能力根本没有 interface。
+--     因此 tool 是**能力自身**的属性。
+--   * adapter_code 改为**可空** —— midas_task 的 7 个能力是 platform-owned
+--     （对接规范 §2.5.1），没有 adapter 可指。
 CREATE TABLE IF NOT EXISTS capabilities (
     id               INTEGER PRIMARY KEY AUTOINCREMENT,
-    adapter_code     TEXT NOT NULL,
+    tool_id          INTEGER NOT NULL,
+    adapter_code     TEXT,
     capability_code  TEXT NOT NULL,
     resource         TEXT NOT NULL,
     action           TEXT NOT NULL,
@@ -666,15 +702,29 @@ CREATE TABLE IF NOT EXISTS capabilities (
     constraints_json TEXT,
     created_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(tool_id) REFERENCES tools(id),
     FOREIGN KEY(adapter_code) REFERENCES adapters(code),
     FOREIGN KEY(interface_id) REFERENCES tool_interfaces(id)
 );
 
+-- 有 adapter 的能力：(adapter_code, capability_code) 唯一。
+-- **同一 capability_code 可对每个 adapter 各存一行** —— 这正是多产品扩展所需的
+-- 键（node.list 在 gen / civil / designer 上各一行）。注意：代码里的 `_TABLE`
+-- 目前只按 `code` 键控，无法表达这一点，是阶段 2 暴露的待修项。
 CREATE UNIQUE INDEX IF NOT EXISTS ux_capability
 ON capabilities(adapter_code, capability_code);
 
+-- platform-owned 的能力（adapter_code IS NULL）：capability_code 全局唯一。
+-- SQL 里 NULL 互不相等，所以上面那条复合唯一索引**管不住**这一半；
+-- 没有本索引，`task.get` 可以被插入两次而无人察觉。
+CREATE UNIQUE INDEX IF NOT EXISTS ux_capability_platform
+ON capabilities(capability_code) WHERE adapter_code IS NULL;
+
 CREATE INDEX IF NOT EXISTS ix_capabilities_resource_action
 ON capabilities(resource, action);
+
+CREATE INDEX IF NOT EXISTS ix_capabilities_tool
+ON capabilities(tool_id);
 
 -- V2.1 新增（B-3）：Capability ↔ Interface 多对多关联表。
 -- 一个能力可能由多个 Interface 组合实现；一个 Interface 可被多个能力复用。
@@ -3317,13 +3367,32 @@ POST /...
 
 ## 16.1 解析表结构支撑
 
+解析从**调用方选定的 MCP 工具**开始，逐层向下到 adapter：
+
 | 解析环节 | 落库表 |
 |---|---|
-| 定位 Adapter | `adapters.code` / `adapters.status` |
+| 定位 Tool | `capabilities.tool_id` → `tools.id`（v1.0 修订新增） |
 | 定位能力 | `capabilities(adapter_code, capability_code)`，唯一键 `ux_capability` |
 | 能力 → Interface | `capability_interfaces`（多对多，裁决 B-3） |
 | Interface 明细 | `tool_interfaces`，唯一键 `ux_tool_interface(adapter_code, interface_code)` |
 | 请求 Schema 二次校验 | `tool_interfaces.request_schema_json` / `capabilities.constraints_json` |
+| 定位 Adapter | `adapters.code` / `adapters.status` |
+
+> **为什么 `tool_id` 落在 `capabilities` 而不在 `tool_interfaces`。**
+> `tool_interfaces.tool_id` 存在但**不足以**推导能力归属：实测 `/post/TABLE` 的
+> POST 被 `midas_execute` 与 `midas_query` **共用**（裁决 B-3 引入
+> `capability_interfaces` 正是为了这种共用），且 platform-owned 的能力没有
+> interface。所以「这个能力由哪个工具暴露」是**能力自身**的属性。
+>
+> **`adapter_code` 可空**（v1.0 修订）：`midas_task` 的 7 个能力是
+> platform-owned（对接规范 §2.5.1 —— MIDAS 没有任务端点），没有 adapter 可指。
+> 可空使 `ux_capability` 失去对它们的约束力（SQL 中 NULL 互不相等），
+> 因此补部分唯一索引 `ux_capability_platform`。
+>
+> **同一 `capability_code` 可按 adapter 各存一行** —— `node.list` 在 gen / civil /
+> designer 上各一行，互不覆盖。这是多产品扩展所需的键。
+> ⚠️ 代码中的 `_TABLE` 目前只按 `code` 键控，**尚不能表达这一点**；将其改为按
+> `(adapter_code, code)` 键控是阶段 3（能力表入库）的前置项。
 
 ## 16.2 解析失败的错误码
 
@@ -3849,6 +3918,38 @@ register(adapter)
   多个候选时取 `status='enabled'` 且版本范围最精确者
 - 无候选 → `ADAPTER_NOT_FOUND`
 - 候选存在但 `status='disabled'` → `ADAPTER_UNAVAILABLE`
+
+## 21.1 选实例（多产品路由，总纲 §4.9）
+
+> **裁决（总纲 §4.9.1）：路由链一律为「实例 → 适配器 → 能力」，禁止反向。**
+> 本节规定**唯一**允许决定「这次调用去哪个实例」的地方。
+
+```
+select_adapter_code(registry, tool, requested) -> str | None
+```
+
+| 已注册适配器 | 调用方指定 | 结果 |
+|---|---|---|
+| 平台拥有的工具（`midas_task`） | （忽略） | `None`（不选实例） |
+| 任意 | 已注册的 code | 该 code |
+| 任意 | 未注册的 code | `ADAPTER_NOT_FOUND` |
+| 恰好 1 个 | 否 | 该适配器（唯一，无歧义） |
+| **0 个** | 否 | `CLIENT_NOT_CONNECTED` |
+| **>1 个** | **否** | **`VALIDATION_ERROR`（歧义，拒绝）** |
+
+**`>1` 且未指定必须拒绝，这是硬约束**（总纲 §4.9.2 闸 1）。原实现会回退到
+`capabilities.adapter_code`（硬编码 `midas_gen`），实机确证：三产品都注册时，
+不带 `adapter` 的调用**成功返回 Gen 的数据**——调用方以为在操作 Civil。
+猜测的代价是静默的数据损坏，拒绝的代价只是一次明确的报错。
+
+**与 §16 的衔接**：本函数产出 `adapter_code`，随后交给
+`CapabilityResolver.resolve(adapter_code, tool, action, resource)`，
+后者在**该适配器内**解析能力。能力解析因此只能回答「这个实例支持不支持这个能力」，
+不可能再反推实例。
+
+**能力表的键控必须与之一致**（总纲 §4.2.12 / §4.9.3）：
+按 `(adapter_code, capability_code)`，同一 `capability_code` 在每个适配器下各一行。
+枚举全部能力只能用有序集合，**不得**用 code 为键的字典——后者会让后一行静默覆盖前一行。
 
 ---
 

@@ -488,6 +488,164 @@ load_parameter_library.parameter_type  wind / snow / seismic / temperature / liv
 > 原 V2.1 构建过程中发现总纲 §4.2 未覆盖这些表的取值，已在 V2.1 中按本规范精神临时定义并标注。
 > 现正式收录于此，V2.1 与 v1.2 应以本节为唯一真源。
 
+### 4.2.11 能力三层分类（`tool_interfaces`）
+
+**背景。** `tool_interfaces` 从 32 个端点扩展到三个产品的全部接口（约 1,373 个条目 /
+约 683 个唯一 URI）后，出现两个本规范此前无法回答的问题：
+
+1. **同一个端点在不同产品上是否可用？** 连 Gen NX 却看到 Civil 专属端点，
+   调用后只会得到 MIDAS 的 404 —— 而正确行为是「该能力不适用于本产品」。
+2. **LLM 如何在上千个端点中定位？** 从 683 个里选一个不可行。
+
+因此 `tool_interfaces` 新增三列，构成**严格三层**分类：
+
+```text
+product_scope          gen / civil / designer / both / unknown
+  └── domain           8 个     ← 前端一级菜单；LLM 第一层筛选
+        └── feature    27 个     ← 前端二级菜单；LLM 第二层筛选
+              └── capability    端点
+```
+
+**三列均为封闭集合，且必须是「列」而非 `metadata_json` 里的字段** ——
+`product_scope` 在**每次能力解析**时都要过滤，`domain`/`feature` 是前端的分组依据，
+索引友好是硬要求。`metadata_json` 仅保留溯源与端点级怪癖
+（`source_chapter` / `outer_key_means` / `new_file_get_put_only`）。
+
+#### `product_scope`（封闭 5 值）
+
+```text
+gen / civil / designer / both / unknown        默认 unknown
+```
+
+| 取值 | 含义 |
+|---|---|
+| `gen` / `civil` / `designer` | 仅该产品可用 |
+| `both` | 两个或以上产品均可用 |
+| **`unknown`** | **尚未对实机验证** |
+
+> **裁决：`unknown` 是**一等状态**，不是占位符。**
+> 《对接规范》§3.5 第 15 条实测：手册声明「Civil 专属」的 47 个端点中，
+> **32 个在 Gen NX 上也能应答**。手册的产品标注**不可信**，
+> 因此「尚未验证」必须可表达，而不是假装知道。
+>
+> **`unknown` 的默认行为（裁决）：乐观放行 + `unverified` 警告。**
+> 即：`unknown` 的能力**可见、可调用**，但信封 `warnings` 中带一条
+> 「该端点的产品适用范围尚未实机验证」。理由：1,373 条逐条验证需要时间，
+> 在验证完成前把大量能力隐藏起来，比带警告放行更糟。实机验证后收敛为
+> `gen`/`civil`/`designer`/`both`。
+
+#### `domain`（封闭 8 值）
+
+```text
+project / model / load / analysis / result / design / view / operation
+```
+
+#### `feature`（封闭 27 值）
+
+手册章节，一一对应 `api_chapters/01..27`：
+
+```text
+doc                        db_project_structure       db_node_element
+db_properties              db_boundary                db_static_loads
+db_temperature_prestress   db_moving_loads            db_dynamic_loads
+db_construction_stage      db_settlement_misc_loads   db_analysis_control
+db_load_combinations       db_pushover                ope
+view                       db_bridge                  post_pre_process
+post_analysis_result_1     post_analysis_result_2     post_story_tables
+post_th_hy_pushover        post_design                db_design
+design_steel_kds41302022   design_rc_kds41202022      design_src_aiksrc2k
+```
+
+#### `feature` → `domain` 的映射（严格全函数）
+
+每个 `feature` **恰好属于一个** `domain`，**不得**出现未归域或一对多：
+
+| domain | features | 数量 |
+|---|---|---|
+| `project` | `doc`, `db_project_structure` | 2 |
+| `model` | `db_node_element`, `db_properties`, `db_boundary`, `db_bridge` | 4 |
+| `load` | `db_static_loads`, `db_temperature_prestress`, `db_moving_loads`, `db_dynamic_loads`, `db_construction_stage`, `db_settlement_misc_loads` | 6 |
+| `analysis` | `db_analysis_control`, `db_load_combinations`, `db_pushover` | 3 |
+| `result` | `post_pre_process`, `post_analysis_result_1`, `post_analysis_result_2`, `post_story_tables`, `post_th_hy_pushover` | 5 |
+| `design` | `post_design`, `db_design`, `design_steel_kds41302022`, `design_rc_kds41202022`, `design_src_aiksrc2k` | 5 |
+| `view` | `view` | 1 |
+| `operation` | `ope` | 1 |
+| | **合计** | **27** |
+
+> 映射表的权威实现在 `app/core/constants.py` 的 `CAPABILITY_FEATURE_DOMAIN`，
+> 与两个枚举放在一起，使「新增章节却忘记归域」不可能悄悄发生。
+
+#### 约束与落库
+
+- `product_scope`：`TEXT NOT NULL DEFAULT 'unknown'` + `CHECK`（封闭 5 值）
+- `domain`：`TEXT` 可空（未归域）+ `CHECK`（封闭 8 值）
+- `feature`：`TEXT` 可空
+- 复合索引 `ix_tool_interfaces_scope(product_scope, domain, feature)`
+
+> **可空列的 CHECK 写法：不得写 `IS NULL OR`。**
+> SQL 的 `CHECK` 仅在条件求值为 **FALSE** 时失败，而 `NULL IN (...)` 求值为
+> `NULL`，三值逻辑下**通过**。因此 `CHECK(domain IN (...))` 本身即允许 NULL。
+> 两条建表路径必须用**同一种形式**：SQLite 走 `sql/001_schema.sql`，
+> PostgreSQL 走 `Base.metadata.create_all`（即 ORM 的 `enum_check`），
+> 形式不同会产生**两个部署路径约束不一致**的静默分歧。
+
+> **产品过滤是数据范围过滤，不新增权限码。**
+> 与 §4.8.2 的权限检查**叠加**生效，而非替代 —— 与《对接规范》§2.5.4 第 5 条
+> 对实例归属的处理同理。不适用产品的能力以 **`CAPABILITY_NOT_SUPPORTED`（422）**
+> 拒绝；该码已在 §4.4 封闭集合内，**不新增错误码**。
+
+### 4.2.12 能力注册表的键控（`capabilities`）
+
+为多产品扩展（Gen / Civil NX / Civil Designer）做准备时，发现 `capabilities`
+表有三处无法表达的事。**三处均在表仍为空时修正，迁移成本为零。**
+
+#### 一、`tool_id` —— 能力归属哪个 MCP 工具
+
+**裁决：新增 `capabilities.tool_id INTEGER NOT NULL` → `tools.id`。**
+
+此前 `Capability.tool`（`midas_query` / `midas_model` / `midas_execute` /
+`midas_task`）**在数据库里没有归宿**。它**不能**从 `tool_interfaces.tool_id` 推导：
+
+- 实测 `/post/TABLE` 的 POST 端点被 `midas_execute` **与** `midas_query` **共用**
+  —— 这正是裁决 B-3 引入 `capability_interfaces` 多对多所要表达的情形；
+- platform-owned 的能力（`midas_task` 的 7 个）**没有 interface**，无从推导。
+
+因此「由哪个工具暴露」是**能力自身**的属性，落在 `capabilities` 上。
+
+> 附带实测：`(resource, action)` 组合在现有 162 行中**唯一决定** `tool`（0 冲突）。
+> 但那是**数据的巧合，不是 schema 的保证** —— 依赖它会重复本项目已犯过的
+> 「用约定代替约束」的错误（`tasks.requested_by` 无写入方、MCP 与 REST 的归属
+> 过滤分歧，皆属此类）。故取显式列，不取推导。
+
+#### 二、`adapter_code` 可空 —— platform-owned 能力
+
+**裁决：`capabilities.adapter_code` 改为**可空**。**
+
+`midas_task` 的 7 个能力是 platform-owned（《对接规范》§2.5.1：MIDAS 没有任务
+端点），**没有 adapter 可指**。原 `NOT NULL` 使它们**根本无法落库** ——
+DB 驱动的能力表会静默丢掉整个 `midas_task` 工具。
+
+#### 三、`capability_code` 按 adapter 唯一 —— 多产品的前提
+
+**裁决：`ux_capability(adapter_code, capability_code)` 保持不变，并补部分唯一索引
+`ux_capability_platform(capability_code) WHERE adapter_code IS NULL`。**
+
+- **同一 `capability_code` 可按 adapter 各存一行**：`node.list` 在 gen / civil /
+  designer 上各一行，互不覆盖。这是多产品扩展**必需**的键。
+- 但 `adapter_code` 可空后，SQL 中 **NULL 互不相等**，复合唯一索引**管不住**
+  platform-owned 那一半 —— `(NULL, 'task.get')` 可被插入两次而无人察觉。
+  部分唯一索引补上这一半（SQLite 与 PostgreSQL 均支持部分索引）。
+
+> **⚠️ 代码侧待修（已知偏离）：** `app/mcp/capabilities.py` 的 `_TABLE` 目前**只按
+> `code` 键控**，且 `CapabilityResolver` 在调用方指定的 adapter 与能力的
+> `adapter_code` 不一致时直接以 `CAPABILITY_NOT_SUPPORTED` 拒绝
+> （`capability.py` §16.2）。这意味着**当前代码结构上无法表达「同一能力属于多个
+> 产品」** —— 给 civil 再加一行 `node.list` 会覆盖 gen 那行。
+>
+> 该项是**阶段 3（能力表入库）的前置条件**，需将 `_TABLE` 改为按
+> `(adapter_code, code)` 键控，并相应调整解析与查询接口。**本规范先行记录该
+> 偏离**，以免实现落后于 schema 而无人察觉。
+
 ## 4.3 统一响应信封
 
 ### 4.3.1 REST 信封（v1.2 全部接口适用）
@@ -782,6 +940,69 @@ assistant:execute   → engineer 及以上，且必须通过 §5 高风险确认
 
 > **裁决**：v1.1 §72 把「恢复数据库」列为 AI 可确认的高风险操作，与「`data:restore` 仅 super_admin」冲突。
 > **结论**：AI 助手**不得**触发 `data:restore`。§72 清单中「恢复数据库」**移除**，改由运维页面人工操作。
+
+## 4.9 多产品多租户路由
+
+> 完整方案见 `docs/多产品多租户路由框架_v1.0.md`；本节只记**裁决**。
+
+### 4.9.1 路由方向（唯一）
+
+**裁决：路由链一律为「实例 → 适配器 → 能力」，禁止反向。**
+
+```
+调用方 → midas_client_id → midas_clients.adapter_code → 该适配器下的 (resource, action)
+```
+
+**禁止**由能力反推适配器。原实现把 `capabilities.adapter_code` 硬编码为 `'midas_gen'`，
+后果经实机确证（Gen / Civil NX / Civil Designer 三实例）：
+
+| 场景 | 原行为 | 应有行为 |
+|---|---|---|
+| 只部署 Civil NX | 每个能力 `ADAPTER_NOT_FOUND` | 自动选中 Civil |
+| 只部署 Civil Designer | 同上 | 自动选中 Designer |
+| 三个都注册，不指定实例 | **`success=True`，静默走 Gen** | **拒绝** |
+
+> **第三行是数据混乱的直接来源**：调用方以为在操作 Civil，实际改了 Gen 的模型，
+> 且**没有任何提示**。故本裁决为**实现阻断级**。
+
+### 4.9.2 四道闸
+
+| 闸 | 规则 | 失败码（§4.4 封闭集合） |
+|---|---|---|
+| **1. 歧义即拒绝** | 可用实例 `>1` 且调用方未指定 → **拒绝，不得猜测** | `VALIDATION_ERROR` |
+| 2. 数据范围 | 用户只能使用其有权使用的实例（§4.8.2 之上的数据范围过滤） | `PERMISSION_DENIED` |
+| 3. 能力可用性 | 目标适配器下无该 `(resource, action)` | `CAPABILITY_NOT_SUPPORTED` |
+| 4. 产品范围 | `product_scope` 不允许（§4.2.11） | `CAPABILITY_NOT_SUPPORTED` |
+
+**闸 1 的实例选择规则（完整）：**
+
+| 可用实例数 | 调用方指定 | 行为 |
+|---|---|---|
+| 0 | — | `CLIENT_NOT_CONNECTED` |
+| 1 | 否 | 自动选中（唯一，无歧义） |
+| 1 | 是，但不匹配 | `PERMISSION_DENIED` |
+| **>1** | **否** | **`VALIDATION_ERROR`（歧义，必须显式指定）** |
+| >1 | 是 | 校验在可用集内 → 用它 |
+
+> **裁决：闸 1 是硬约束。** 「宁可让调用方多传一个参数，也不能让它改错模型」——
+> 猜测的代价是**静默的数据损坏**，而拒绝的代价只是一次明确的报错。
+> 平台拥有的工具（`midas_task`）不参与选实例：MIDAS 无任务端点
+> （《对接规范》§2.5.1），其能力 `adapter_code` 为 `NULL`。
+
+### 4.9.3 能力表的键控
+
+与 §4.2.12 一致：`capabilities` 与内存能力表均按 **`(adapter_code, capability_code)`** 键控。
+
+**裁决：不存在「按 code 单独键控」的形式。** 同一 `capability_code` 在每个适配器下各有一行
+（`node.list` 在 gen / civil / cdn 各一行），按 code 单独键控会让后一行**静默覆盖**前一行——
+这正是 §4.9.1 那条「静默走 Gen」的成因。
+
+因此枚举全部能力**只能**用有序集合（`capability_rows()`），**不得**用 code 为键的字典。
+
+### 4.9.4 不新增错误码
+
+§4.9.2 用到的四个码**全部已在 §4.4 封闭集合内**，本框架不新增任何错误码、
+不新增 ID 前缀、不新增权限码。
 
 ---
 

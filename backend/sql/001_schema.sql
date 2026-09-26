@@ -418,6 +418,30 @@ CREATE TABLE IF NOT EXISTS tool_interfaces (
     response_root_key TEXT,
     operation         TEXT NOT NULL,
     resource          TEXT,
+    -- ===== 三层分类（v1.0 修订，《总纲》§4.2.12 / 对接规范 §7.1）=====
+    -- product_scope = 该端点适用于哪个 MIDAS 产品
+    -- domain        = 业务域（前端一级菜单 / LLM 第一层筛选）
+    -- feature       = 手册章节（前端二级菜单 / LLM 第二层筛选）
+    --
+    -- 三者是**列而非 metadata_json 里的字段**：它们都是过滤与分组条件
+    -- （product_scope 在每次能力解析时都要过滤），索引友好是硬要求。
+    --
+    -- product_scope 默认 'unknown'：手册的产品标注**不可信**——对接规范 §3.5
+    -- 第 15 条实测，47 条声明「Civil 专属」的端点中 32 条在 Gen NX 上也能应答。
+    -- 因此「尚未实机验证」必须是一个**显式状态**，而不是假装知道。
+    product_scope     TEXT NOT NULL DEFAULT 'unknown'
+                      CHECK(product_scope IN ('gen','civil','designer','both','unknown')),
+    -- domain 可空（未归域），且**不需要写 IS NULL OR**：SQL 的 CHECK 只在条件
+    -- 求值为 FALSE 时失败，而 NULL IN (...) 求值为 NULL —— 三值逻辑下通过。
+    -- 这里刻意与 ORM 的 enum_check 保持**同一种形式**：测试夹具用
+    -- Base.metadata.create_all 建表（tests/conftest.py），形式不同会让
+    -- 「测试用的 schema」与「本文件产出的 schema」约束不一致。
+    domain            TEXT
+                      CHECK(domain IN (
+                          'project','model','load','analysis',
+                          'result','design','view','operation'
+                      )),
+    feature           TEXT,
     request_schema_json TEXT,
     response_schema_json TEXT,
     enabled           INTEGER NOT NULL DEFAULT 1,
@@ -436,14 +460,29 @@ ON tool_interfaces(adapter_code, interface_code);
 CREATE INDEX IF NOT EXISTS ix_tool_interfaces_tool
 ON tool_interfaces(tool_id);
 
+-- 三层分类的复合索引：能力解析要按产品过滤，前端要按 域→章 分组。
+CREATE INDEX IF NOT EXISTS ix_tool_interfaces_scope
+ON tool_interfaces(product_scope, domain, feature);
+
 -- =========================================================
 -- 10. Capability Registry（2 张表）
 -- =========================================================
 
 -- capabilities：能力语义注册表（resource + action 决定该 Adapter 能做什么）。
+--
+-- v1.0 修订两处（表为空时改，零迁移成本）：
+--   * 新增 tool_id —— 此前 `Capability.tool`（MCP 工具名）在库里**没有归宿**。
+--     它**不能**从 tool_interfaces.tool_id 推导：实测 /post/TABLE 的 POST 被
+--     midas_execute 与 midas_query 共用（裁决 B-3 说的正是这种共用），
+--     而 platform-owned 的 24 行根本没有 interface。所以它是能力自身的属性。
+--   * adapter_code 改为**可空** —— 7 个 midas_task 能力是 platform-owned
+--     （对接规范 §2.5.1：MIDAS 没有任务端点），没有 adapter 可指。
+--     NULL 使 ux_capability 失去对它们的唯一性（SQL 里 NULL 互不相等），
+--     因此补一条**部分唯一索引**只管 NULL 那一半。
 CREATE TABLE IF NOT EXISTS capabilities (
     id               INTEGER PRIMARY KEY AUTOINCREMENT,
-    adapter_code     TEXT NOT NULL,
+    tool_id          INTEGER NOT NULL,
+    adapter_code     TEXT,
     capability_code  TEXT NOT NULL,
     resource         TEXT NOT NULL,
     action           TEXT NOT NULL,
@@ -453,15 +492,27 @@ CREATE TABLE IF NOT EXISTS capabilities (
     constraints_json TEXT,
     created_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(tool_id) REFERENCES tools(id),
     FOREIGN KEY(adapter_code) REFERENCES adapters(code),
     FOREIGN KEY(interface_id) REFERENCES tool_interfaces(id)
 );
 
+-- 有 adapter 的能力：(adapter_code, capability_code) 唯一。
+-- 同一 capability_code 可对每个 adapter 各存一行 —— 这正是多产品扩展所需的键
+-- （node.list 在 gen 与 civil 上各有一行），也是本表与 `_TABLE` 目前不一致之处。
 CREATE UNIQUE INDEX IF NOT EXISTS ux_capability
 ON capabilities(adapter_code, capability_code);
 
+-- platform-owned 的能力（adapter_code IS NULL）：capability_code 全局唯一。
+-- 没有它，NULL 互不相等的语义会让 `task.get` 被插入两次而无人察觉。
+CREATE UNIQUE INDEX IF NOT EXISTS ux_capability_platform
+ON capabilities(capability_code) WHERE adapter_code IS NULL;
+
 CREATE INDEX IF NOT EXISTS ix_capabilities_resource_action
 ON capabilities(resource, action);
+
+CREATE INDEX IF NOT EXISTS ix_capabilities_tool
+ON capabilities(tool_id);
 
 -- capability_interfaces：Capability ↔ Interface 多对多关联（V2.1 新增，裁决 B-3）。
 CREATE TABLE IF NOT EXISTS capability_interfaces (

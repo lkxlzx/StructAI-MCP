@@ -651,11 +651,48 @@ MAPI-Key: <key>
 ```json
 {
   "new_file_get_put_only": true,
-  "product_scope": "both|gen|civil",
   "source_chapter": "03_DB_Node_Element",
   "outer_key_means": "node|element|load_case|group|self"
 }
 ```
+
+### 7.1.1 订正：`product_scope` 提升为**列**，并新增 `domain` / `feature`
+
+本规范早期版本把 `product_scope` 放在 `metadata_json` 里：
+
+```json
+{ "product_scope": "both|gen|civil" }
+```
+
+**该写法已废弃**（总纲 §4.2.11 裁决）。原因：`product_scope` 在**每次能力解析**时
+都要参与过滤，而 JSON 字段无法有效索引；`domain`/`feature` 同理，它们是前端的
+分组依据。三者改为**列**，并加复合索引 `ix_tool_interfaces_scope`。
+
+同时把 `product_scope` 的取值从 3 值扩为 **5 值**，并新增第三产品：
+
+```
+product_scope   gen / civil / designer / both / unknown      默认 unknown
+domain          8 值（封闭）      ← 前端一级菜单 / LLM 第一层筛选
+feature         27 值（封闭）     ← 手册章节 / 前端二级菜单 / LLM 第二层筛选
+```
+
+权威取值表与 `feature → domain` 映射见**总纲 §4.2.11**；本节只记数据库形态。
+
+**为什么必须有 `unknown`（本规范实测所得）：**
+
+> §3.5 第 15 条已证明：手册对 ch08/ch17 的「Civil 专属」标注**不可靠** ——
+> 47 个声明 Civil 专属的端点中，**32 个在 Gen NX 上也能应答**。
+
+所以手册的产品标注**不能作为 `product_scope` 的取值来源**，只能作为线索。
+真实取值必须**逐端点对实机探测**得到；在探测之前，该端点就是 `unknown`。
+
+**`unknown` 的默认行为（总纲 §4.2.11 裁决）：乐观放行 + `unverified` 警告。**
+不适用产品的能力以 `CAPABILITY_NOT_SUPPORTED`（422，总纲 §4.4 封闭集合内）
+拒绝，**不新增错误码**；产品过滤与 §4.8.2 的权限检查**叠加**生效。
+
+> **`metadata_json` 保留 `source_chapter`** —— 它是**溯源**信息（读出来给人看），
+> 不是过滤条件；而 `feature` 是同一件事的**可查询形态**。两者并存是有意的：
+> 前者记录来源，后者供查询。抽取管线应同时写入。
 
 **`midas_clients` 需另加 4 列** —— 见 §2.5.4 第 5 条（多租户归属）：
 `owner_id` / `department` / `visibility` / `max_concurrency`。
@@ -887,6 +924,8 @@ info_schema     取自 GET /info{endpoint}
 
 ## 11.1 被测环境
 
+### 11.1.1 第一轮：本机 Gen NX（只读）
+
 | 项 | 值 |
 |---|---|
 | 产品 | **MIDAS Gen NX**（`/mapikey/verify` 返回 `"program":"gen"`） |
@@ -894,6 +933,29 @@ info_schema     取自 GET /info{endpoint}
 | 验证端点根 | `http://localhost:3030` |
 | 探测方式 | **纯 GET，只读**（未执行任何写操作、`/doc/NEW` 或 `DELETE`） |
 | 模型状态 | 项目已打开，**模型为空**（`/ope/PROJECTSTATUS` 各计数均为 0） |
+
+### 11.1.2 第二轮：三个产品并列（含云端中继）
+
+> 为多产品路由框架（总纲 §4.9）验收而建立。**三个产品同时连通**，
+> 这是「同一平台连接不同用户的不同产品」的实测基础。
+
+| 产品 | 接入方式 | Base URL | `program` 回显 | 实测 |
+|---|---|---|---|---|
+| **MIDAS Gen NX** | 本机回环 | `http://localhost:3030/gen` | `gen` | `healthy` |
+| **MIDAS Civil NX** | 云端中继 | `https://moa-engineers.midasit.cn:443/civil` | `civil` | `healthy` |
+| **MIDAS Civil Designer** | 云端中继 | `https://moa-engineers.midasit.cn:443/cdn` | `cdn` | `healthy` |
+
+三者均 `keyVerified: true`、`status: "connected"`，延迟 250–630 ms。
+
+> **第三产品**：`product_scope` 的取值集合（总纲 §4.2.11）因此从
+> `gen / civil / both / unknown` 扩为 **`gen / civil / designer / both / unknown`**。
+>
+> **URL 段与分类名不同**：云端 URL 的路径段是 **`cdn`**（MIDAS 的 API 要求），
+> 而 `product_scope` 标为 **`designer`**（给人看的分类）。两者是不同轴——
+> 前者是 wire 细节，后者是能力分类——映射由
+> `app.core.constants.PRODUCT_SCOPE_BY_PRODUCT` 显式给出，不靠推断。
+> 适配器 code 由产品值派生（`f"midas_{product.value}"`），故 Designer 的
+> 适配器 code 是 **`midas_cdn`**。
 
 ## 11.2 已验证为真的结论
 
@@ -928,8 +990,20 @@ info_schema     取自 GET /info{endpoint}
 
 | 项 | 文档说法 | 实测 |
 |---|---|---|
-| `/mapikey/verify` 的 `user` / `connectionID` | 官方示例给出 `"User_ID"` 与一个连接 ID | **实测均为空字符串** `""`。`keyVerified`/`status`/`program` 正常。**因此不可依赖 `user` 字段**（SDK 亦独立发现它其实是 MAPI 账号邮箱，而非 NX 主机账户） |
+| `/mapikey/verify` 的 `user` / `connectionID` | 官方示例给出 `"User_ID"` 与一个连接 ID | **本机回环实测均为空字符串** `""`。`keyVerified`/`status`/`program` 正常。**因此不可依赖 `user` 字段**（SDK 亦独立发现它其实是 MAPI 账号邮箱，而非 NX 主机账户） |
 | `/info` 的字段完整度 | 官方称返回该资源的 Key 与类型 | 实测**扁平且不完整**（`MATL` 仅 9 属性、`CONS` 仅 1 个 `ITEMS`），不含 `required`、不表达分支 |
+
+> **订正（第二轮实测）：上面第一行的「均为空字符串」只对**本机回环**成立。**
+> **云端中继两者都有值**：
+>
+> | 接入方式 | `user` | `connectionID` |
+> |---|---|---|
+> | 本机 `localhost:3030` | `""` | `""` |
+> | 云端 `moa-engineers.midasit.cn` | `"erwe"` | `"t-NXqIsmTw"`（Civil）/ `"CZXg8vJZQw"`（Designer） |
+>
+> 因此结论应改为：**本地接入为空、云端接入有值**。「不得依赖 `user`」的理由
+> （它无法用来推导 NX 主机的 Windows 账户或路径，§3.5 第 6 条）在两种接入下
+> **都仍然成立**——有值也不代表它描述的是 NX 主机账户。
 
 ## 11.5 写操作验证（第二轮，已获授权）
 
@@ -1154,6 +1228,55 @@ GET /mapikey/verify       -> curl 000     ← 连不碰文档的端点也超时
 > **一般教训**：当观测不足以支撑结论时，正确的做法是把状态命名为**观测到的现象**
 > （`session_unresponsive`）并列出候选，而不是命名成我们**猜测的原因**
 > （`session_frozen`）。后者会在错误的那一半情况下给出错误且有害的处置建议。
+### 11.5.15 🔴 三产品并列时「静默走错产品」——路由方向必须是「实例 → 适配器 → 能力」
+
+**背景。** 为验收多产品路由框架（总纲 §4.9），同时注册 Gen / Civil NX / Civil Designer
+三个实例（§11.1.2），观察同一能力 `midas_query target=node action=list` 的落点。
+
+**实测（修复前）：**
+
+| 注册情况 | 调用 | 结果 |
+|---|---|---|
+| 只 Gen | 不指定 adapter | `success=True` |
+| **只 Civil** | 不指定 adapter | **`ADAPTER_NOT_FOUND`**（去找 `midas_gen`） |
+| **只 Designer** | 不指定 adapter | **`ADAPTER_NOT_FOUND`** |
+| **三个都注册** | **不指定 adapter** | **`success=True` —— 静默走了 Gen** |
+| 三个都注册 | `adapter=midas_civil` | `CAPABILITY_NOT_SUPPORTED` |
+
+**根因**：`adapter.code` 是**产品派生**的（`f"midas_{product.value}"`），而全部
+155 个非平台能力把 `adapter_code` **硬编码为 `'midas_gen'`**，且能力表**只按 `code` 键控**。
+
+**第四行是最危险的一条**：调用方以为在操作 Civil，实际读写了 **Gen 的模型**，
+而且 `success=True` —— **没有任何提示**。报错会被发现，静默走错不会。
+
+**修复后（实测验收）：**
+
+| 注册情况 | 调用 | 结果 |
+|---|---|---|
+| 只 Gen | 不指定 | `success=True` |
+| 只 Civil | 不指定 | `CAPABILITY_NOT_SUPPORTED`（适配器**已找到**，缺 civil 能力行） |
+| 只 Designer | 不指定 | 同上 |
+| **三个都注册** | **不指定** | **`VALIDATION_ERROR`（歧义，拒绝并列出可选项）** |
+| 三个都注册 | `adapter=midas_civil` | `success=True` |
+
+**URL 级证明**（HTTP 传输层记录器，每次调用只触达自己的产品）：
+
+```
+adapter=midas_gen     -> GET http://localhost:3030/gen/db/NODE
+adapter=midas_civil   -> GET https://moa-engineers.midasit.cn/civil/db/NODE
+adapter=midas_cdn     -> GET https://moa-engineers.midasit.cn/cdn/db/NODE
+```
+
+**三条可复用的结论：**
+
+1. **路由方向只能是「实例 → 适配器 → 能力」。** 反向（能力决定实例）在本项目
+   产生了「静默走错产品」这一**数据损坏路径**。
+2. **歧义必须拒绝，不得猜测。** 可用实例 `>1` 且调用方未指定时，猜测的代价是
+   静默改错模型，拒绝的代价只是一次明确的报错。
+3. **「每个适配器只触达自己的 URL」必须被测量，不能靠推断。** 回归的表现是
+   「返回另一个产品的数据且 `success=True`」——只看信封抓不到，必须断言 URL。
+
+> 完整方案见 `docs/多产品多租户路由框架_v1.0.md`；裁决见总纲 §4.9。
 ## 11.6 ✅ 已解决：位移为零是建模错误，不是 MIDAS 异常
 
 ### 根因：`/db/CNLD` 的 `Assign` 外层键才是节点号
