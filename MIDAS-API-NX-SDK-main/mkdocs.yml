@@ -1,0 +1,110 @@
+site_name: midas-nx
+site_description: >-
+  Unified Python and JavaScript/TypeScript SDKs for the MIDAS NX Open API
+  (Civil NX + Gen NX). An employee-led open-source project, not an official
+  MIDAS IT product.
+site_url: https://dennis5882.github.io/MIDAS-API-NX-SDK/
+repo_url: https://github.com/Dennis5882/MIDAS-API-NX-SDK
+repo_name: Dennis5882/MIDAS-API-NX-SDK
+edit_uri: edit/main/docs/
+
+# MkDocs Material over Sphinx: the documentation that already exists in this
+# repo is Markdown, the API reference is generated from Google/reST-ish
+# docstrings that mkdocstrings reads directly, and nobody here needs Sphinx's
+# cross-project inventory machinery. Sphinx would mean converting the existing
+# guides to reST or bolting on MyST for no gain.
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - search.highlight
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            show_source: false
+            show_root_heading: true
+            heading_level: 3
+            members_order: source
+            docstring_section_style: list
+            filters: ["!^_"]
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  # Recipes show the same task in Python and TypeScript side by side.
+  # Only pages that are read on the site use these - the quickstarts and
+  # READMEs are linked as GitHub blobs too, where a tab block would render
+  # as literal text.
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.details
+
+# Repo artifacts that live under docs/ but are not documentation pages.
+exclude_docs: |
+  coverage.json
+  vendor_report_ko.md
+  vendor_report_*.docx
+  vendor_report_triage.md
+  vendor_repro_nmas.py
+  release_notes_*.md
+  planning/
+
+nav:
+  - Overview: index.md
+  - Getting started (Python):
+      - English: en/quickstart.md
+      - 한국어: ko/quickstart.md
+      - 繁體中文: zh-tw/quickstart.md
+      - Python 기초 (한국어): ko/python-basics.md
+  - Getting started (JavaScript / TypeScript):
+      - English: npm/quickstart.md
+      - 한국어: npm/quickstart-ko.md
+      - 繁體中文: npm/quickstart-zh-tw.md
+  - AI-assisted coding:
+      - Safe start:
+          - English: ai-coding/safe-start.md
+          - 한국어: ko/ai-coding/safe-start.md
+      - AI context pack: ai-coding/context-pack.md
+  - Recipes:
+      - Overview: recipes/index.md
+      - Inspect a project: recipes/inspect-project.md
+      - Read nodes and elements: recipes/read-nodes-and-elements.md
+      - Extract a result table: recipes/get-results.md
+  - Safety:
+      - Destructive operations and recovery: safety.md
+  - Reference:
+      - Client and exceptions: reference/client.md
+      - DB resources: reference/db.md
+      - Document lifecycle: reference/document.md
+      - Operation functions: reference/operations.md
+      - View functions: reference/view.md
+      - Post and result extraction: reference/post.md
+      - Design code chapters: reference/design.md
+  - Verification:
+      - How endpoints are verified: verification.md
+      - Live session notes: live_verification_notes.md

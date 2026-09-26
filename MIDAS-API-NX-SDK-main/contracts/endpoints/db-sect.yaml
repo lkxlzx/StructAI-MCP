@@ -1,0 +1,755 @@
+# /db/SECT
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then written
+# by hand: the four documented SECTTYPE tables state their own gate but not
+# their own nesting, because their No. columns continue the common table's
+# SECT_BEFORE numbering. Each table's Request Example is what places the fields,
+# and every one of them puts these under SECT_BEFORE. CALC_OPT is the exception
+# and sits at the top level - confirmed by its example and by a live run on
+# 2026-09-03.
+contractVersion: 1
+id: db-sect
+endpoint: /db/SECT
+name: Section Properties
+surface:
+  className: Section
+  exportName: section
+  modulePath: [db, properties, section]
+  payloadTypeName: SectionPayload
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 04_DB_Properties.md
+    section: "12. `/db/SECT`"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-write-sweep-2026-07-26
+    - product: gen
+      ref: db-write-sweep-2026-07-26
+    - product: gen
+      ref: spfc-calc-opt-2026-09-03
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/SECT/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      For SECTTYPE VALUE the server computes SECT_BEFORE.SECT_I.STIFF and
+      .DESIGN from vSIZE on this method only, and writes them into the stored
+      record. A supplied STIFF is written through instead, under every
+      CALC_OPT value.
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      CALC_OPT has no effect here. A PUT that changes vSIZE stores the new
+      dimensions and keeps the old STIFF, so a resized VALUE section carries
+      section properties that no longer match it - see sdkRule
+      db-sect-put-does-not-recompute.
+
+fields:
+  - key: SECTTYPE
+    description: >-
+      Section Data Type
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    # TODO(review): nobody has omitted this against a live product.
+    # Leave it unverified, or find out - do not read the manual's
+    # 'Optional' as an answer; that is what documentedOptional records.
+    provenance: manual
+  - key: SECT_NAME
+    description: >-
+      Section Name
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    # TODO(review): nobody has omitted this against a live product.
+    # Leave it unverified, or find out - do not read the manual's
+    # 'Optional' as an answer; that is what documentedOptional records.
+    provenance: manual
+  - key: SECT_BEFORE
+    description: >-
+      Section Data (Before Stage)
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    # TODO(review): nobody has omitted this against a live product.
+    # Leave it unverified, or find out - do not read the manual's
+    # 'Optional' as an answer; that is what documentedOptional records.
+    provenance: manual
+    properties:
+      - key: SHAPE
+        description: >-
+          Section Shape
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        # TODO(review): nobody has omitted this against a live product.
+        # Leave it unverified, or find out - do not read the manual's
+        # 'Optional' as an answer; that is what documentedOptional records.
+        provenance: manual
+        # RESOLVED: the manual nests this under 'SECT_BEFORE' by numbering it
+        # '(1)', not by naming a path
+      - key: OFFSET_PT
+        description: >-
+          Offset Direction
+        type: string
+        requirement: optional
+        documentedDefault: CC
+        documentedOptional: true
+        safeToOmit: unverified
+        # TODO(review): nobody has omitted this against a live product.
+        # Leave it unverified, or find out - do not read the manual's
+        # 'Optional' as an answer; that is what documentedOptional records.
+        provenance: manual
+        # RESOLVED: the manual nests this under 'SECT_BEFORE' by numbering it
+        # '(2)', not by naming a path
+      - key: OFFSET_CENTER
+        description: >-
+          Center Location (0: Centroid, 1: Center of Section)
+        type: integer
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        # TODO(review): nobody has omitted this against a live product.
+        # Leave it unverified, or find out - do not read the manual's
+        # 'Optional' as an answer; that is what documentedOptional records.
+        provenance: manual
+        # RESOLVED: the manual nests this under 'SECT_BEFORE' by numbering it
+        # '(3)', not by naming a path
+      - key: HORZ_OFFSET_OPT
+        description: >-
+          Horizontal Offset Option (0: Extreme Fiber, 1: User)
+        type: integer
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        # TODO(review): nobody has omitted this against a live product.
+        # Leave it unverified, or find out - do not read the manual's
+        # 'Optional' as an answer; that is what documentedOptional records.
+        provenance: manual
+        # RESOLVED: the manual nests this under 'SECT_BEFORE' by numbering it
+        # '(4)', not by naming a path
+      - key: USERDEF_OFFSET_YI
+        description: >-
+          Horizontal Offset Value (I-end)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        # TODO(review): nobody has omitted this against a live product.
+        # Leave it unverified, or find out - do not read the manual's
+        # 'Optional' as an answer; that is what documentedOptional records.
+        provenance: manual
+        # RESOLVED: the manual nests this under 'SECT_BEFORE' by numbering it
+        # '(5)', not by naming a path
+      - key: USERDEF_OFFSET_YJ
+        description: >-
+          Horizontal Offset Value (J-end, Tapered only)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        # TODO(review): nobody has omitted this against a live product.
+        # Leave it unverified, or find out - do not read the manual's
+        # 'Optional' as an answer; that is what documentedOptional records.
+        provenance: manual
+        # RESOLVED: the manual nests this under 'SECT_BEFORE' by numbering it
+        # '(6)', not by naming a path
+      - key: VERT_OFFSET_OPT
+        description: >-
+          Vertical Offset Option
+        type: integer
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        # TODO(review): nobody has omitted this against a live product.
+        # Leave it unverified, or find out - do not read the manual's
+        # 'Optional' as an answer; that is what documentedOptional records.
+        provenance: manual
+        # RESOLVED: the manual nests this under 'SECT_BEFORE' by numbering it
+        # '(7)', not by naming a path
+      - key: USERDEF_OFFSET_ZI
+        description: >-
+          Vertical Offset Value (I-end)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        # TODO(review): nobody has omitted this against a live product.
+        # Leave it unverified, or find out - do not read the manual's
+        # 'Optional' as an answer; that is what documentedOptional records.
+        provenance: manual
+        # RESOLVED: the manual nests this under 'SECT_BEFORE' by numbering it
+        # '(8)', not by naming a path
+      - key: USERDEF_OFFSET_ZJ
+        description: >-
+          Vertical Offset Value (J-end, Tapered only)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        # TODO(review): nobody has omitted this against a live product.
+        # Leave it unverified, or find out - do not read the manual's
+        # 'Optional' as an answer; that is what documentedOptional records.
+        provenance: manual
+        # RESOLVED: the manual nests this under 'SECT_BEFORE' by numbering it
+        # '(9)', not by naming a path
+      - key: USER_OFFSET_REF
+        description: >-
+          User Type Offset Reference (0: Centroid, 1: Extreme Fiber)
+        type: integer
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        # TODO(review): nobody has omitted this against a live product.
+        # Leave it unverified, or find out - do not read the manual's
+        # 'Optional' as an answer; that is what documentedOptional records.
+        provenance: manual
+        # RESOLVED: the manual nests this under 'SECT_BEFORE' by numbering it
+        # '(10)', not by naming a path
+      - key: USE_SHEAR_DEFORM
+        description: >-
+          Consider Shear Deformation
+        type: boolean
+        requirement: optional
+        documentedDefault: false
+        documentedOptional: true
+        safeToOmit: unverified
+        # TODO(review): nobody has omitted this against a live product.
+        # Leave it unverified, or find out - do not read the manual's
+        # 'Optional' as an answer; that is what documentedOptional records.
+        provenance: manual
+        # RESOLVED: the manual nests this under 'SECT_BEFORE' by numbering it
+        # '(11)', not by naming a path
+      - key: USE_WARPING_EFFECT
+        description: >-
+          Consider Warping Effect
+        type: boolean
+        requirement: optional
+        documentedDefault: false
+        documentedOptional: true
+        safeToOmit: unverified
+        # TODO(review): nobody has omitted this against a live product.
+        # Leave it unverified, or find out - do not read the manual's
+        # 'Optional' as an answer; that is what documentedOptional records.
+        provenance: manual
+        # RESOLVED: the manual nests this under 'SECT_BEFORE' by numbering it
+        # '(12)', not by naming a path
+
+
+variants:
+  - when:
+      - path: SECTTYPE
+        equals: DBUSER
+    source:
+      table: "12-A. SECT — DB/User (`\"SECTTYPE\": \"DBUSER\"`)"
+      line: 1110
+    fields:
+      - key: SECT_BEFORE
+        description: >-
+          Section Specifications for the I-end.
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: DATATYPE
+            description: >-
+              Data Type · DB: 1 · User: 2
+            type: integer
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            enum: [1, 2]
+            provenance: manual
+          - key: SECT_I
+            description: >-
+              Section Specifications
+            type: object
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            properties:
+              - key: DB_NAME
+                description: >-
+                  DB Name
+                type: string
+                requirement: required
+                appliesWhen:
+                  - path: SECT_BEFORE.DATATYPE
+                    equals: 1
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+                # RESOLVED: the manual puts 'DB' in this row's No. column rather than a number. That
+                # is a condition, not a level: DATATYPE 1 is DB and 2 is User, and the
+                # section's Request Example sends DB_NAME and SECT_NAME together inside
+                # SECT_I for a DB section
+              - key: SECT_NAME
+                description: >-
+                  Section Name of DB
+                type: string
+                requirement: required
+                appliesWhen:
+                  - path: SECT_BEFORE.DATATYPE
+                    equals: 1
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+                # RESOLVED: a second SECT_NAME, and not the record's own. The section's Request
+                # Example sends SECT_NAME at the top level and a different one inside
+                # SECT_I: the outer names the section in the model, this one names a shape
+                # inside the DB that DB_NAME selects
+              - key: vSIZE
+                description: >-
+                  Dimension of Section
+                type: array
+                items:
+                  type: number
+                requirement: required
+                appliesWhen:
+                  - path: SECT_BEFORE.DATATYPE
+                    equals: 2
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+                # RESOLVED: the manual puts 'User' in this row's No. column - the DATATYPE 2 branch,
+                # where the caller gives dimensions instead of naming a DB entry. 12-A's
+                # Request Example shows the DATATYPE 1 side, and 12-B's shows vSIZE in
+                # this position for a section whose dimensions are given rather than
+                # looked up
+  - when:
+      - path: SECTTYPE
+        equals: VALUE
+    source:
+      table: "12-B. SECT — Value (`\"SECTTYPE\": \"VALUE\"`)"
+      line: 1145
+    fields:
+      - key: CALC_OPT
+        description: >-
+          Calculation Options
+        type: boolean
+        requirement: create_only
+        documentedDefault: true
+        documentedOptional: false
+        safeToOmit: true
+        provenance: manual
+        # RESOLVED: measured against a live product on 2026-09-03, on Gen NX. Omitted or
+        # true with no SECT_I.STIFF in the body, the server computes STIFF and
+        # DESIGN from vSIZE; false with no STIFF is refused with `[Error] Section
+        # input data contain errors.`; and a supplied STIFF is stored verbatim
+        # under every value including true. On PUT it does nothing at all - the
+        # body POST refuses is accepted, and a resize never recomputes. The field
+        # is never stored: no GET returned it. See MD-15
+        omissionEvidence: >-
+          Omitted from a POST of the section's own worked example on 2026-09-03 and
+          the record stored, with STIFF computed from vSIZE - which is the
+          documented default of true, made explicit by measurement. Gen NX,
+          verification record spfc-calc-opt-2026-09-03.
+      - key: SECT_BEFORE
+        description: >-
+          Section Specifications for the I-end.
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: SECT_I
+            description: >-
+              Section Specifications
+            type: object
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            properties:
+              - key: vSIZE
+                description: >-
+                  Dimension of Section
+                type: array
+                items:
+                  type: number
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+                # RESOLVED: the manual numbers this '(1)' directly under CALC_OPT, which it types
+                # Boolean. The section's Request Example places it at
+                # SECT_BEFORE.SECT_I.vSIZE, and the live run on 2026-09-03 sent it there
+  - when:
+      - path: SECTTYPE
+        equals: SRC
+    source:
+      table: "12-C. SECT — SRC (`\"SECTTYPE\": \"SRC\"`)"
+      line: 1179
+    fields:
+      - key: SECT_BEFORE
+        description: >-
+          Section Specifications for the I-end.
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: SRC_TYPE
+            description: >-
+              SRC Type · DB: 1 · User: 2
+            type: integer
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            enum: [1, 2]
+            provenance: manual
+          - key: MATL_ELAST
+            description: >-
+              E Ratio (Steel/Concrete)
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: MATL_DENS
+            description: >-
+              Density Ratio
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: MATL_POIS_S
+            description: >-
+              Poisson's Ratio (Steel)
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: MATL_POIS_C
+            description: >-
+              Poisson's Ratio (Concrete)
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: MATL_STIF_FACTOR
+            description: >-
+              Stiffness Reduction Factor (Concrete)
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: SECT_I
+            description: >-
+              Steel Section (DB/User)
+            type: object
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual's No. cell for this row reads '(9) DB', which is the
+            # SECT_BEFORE member number followed by the same DB/User condition 12-A
+            # uses. The section's Request Example sends SECT_I: {DB_NAME, SECT_NAME}
+            properties:
+              - key: DB_NAME
+                description: >-
+                  DB Name
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              - key: SECT_NAME
+                description: >-
+                  Section Name of DB
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+          - key: SECT_J
+            description: >-
+              Concrete Dimensions
+            type: object
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            properties:
+              - key: vSIZE
+                description: >-
+                  Dimension of Section
+                type: array
+                items:
+                  type: number
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+  - when:
+      - path: SECTTYPE
+        equals: PSC
+    source:
+      table: "12-D. SECT — PSC (`\"SECTTYPE\": \"PSC\"`)"
+      line: 1221
+    fields:
+      - key: SECT_BEFORE
+        description: >-
+          Section Specifications for the I-end.
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: SECT_I
+            description: >-
+              Section Specifications
+            type: object
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            properties:
+              - key: vSIZE_PSC_A
+                description: >-
+                  Outer-Height array
+                type: array
+                items:
+                  type: number
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+                # RESOLVED: the manual numbers this row 'i', a roman numeral, which states no level.
+                # The section's Request Example places all four arrays inside
+                # SECT_BEFORE.SECT_I
+              - key: vSIZE_PSC_B
+                description: >-
+                  Outer-Breadth array
+                type: array
+                items:
+                  type: number
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              - key: vSIZE_PSC_C
+                description: >-
+                  Inner-Height array
+                type: array
+                items:
+                  type: number
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              - key: vSIZE_PSC_D
+                description: >-
+                  Inner-Breadth array
+                type: array
+                items:
+                  type: number
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+          - key: USE_WEB_THICK
+            description: >-
+              Web Thickness Check [i, j]
+            type: array
+            items:
+              type: boolean
+            requirement: required
+            documentedDefault: false
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual numbers this '(6)', which reads as a member of the row above
+            # it. The section's Request Example puts it beside SECT_I under
+            # SECT_BEFORE, not inside it
+
+manualDefects:
+  - describes: requiredness
+    manualSays: >-
+      The 12-B table marks `CALC_OPT` `Create Only`, one of only two cells in
+      the whole manual that use that value.
+    actual: >-
+      True here, and measured: the body a POST refuses - `CALC_OPT: false` with
+      no `SECT_I.STIFF` to fall back on, answered `[Error] Section input data
+      contain errors.` - is accepted as a PUT, and a PUT never recomputes
+      `STIFF` even with `CALC_OPT: true` sent explicitly. The defect is that
+      the manual's *other* `Create Only`, `/db/SPFC`'s, does not behave this way
+      at all, so the value carries two contracts with nothing to tell them
+      apart. Registered as MD-15; the contract schema's `create_only` therefore
+      records what the manual claims, not what a product does.
+    evidence: >-
+      docs/live_verification_notes.md, "what the manual's 'Create Only' actually
+      means" (2026-09-03), measured on Gen NX against an empty document.
+  - describes: field_name
+    manualSays: >-
+      The four SECTTYPE tables number their rows `(1)`, `(2)`, `i`..`iv` and
+      `DB`/`User`, none of which names a path, and 12-B's `(1) vSIZE` follows a
+      row typed Boolean.
+    actual: >-
+      Those numbers continue the common table's `SECT_BEFORE` numbering rather
+      than addressing the row above, so read literally they nest a section's
+      dimensions inside a boolean flag. Every one of the four tables' own
+      Request Examples places these fields under `SECT_BEFORE`, and 12-A's
+      `DB`/`User` column is a condition on `DATATYPE`, not a level. The
+      structure in this contract is read from those examples.
+    evidence: >-
+      The section's own Request Examples, 04_DB_Properties.md lines 1118, 1150,
+      1188 and 1230.
+
+sdkRules:
+  - id: db-sect-put-does-not-recompute
+    kind: warn
+    appliesTo: [PUT]
+    reason: >-
+      For SECTTYPE VALUE the server derives SECT_BEFORE.SECT_I.STIFF and
+      .DESIGN from vSIZE on POST only. A PUT that changes vSIZE stores the new
+      dimensions and leaves the old properties, answers 200 with no error, and
+      reads back looking self-consistent - a 0.3m section resized to 0.9m kept
+      AREA 0.004533 where a fresh POST at 0.9m gives 0.008433. Sending
+      CALC_OPT: true on the PUT does not help.
+    alternative: >-
+      Delete the record and POST it again to get the properties recomputed.
+      Neither SDK can do this for the caller: deleting and recreating a section
+      changes what elements reference, which is the caller's decision.
+  - id: db-sect-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-sect-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog. Deleting a section also orphans every element that
+      references it.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 04_DB_Properties.md line 1072
+  table: 공통 Specifications (모든 SECTTYPE 공통)
+  # The chapter documents four of the eight SECTTYPE values its own common
+  # table names. 12-E (TAPERED) is prose describing a second SECT_AFTER object
+  # with no parameter table, and COMBINED, COMPOSITE and SOD have no section at
+  # all. A record under one of those carries fields this contract does not
+  # describe; that is a gap in the manual, not a claim they do not exist.

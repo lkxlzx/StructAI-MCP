@@ -1,0 +1,18 @@
+contractVersion: 1
+id: post-solid-force-local
+endpoint: /post/TABLE
+name: Solid Force Local
+summary: Local solid force components.
+products: [gen, civil]
+source: {manual: {status: documented, repo: Dennis5882/MIDAS-API, chapterFile: 20_POST_AnalysisResult_2.md, section: "20. Solid Force (Local)"}}
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getSolidForceLocalTable
+  modulePath: [result1]
+  tableType: SOLIDFL
+  factory: fixed
+  optionNames: [components, constructionStage, loadCaseNames, nodeElements, stageSteps, styles, tableName, unit]
+  documentation: |-
+    docs/manual/20_POST_AnalysisResult_2.md #20 — Solid Force (Local).
+tableTypes: [{value: SOLIDFL, description: Local solid force, head: [Index, Elem, Load, Node, Fx, Fy, Fz], provenance: manual}]

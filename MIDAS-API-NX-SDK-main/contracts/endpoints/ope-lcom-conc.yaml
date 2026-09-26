@@ -1,0 +1,603 @@
+# /ope/LCOM-CONC
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: ope-lcom-conc
+endpoint: /ope/LCOM-CONC
+name: "Load Combination (Concrete) – KDS 41 20:2022"
+
+products: [gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 15_OPE.md
+    section: "16. `/ope/LCOM-CONC` — Load Combination (Concrete) – KDS 41 20:2022"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_gen
+  records:
+    - product: gen
+      ref: db-read-sweep-2026-07-31
+
+operations:
+  - method: POST
+    surface:
+      exportName: generateLoadCombinationConcrete
+      modulePath: [ope]
+      argumentTypeName: LoadCombinationConcreteArgument
+      documentation: |-
+        docs/manual/15_OPE.md #16 — /ope/LCOM-CONC — Load Combination (Concrete) – KDS 41 20:2022.
+
+        ⚠️ Live-tested 2026-07-30: a minimal payload ({OPTION, DGNCODE} only)
+        succeeded on Gen NX but 404'd on Civil NX, on the same synthetic frame
+        model shape (single reproduction so far, not yet independently
+        reconfirmed) — possibly Gen-only despite the manual not saying so. Not
+        enforced here: plain ope.py functions have no PRODUCTS gate in this
+        SDK, so a Civil call reaches the server and 404s there rather than
+        raising client-side.
+
+        ⚠️ Confirmed 2026-07-31: ``GET /info/ope/LCOM-CONC`` (and
+        ``/info/ope/LCOM-GEN``) also 404 on Civil NX — the whole `/ope/LCOM-*`
+        family's routes aren't registered on Civil at all, not just failing at
+        execution. This upgrades the "possibly Gen-only" guess above to a
+        routing-level confirmation.
+      nestedTypes:
+        - {path: ADDITIONAL_LOAD, name: AdditionalLoad, namespace: OpeTypes}
+        - {path: ADDITIONAL_LOAD.SPECIAL_LOAD, name: SpecialSeismicLoad, namespace: OpeTypes}
+        - {path: ADDITIONAL_LOAD.SPECIAL_LOAD.OVER_STRENGTH_FACTOR, name: LoadCombScaleFactorItem, namespace: OpeTypes}
+        - {path: ADDITIONAL_LOAD.VERTICAL_LOAD, name: VerticalSeismicLoad, namespace: OpeTypes}
+        - {path: ORTHO_EFFECT, name: OrthoEffect, namespace: OpeTypes}
+        - {path: RS_SCALE_FACTOR, name: LoadCombScaleFactorItem, namespace: OpeTypes}
+        - {path: UNDERGROUND_LOAD, name: UndergroundLoad, namespace: OpeTypes}
+        - {path: UNDERGROUND_LOAD.LOAD_CASE_LIST, name: UndergroundLoadCaseItem, namespace: OpeTypes}
+        - {path: UNDERGROUND_LOAD.SCALE_FACTOR, name: LoadCombScaleFactorItem, namespace: OpeTypes}
+        - {path: UNDERGROUND_LOAD.SPECIAL_LOAD, name: SpecialSeismicLoad, namespace: OpeTypes}
+        - {path: UNDERGROUND_LOAD.SPECIAL_LOAD.OVER_STRENGTH_FACTOR, name: LoadCombScaleFactorItem, namespace: OpeTypes}
+        - {path: WIND_LOAD_COMB, name: WindLoadComb, namespace: OpeTypes}
+        - {path: WIND_LOAD_COMB.PARAMETERS, name: WindLoadCombParameter, namespace: OpeTypes}
+        - {path: WIND_LOAD_COMB.PARAMETERS.WIND_LOAD_CASE, name: WindLoadCase, namespace: OpeTypes}
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: OPTION
+    description: >-
+      OPTION – 기존 조합에 추가할지 전체 대체할지
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedDefaultNote: ADD, REPLACE
+    documentedOptional: false
+    enum: [ADD, REPLACE]
+    safeToOmit: unverified
+    provenance: manual
+  - key: DGNCODE
+    description: >-
+      콘크리트 설계기준 코드 값
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedDefaultNote: "KDS 41 20 : 2022"
+    documentedOptional: false
+    enum: ["KDS 41 20 : 2022"]
+    safeToOmit: unverified
+    provenance: manual
+  - key: RS_SCALE_FACTOR
+    description: >-
+      응답스펙트럼 하중조합 목록
+    type: array
+    items:
+      type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: LOAD_CASE
+        description: >-
+          하중 케이스명 (정적: NAME(ST), 응답스펙트럼: NAME(RS))
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: FACTOR
+        description: >-
+          축계수
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+  - key: WIND_LOAD_COMB
+    description: >-
+      풍하중 조합 세트
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: PARAMETERS
+        description: >-
+          풍하중 조합 세트 목록
+        type: array
+        items:
+          type: object
+        requirement: conditional
+        condition: WIND_LOAD_COMB 사용 시
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: BUILDING_TYPE
+            description: >-
+              풍하중 그룹
+            type: string
+            requirement: required
+            documentedDefault: null
+            documentedDefaultNote: MIDDLE, HIGH
+            documentedOptional: false
+            enum: [MIDDLE, HIGH]
+            safeToOmit: unverified
+            provenance: manual
+          - key: WIND_LOAD_CASE
+            description: >-
+              풍하중 방향(Wind Direction)별 케이스
+            type: object
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            properties:
+              - key: ALONG
+                description: >-
+                  순풍(Along) 방향 하중 케이스
+                type: string
+                requirement: optional
+                documentedDefault: null
+                documentedOptional: true
+                safeToOmit: unverified
+                provenance: manual
+              - key: ACROSS
+                description: >-
+                  횡풍(Across) 방향 하중 케이스
+                type: string
+                requirement: optional
+                documentedDefault: null
+                documentedOptional: true
+                safeToOmit: unverified
+                provenance: manual
+              - key: TORSION
+                description: >-
+                  비틀림(Torsion) 하중 케이스
+                type: string
+                requirement: optional
+                documentedDefault: null
+                documentedOptional: true
+                safeToOmit: unverified
+                provenance: manual
+          - key: GUST_FACTOR
+            description: >-
+              거스트 계수
+            type: number
+            minimum: 0
+            requirement: optional
+            documentedDefault: null
+            documentedDefaultNote: 최소값 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: KAPPA_FACTOR
+            description: >-
+              Kappa 계수
+            type: number
+            minimum: 0
+            requirement: optional
+            documentedDefault: null
+            documentedDefaultNote: 최소값 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+      - key: TORSION_DIR
+        description: >-
+          비틀림 풍하중 방향
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedDefaultNote: BOTH, POSITIVE, NEGATIVE (기본값 BOTH)
+        documentedOptional: true
+        enum: [BOTH, POSITIVE, NEGATIVE]
+        safeToOmit: unverified
+        provenance: manual
+  - key: ORTHO_EFFECT
+    description: >-
+      직교효과 고려 옵션
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: OPT_USE
+        description: >-
+          직교효과 고려 여부
+        type: boolean
+        requirement: required
+        documentedDefault: null
+        documentedDefaultNote: 기본값 false
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: TYPE
+        description: >-
+          직교효과 방식 – ORTHO_EFFECT.OPT_USE가 true일 때 필수
+        type: string
+        requirement: conditional
+        condition: ORTHO_EFFECT.OPT_USE가 true일 때 필수
+        documentedDefault: null
+        documentedDefaultNote: 100_30, SRSS
+        documentedOptional: false
+        enum: ["100_30", SRSS]
+        safeToOmit: unverified
+        provenance: manual
+      - key: LOAD_GROUP
+        description: >-
+          직교 하중케이스 쌍 (길이 2 고정) – ORTHO_EFFECT.OPT_USE가 true일 때 필수
+        type: array
+        items:
+          type: string
+        minItems: 2
+        maxItems: 2
+        requirement: conditional
+        condition: ORTHO_EFFECT.OPT_USE가 true일 때 필수
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+  - key: ADDITIONAL_LOAD
+    description: >-
+      추가 하중 옵션 컨테이너
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: SPECIAL_LOAD
+        description: >-
+          특별지진하중 옵션
+        type: object
+        requirement: conditional
+        condition: ADDITIONAL_LOAD 사용 시
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: OPT_USE
+            description: >-
+              특별지진하중 사용 여부
+            type: boolean
+            requirement: required
+            documentedDefault: null
+            documentedDefaultNote: 기본값 false
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: VERTICAL_LOAD_FACTOR
+            description: >-
+              수직하중계수 – OPT_USE가 true일 때 필수
+            type: number
+            minimum: 0
+            requirement: conditional
+            condition: OPT_USE가 true일 때 필수
+            documentedDefault: null
+            documentedDefaultNote: 최소값 0
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: SDS
+            description: >-
+              Sds – OPT_USE가 true일 때 필수
+            type: number
+            minimum: 0
+            requirement: conditional
+            condition: OPT_USE가 true일 때 필수
+            documentedDefault: null
+            documentedDefaultNote: 최소값 0
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: OVER_STRENGTH_FACTOR
+            description: >-
+              초과강도계수 목록 – OPT_USE가 true일 때 필수
+            type: array
+            items:
+              type: object
+            requirement: conditional
+            condition: OPT_USE가 true일 때 필수
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            properties:
+              - key: LOAD_CASE
+                description: >-
+                  하중 케이스명
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              - key: FACTOR
+                description: >-
+                  축계수
+                type: number
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+      - key: VERTICAL_LOAD
+        description: >-
+          수직지진력 옵션
+        type: object
+        requirement: conditional
+        condition: ADDITIONAL_LOAD 사용 시
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: OPT_USE
+            description: >-
+              수직지진력 고려 여부
+            type: boolean
+            requirement: required
+            documentedDefault: null
+            documentedDefaultNote: 기본값 false
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: FORCE_FACTOR
+            description: >-
+              수직력 계수 – OPT_USE가 true일 때 필수
+            type: number
+            minimum: 0
+            requirement: conditional
+            condition: OPT_USE가 true일 때 필수
+            documentedDefault: null
+            documentedDefaultNote: 최소값 0
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+  - key: UNDERGROUND_LOAD
+    description: >-
+      지하구조물 하중 옵션
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: OPT_USE
+        description: >-
+          지하구조물 하중 사용 여부
+        type: boolean
+        requirement: conditional
+        condition: UNDERGROUND_LOAD 사용 시
+        documentedDefault: null
+        documentedDefaultNote: 기본값 false
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: SCALE_FACTOR
+        description: >-
+          지하구조물 하중 축계수 목록 – OPT_USE가 true일 때 필수
+        type: array
+        items:
+          type: object
+        requirement: conditional
+        condition: OPT_USE가 true일 때 필수
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: LOAD_CASE
+            description: >-
+              하중 케이스명
+            type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: FACTOR
+            description: >-
+              축계수
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+      - key: LOAD_CASE_LIST
+        description: >-
+          지진 하중케이스 목록 – OPT_USE가 true일 때 필수
+        type: array
+        items:
+          type: object
+        requirement: conditional
+        condition: OPT_USE가 true일 때 필수
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: LOAD_CASE
+            description: >-
+              하중 케이스명
+            type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: DIRECTION
+            description: >-
+              지진 하중케이스 방향
+            type: string
+            requirement: required
+            documentedDefault: null
+            documentedDefaultNote: POSITIVE, NEGATIVE
+            documentedOptional: false
+            enum: [POSITIVE, NEGATIVE]
+            safeToOmit: unverified
+            provenance: manual
+          - key: LOAD_CASE_SEISMIC
+            description: >-
+              지진 성분 토압 하중케이스명
+            type: array
+            items:
+              type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: LOAD_CASE_STATIC
+            description: >-
+              정적 성분 토압 하중케이스명
+            type: array
+            items:
+              type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+      - key: SPECIAL_LOAD
+        description: >-
+          지하구조물 특별하중 사용 옵션
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: OPT_USE
+            description: >-
+              지하구조물 특별하중 사용 여부
+            type: boolean
+            requirement: required
+            documentedDefault: null
+            documentedDefaultNote: 기본값 false
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: VERTICAL_LOAD_FACTOR
+            description: >-
+              수직하중계수 – OPT_USE가 true일 때 필수
+            type: number
+            minimum: 0
+            requirement: conditional
+            condition: OPT_USE가 true일 때 필수
+            documentedDefault: null
+            documentedDefaultNote: 최소값 0
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: SDS
+            description: >-
+              Sds – OPT_USE가 true일 때 필수
+            type: number
+            minimum: 0
+            requirement: conditional
+            condition: OPT_USE가 true일 때 필수
+            documentedDefault: null
+            documentedDefaultNote: 최소값 0
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: OVER_STRENGTH_FACTOR
+            description: >-
+              지하구조물 특별하중 초과강도계수 목록(설명: Over-strength factors) – OPT_USE가 true일 때 필수
+            type: array
+            items:
+              type: object
+            requirement: conditional
+            condition: OPT_USE가 true일 때 필수
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            properties:
+              - key: LOAD_CASE
+                description: >-
+                  하중 케이스명
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              - key: FACTOR
+                description: >-
+                  축계수
+                type: number
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+  - key: CS_ANALYSIS
+    description: >-
+      시공단계 해석결과 반영 여부
+    type: boolean
+    requirement: optional
+    documentedDefault: null
+    documentedDefaultNote: 기본값 false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: PRESTRESS_LOSS
+    description: >-
+      프리스트레스 손실 반영 여부
+    type: boolean
+    requirement: optional
+    documentedDefault: null
+    documentedDefaultNote: 기본값 false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+
+extraction:
+  source: 15_OPE.md line 2930
+  table: Parameters

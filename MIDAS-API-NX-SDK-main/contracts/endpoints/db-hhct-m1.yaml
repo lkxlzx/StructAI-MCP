@@ -1,0 +1,462 @@
+# /db/HHCT-M1
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-hhct-m1
+endpoint: /db/HHCT-M1
+name: Heat of Hydration Analysis Control (Hyper-S)
+surface:
+  className: HeatOfHydrationAnalysisControlHyperS
+  exportName: heatOfHydrationAnalysisControlHyperS
+  modulePath: [db, analysisControl]
+  payloadTypeName: HeatOfHydrationAnalysisControlHyperSPayload
+  nestedTypes:
+    - {path: CONVERGENCE, name: HeatOfHydrationConvergenceHyperS, namespace: DbAnalysisControlTypes}
+    - {path: ITEM, name: CreepShrinkageItemHyperS, namespace: DbAnalysisControlTypes}
+    - {path: ITEM.M_EFF_MOD, name: CreepShrinkageEffectiveModulusData, namespace: DbAnalysisControlTypes}
+    - {path: CONVERGENCE.DISP, name: ConvergenceCriterionCheck, namespace: DbAnalysisControlTypes}
+    - {path: CONVERGENCE.LOAD, name: ConvergenceCriterionCheck, namespace: DbAnalysisControlTypes}
+    - {path: CONVERGENCE.WORK, name: ConvergenceCriterionCheck, namespace: DbAnalysisControlTypes}
+
+products: [civil]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 12_DB_Analysis_Control.md
+    section: 8. /db/HHCT-M1 — Heat of Hydration Analysis Control (Hyper-S)
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_civil
+  records:
+    - product: civil
+      ref: db-write-sweep-2026-08-25
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/HHCT-M1/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: FINAL_STAGE
+    description: >-
+      Final Stage (Last: true / Other: false)
+    type: boolean
+    requirement: optional
+    documentedDefault: true
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: STAGE_NAME
+    description: >-
+      Stage Name (when FINAL_STAGE false)
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's HeatOfHydrationAnalysisControlHyperS case
+      completed a live create-read-update-delete round trip on civil without
+      this field in its payload. That is evidence the call is accepted, not that
+      the resulting model is what an engineer wanted.
+    provenance: manual
+  - key: INIT_TEMP
+    description: >-
+      Initial Temperature
+    type: number
+    requirement: optional
+    documentedDefault: 20
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's HeatOfHydrationAnalysisControlHyperS case
+      completed a live create-read-update-delete round trip on civil without
+      this field in its payload. That is evidence the call is accepted, not that
+      the resulting model is what an engineer wanted.
+    provenance: manual
+  - key: EVAL
+    description: >-
+      Element Stress Evaluation ("CENTER"/"GAUSS"/"NODAL")
+    type: string
+    requirement: optional
+    documentedDefault: GAUSS
+    documentedOptional: true
+    enum: [CENTER, GAUSS, NODAL]
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's HeatOfHydrationAnalysisControlHyperS case
+      completed a live create-read-update-delete round trip on civil without
+      this field in its payload. That is evidence the call is accepted, not that
+      the resulting model is what an engineer wanted.
+    provenance: manual
+  - key: OPT_IS_CREEP_SHRINKAGE
+    description: >-
+      Creep & Shrinkage
+    type: boolean
+    requirement: optional
+    documentedDefault: true
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: ITEM
+    description: >-
+      Creep & Shrinkage Settings (when option true)
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's HeatOfHydrationAnalysisControlHyperS case
+      completed a live create-read-update-delete round trip on civil without
+      this field in its payload. That is evidence the call is accepted, not that
+      the resulting model is what an engineer wanted.
+    provenance: manual
+    properties:
+      - key: TYPE
+        description: >-
+          Type ("CREEP"/"SHRINKAGE"/"BOTH")
+        type: string
+        requirement: optional
+        documentedDefault: BOTH
+        documentedOptional: true
+        enum: [CREEP, SHRINKAGE, BOTH]
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEM' by numbering it '(1)', not
+        # by naming a path
+      - key: CREEP_CALC_METHOD
+        description: >-
+          Creep Calculation Method (General: 0 / Effective Modulus: 1)
+        type: integer
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        enum: [0, 1]
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEM' by numbering it '(2)', not
+        # by naming a path
+      - key: M_EFF_MOD
+        description: >-
+          Effective Modulus Params (when method 1)
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEM' by numbering it '(3)', not
+        # by naming a path
+        properties:
+          - key: PHI1
+            description: >-
+              phi 1
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'M_EFF_MOD' by numbering it 'a',
+            # not by naming a path
+          - key: DAY1
+            description: >-
+              day 1
+            type: integer
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'M_EFF_MOD' by numbering it 'b',
+            # not by naming a path
+          - key: PHI2
+            description: >-
+              phi 2
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'M_EFF_MOD' by numbering it 'c',
+            # not by naming a path
+          - key: DAY2
+            description: >-
+              day 2
+            type: integer
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'M_EFF_MOD' by numbering it 'd',
+            # not by naming a path
+  - key: OPT_USE_EQUI_AGE
+    description: >-
+      Use Equivalent Age by Time & Temperature
+    type: boolean
+    requirement: optional
+    documentedDefault: true
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's HeatOfHydrationAnalysisControlHyperS case
+      completed a live create-read-update-delete round trip on civil without
+      this field in its payload. That is evidence the call is accepted, not that
+      the resulting model is what an engineer wanted.
+    provenance: manual
+  - key: OPT_INCL_SELF_WEIGHT
+    description: >-
+      Include Selfweight Load
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's HeatOfHydrationAnalysisControlHyperS case
+      completed a live create-read-update-delete round trip on civil without
+      this field in its payload. That is evidence the call is accepted, not that
+      the resulting model is what an engineer wanted.
+    provenance: manual
+  - key: SELF_WEIGHT_FACTOR
+    description: >-
+      Self Weight Factor (when option true)
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's HeatOfHydrationAnalysisControlHyperS case
+      completed a live create-read-update-delete round trip on civil without
+      this field in its payload. That is evidence the call is accepted, not that
+      the resulting model is what an engineer wanted.
+    provenance: manual
+  - key: ITER
+    description: >-
+      Max. No. of Iterations per Increment
+    type: integer
+    requirement: optional
+    documentedDefault: 50
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's HeatOfHydrationAnalysisControlHyperS case
+      completed a live create-read-update-delete round trip on civil without
+      this field in its payload. That is evidence the call is accepted, not that
+      the resulting model is what an engineer wanted.
+    provenance: manual
+  - key: CONVERGENCE
+    description: >-
+      Convergence Criteria (DISP/LOAD/WORK 중 최소 1개 필수)
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's HeatOfHydrationAnalysisControlHyperS case
+      completed a live create-read-update-delete round trip on civil without
+      this field in its payload. That is evidence the call is accepted, not that
+      the resulting model is what an engineer wanted.
+    provenance: manual
+    properties:
+      - key: DISP
+        description: >-
+          Displacement(U)
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'CONVERGENCE' by numbering it
+        # '(1)', not by naming a path
+        properties:
+          - key: OPT_CHECK
+            description: >-
+              Use Option
+            type: boolean
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # the manual's rows 'a' and 'b' follow '(3)' once, and apply to
+            # all three criteria: the section's request example gives DISP the same
+            # {OPT_CHECK, VALUE}, and /info declares both members under DISP.
+          - key: VALUE
+            description: >-
+              Tolerance (when OPT_CHECK true)
+            type: number
+            requirement: required
+            appliesWhen:
+              - path: CONVERGENCE.DISP.OPT_CHECK
+                equals: true
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # required only when this criterion is checked, as the row's
+            # own wording says.
+      - key: LOAD
+        description: >-
+          Load(P)
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'CONVERGENCE' by numbering it
+        # '(2)', not by naming a path
+        properties:
+          - key: OPT_CHECK
+            description: >-
+              Use Option
+            type: boolean
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # the manual's rows 'a' and 'b' follow '(3)' once, and apply to
+            # all three criteria: the section's request example gives LOAD the same
+            # {OPT_CHECK, VALUE}, and /info declares both members under LOAD.
+          - key: VALUE
+            description: >-
+              Tolerance (when OPT_CHECK true)
+            type: number
+            requirement: required
+            appliesWhen:
+              - path: CONVERGENCE.LOAD.OPT_CHECK
+                equals: true
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # required only when this criterion is checked, as the row's
+            # own wording says.
+      - key: WORK
+        description: >-
+          Work(W)
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'CONVERGENCE' by numbering it
+        # '(3)', not by naming a path
+        properties:
+          - key: OPT_CHECK
+            description: >-
+              Use Option
+            type: boolean
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'WORK' by numbering it 'a', not by
+            # naming a path
+          - key: VALUE
+            description: >-
+              Tolerance (when OPT_CHECK true)
+            type: number
+            requirement: required
+            appliesWhen:
+              - path: CONVERGENCE.WORK.OPT_CHECK
+                equals: true
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'WORK' by numbering it 'b', not by
+            # naming a path
+
+sdkRules:
+  - id: db-hhct-m1-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-hhct-m1-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  prose:
+    - line: 890
+      quote: >-
+        "DISP": { "OPT_CHECK": true, "VALUE": 0.001 }, "LOAD": { "OPT_CHECK": true,
+        "VALUE": 0.001 }, "WORK": { "OPT_CHECK": true, "VALUE": 0.001 }
+      paths: [CONVERGENCE.DISP.OPT_CHECK, CONVERGENCE.DISP.VALUE, CONVERGENCE.LOAD.OPT_CHECK, CONVERGENCE.LOAD.VALUE]
+  source: 12_DB_Analysis_Control.md line 842
+  table: Parameters

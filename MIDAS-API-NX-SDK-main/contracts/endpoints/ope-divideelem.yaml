@@ -1,0 +1,413 @@
+# /ope/DIVIDEELEM
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: ope-divideelem
+endpoint: /ope/DIVIDEELEM
+name: Divide Elements
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 15_OPE.md
+    section: "2. `/ope/DIVIDEELEM` — Divide Elements"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-write-sweep-2026-07-30
+    - product: gen
+      ref: db-write-sweep-2026-07-30
+
+operations:
+  - method: POST
+    surface:
+      exportName: divideElements
+      modulePath: [ope]
+      argumentTypeName: DivideElementsArgument
+      documentation: |-
+        docs/manual/15_OPE.md #2 — /ope/DIVIDEELEM — Divide Elements.
+      nestedTypes:
+        - {path: START_NUMBER, name: DivideStartNumber, namespace: OpeTypes}
+        - {path: START_NUMBER.NODE_NUMBER, name: NumberOption, namespace: OpeTypes}
+        - {path: START_NUMBER.ELEM_NUMBER, name: NumberOption, namespace: OpeTypes}
+        - {path: DIVIDE, name: DivideSettings, namespace: OpeTypes}
+        - {path: DIVIDE.OPTION, name: DivideOption, namespace: OpeTypes}
+        - {path: DIVIDE.OPTION.EQUAL_OPTION, name: DivideEqualOption, namespace: OpeTypes}
+        - {path: DIVIDE.OPTION.UNEQUAL_OPTION, name: DivideUnequalOption, namespace: OpeTypes}
+        - {path: DIVIDE.OPTION.PARAMETRIC_OPTION, name: DivideParametricOption, namespace: OpeTypes}
+        - {path: DIVIDE.OPTION.PARALLEL_OPTION, name: DivideParallelOption, namespace: OpeTypes}
+        - {path: DIVIDE.OPTION.BY_NODE_OPTION, name: DivideByNodeOption, namespace: OpeTypes}
+        - {path: DIVIDE.MERGE_DUPLICATE_NODES, name: MergeDuplicateNodesOption, namespace: OpeTypes}
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: TARGETS
+    description: >-
+      분할 대상 요소 ID
+    type: array
+    items:
+      type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: START_NUMBER
+    description: >-
+      시작 노드/요소 번호
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedDefaultNote: System
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: NODE_NUMBER
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: NUMBER_OPTION
+            description: >-
+              노드 번호 옵션 · 최소 미사용: "Smallest" / 최대+1: "Largest" / 사용자지정: "User"
+            type: string
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: USER_NUM
+            description: >-
+              사용자 지정 노드 번호 (NUMBER_OPTION="User"일 때)
+            type: integer
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+      - key: ELEM_NUMBER
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: NUMBER_OPTION
+            description: >-
+              요소 번호 옵션 (노드와 동일 enum)
+            type: string
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: USER_NUM
+            description: >-
+              사용자 지정 요소 번호
+            type: integer
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+  - key: DIVIDE
+    description: >-
+      분할 설정
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: ELEM_TYPE
+        description: >-
+          요소 타입 · 선요소: "Frame" / 벽: "Wall" / 평면: "Planar" / 솔리드: "Solid"
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: DIV_METHOD
+        description: >-
+          분할 방법 · 등분할: "Equal" / 비등분할: "Unequal" / 비율분할: "ParametricUnequal" /
+          평행브레이싱: "ParallelBracing" / 노드기준: "DividebyNode"
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: OPTION
+        description: >-
+          분할 옵션 (DIV_METHOD별 하위 객체 중 하나)
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: EQUAL_OPTION
+            type: object
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            properties:
+              - key: NUM_X
+                description: >-
+                  Equal: X/Y/Z 방향 분할수 (Frame=X만, Planar=X,Y, Wall=X,Z, Solid=X,Y,Z)
+                type: integer
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              - key: NUM_Y
+                description: >-
+                  Equal: X/Y/Z 방향 분할수 (Frame=X만, Planar=X,Y, Wall=X,Z, Solid=X,Y,Z)
+                type: integer
+                requirement: required
+                appliesWhen:
+                  - path: DIVIDE.ELEM_TYPE
+                    in: [Planar, Solid]
+                # The manual's row: 'Frame=X만, Planar=X,Y, Wall=X,Z, Solid=X,Y,Z'.
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              - key: NUM_Z
+                description: >-
+                  Equal: X/Y/Z 방향 분할수 (Frame=X만, Planar=X,Y, Wall=X,Z, Solid=X,Y,Z)
+                type: integer
+                requirement: required
+                appliesWhen:
+                  - path: DIVIDE.ELEM_TYPE
+                    in: [Wall, Solid]
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+          - key: UNEQUAL_OPTION
+            type: object
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            properties:
+              - key: DIST_X
+                description: >-
+                  Unequal: X/Y/Z 방향 비등분할 거리 문자열 (예: "3@2.0")
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              - key: DIST_Y
+                description: >-
+                  Unequal: X/Y/Z 방향 비등분할 거리 문자열 (예: "3@2.0")
+                type: string
+                requirement: required
+                appliesWhen:
+                  - path: DIVIDE.ELEM_TYPE
+                    in: [Planar, Solid]
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: live_corrected
+              - key: DIST_Z
+                description: >-
+                  Unequal: X/Y/Z 방향 비등분할 거리 문자열 (예: "3@2.0")
+                type: string
+                requirement: required
+                appliesWhen:
+                  - path: DIVIDE.ELEM_TYPE
+                    in: [Wall, Solid]
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: live_corrected
+          - key: PARAMETRIC_OPTION
+            type: object
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            properties:
+              - key: RATIO_X
+                description: >-
+                  ParametricUnequal: X/Y/Z 방향 비율 문자열 (예: "3@0.3")
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              - key: RATIO_Y
+                description: >-
+                  ParametricUnequal: X/Y/Z 방향 비율 문자열 (예: "3@0.3")
+                type: string
+                requirement: required
+                appliesWhen:
+                  - path: DIVIDE.ELEM_TYPE
+                    in: [Planar, Solid]
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: live_corrected
+              - key: RATIO_Z
+                description: >-
+                  ParametricUnequal: X/Y/Z 방향 비율 문자열 (예: "3@0.3")
+                type: string
+                requirement: required
+                appliesWhen:
+                  - path: DIVIDE.ELEM_TYPE
+                    in: [Wall, Solid]
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: live_corrected
+          - key: PARALLEL_OPTION
+            type: object
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            properties:
+              - key: NUM_OF_DIVISIONS
+                description: >-
+                  ParallelBracing: 분할 수 / 기준 기둥(Post) 요소 목록
+                type: integer
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              - key: MAIN_POST_ELEM
+                description: >-
+                  ParallelBracing: 분할 수 / 기준 기둥(Post) 요소 목록
+                type: array
+                items:
+                  type: integer
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+          - key: BY_NODE_OPTION
+            type: object
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            properties:
+              - key: ELEM_NUM
+                description: >-
+                  DividebyNode: 대상 요소번호 / 분할기준 노드번호
+                type: integer
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              - key: NODE_NUM
+                description: >-
+                  DividebyNode: 대상 요소번호 / 분할기준 노드번호
+                type: integer
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+      - key: SUBDIVIDE_ELEM
+        description: >-
+          선요소 재분할 여부
+        type: boolean
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: MERGE_DUPLICATE_NODES
+        description: >-
+          중복 노드 병합
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: OPT_CHECK
+            description: >-
+              활성화 여부
+            type: boolean
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: TOLERANCE
+            description: >-
+              병합 허용오차
+            type: number
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+
+manualDefects:
+  - describes: requiredness
+    manualSays: >-
+      The Unequal and ParametricUnequal rows mark `DIST_X/Y/Z` and
+      `RATIO_X/Y/Z` Required with no condition. The Equal row beside them
+      states which axes each element type divides along (Frame=X만,
+      Planar=X,Y, Wall=X,Z, Solid=X,Y,Z), and the section's own Planar
+      Unequal Request Body sends X and Y only.
+    actual: >-
+      The Equal row's axes hold for the other two methods. A Frame element
+      divides with `DIST_X` alone and with `RATIO_X` alone; a Planar element
+      divides with `RATIO_X` and `RATIO_Y` and answers `Unknown Error` with
+      `RATIO_X` alone. Identical on both products. Wall and Solid were not
+      measured and follow the Equal row.
+    evidence: >-
+      docs/live_verification_notes.md, "/ope/DIVIDEELEM: the Equal row's axes
+      hold for every method" (2026-09-22): scripts/live_manual_feedback.py case
+      c8 on Civil NX and Gen NX, each body in its own seeded document, the
+      element table read before and after. Registered as MD-62.
+
+extraction:
+  source: 15_OPE.md line 246
+  table: Parameters

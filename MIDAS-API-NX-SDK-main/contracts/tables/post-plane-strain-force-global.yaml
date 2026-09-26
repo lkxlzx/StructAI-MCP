@@ -1,0 +1,18 @@
+contractVersion: 1
+id: post-plane-strain-force-global
+endpoint: /post/TABLE
+name: Plane Strain Force Global
+summary: Global plane-strain force components.
+products: [gen, civil]
+source: {manual: {status: documented, repo: Dennis5882/MIDAS-API, chapterFile: 20_POST_AnalysisResult_2.md, section: "13. Plane Strain Force (Global)"}}
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getPlaneStrainForceGlobalTable
+  modulePath: [result1]
+  tableType: PLANESTRAINFG
+  factory: fixed
+  optionNames: [components, constructionStage, loadCaseNames, nodeElements, stageSteps, styles, tableName, unit]
+  documentation: |-
+    docs/manual/20_POST_AnalysisResult_2.md #13 — Plane Strain Force (Global).
+tableTypes: [{value: PLANESTRAINFG, description: Global plane-strain force, head: [Index, Elem, Load, Node, FX, FY, FZ], provenance: manual}]

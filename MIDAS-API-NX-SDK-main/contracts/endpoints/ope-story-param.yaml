@@ -1,0 +1,79 @@
+# /ope/STORY_PARAM
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: ope-story-param
+endpoint: /ope/STORY_PARAM
+name: Story Check Parameter
+
+products: [gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 15_OPE.md
+    section: "10. `/ope/STORY_PARAM` — Story Check Parameter"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_gen
+  records:
+    - product: gen
+      ref: db-read-sweep-2026-07-30
+
+operations:
+  - method: GET
+    surface:
+      exportName: getStoryCheckParameter
+      modulePath: [ope]
+      documentation: |-
+        docs/manual/15_OPE.md #10 — /ope/STORY_PARAM — Story Check Parameter (GET).
+
+        Live-confirmed Gen NX only (404 on Civil, twice independently, 2026-07-29)
+        — see db/base.py's GEN_ONLY docstring. Not enforced here: unlike
+        db/*/design/* resources, plain doc/ope/view functions have no PRODUCTS
+        gate in this SDK, so a Civil call reaches the server and 404s there
+        rather than raising client-side.
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    surface:
+      exportName: setStoryCheckParameter
+      modulePath: [ope]
+      argumentTypeName: StoryCheckParameterArgument
+      documentation: |-
+        docs/manual/15_OPE.md #10 — /ope/STORY_PARAM — Story Check Parameter (POST).
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: COUNTRY_CODE
+    description: >-
+      국가 기준코드 설정 · "NTC2012" / "NTC2008" / "KBC2009" / "NSR-10" / "NTC2018" /
+      "NTC2020" / "IS1893(2016)" / "IS16700(2023)"
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+
+extraction:
+  source: 15_OPE.md line 1552
+  table: Parameters

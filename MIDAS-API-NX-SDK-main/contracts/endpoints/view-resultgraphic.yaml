@@ -1,0 +1,1105 @@
+# /view/RESULTGRAPHIC
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: view-resultgraphic
+endpoint: /view/RESULTGRAPHIC
+name: Result Graphic
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 16_VIEW.md
+    section: "7. `/view/RESULTGRAPHIC` — Result Graphic"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-08-11
+    - product: gen
+      ref: db-read-sweep-2026-08-11
+
+operations:
+  - method: POST
+    surface:
+      exportName: setResultGraphic
+      modulePath: [view]
+      argumentTypeName: ResultGraphicArgument
+      nestedTypes:
+        - {path: LOAD_CASE_COMB, name: LoadCaseCombSelection, namespace: ViewTypes}
+        - {path: DISPLAY_OPTIONS, name: DisplayOptionsSelection, namespace: ViewTypes}
+        - {path: OPTIONS, name: ResultOptionsSelection, namespace: ViewTypes}
+        - {path: OPTIONS.LOCAL_UCS, name: LocalUcsOption, namespace: ViewTypes}
+        - {path: OPTIONS.AVERAGE_NODAL, name: AverageNodalOption, namespace: ViewTypes}
+        - {path: OUTPUT_SECT_LOCATION, name: OutputSectLocation, namespace: ViewTypes}
+        - {path: TYPE_OF_DISPLAY, name: TypeOfDisplayArgument, namespace: ViewTypes}
+        - {path: TYPE_OF_DISPLAY.CONTOUR, name: ContourDisplay, namespace: ViewTypes}
+        - {path: TYPE_OF_DISPLAY.CONTOUR.OPTIONS, name: ContourOptions, namespace: ViewTypes}
+        - {path: TYPE_OF_DISPLAY.VALUES, name: ValuesDisplay, namespace: ViewTypes}
+        - {path: TYPE_OF_DISPLAY.VALUES.MINMAX_ONLY, name: MinMaxOnly, namespace: ViewTypes}
+        - {path: TYPE_OF_DISPLAY.LEGEND, name: LegendDisplay, namespace: ViewTypes}
+        - {path: TYPE_OF_DISPLAY.DEFORM, name: DeformDisplay, namespace: ViewTypes}
+        - {path: TYPE_OF_DISPLAY.DISP_OPT, name: DispOptDisplay, namespace: ViewTypes}
+        - {path: TYPE_OF_DISPLAY.MIRRORED, name: MirroredDisplay, namespace: ViewTypes}
+        - {path: TYPE_OF_DISPLAY.MIRRORED.MIRROR_BY_1, name: MirrorBy, namespace: ViewTypes}
+        - {path: TYPE_OF_DISPLAY.MIRRORED.MIRROR_BY_2, name: MirrorBy, namespace: ViewTypes}
+        - {path: TYPE_OF_DISPLAY.CUTTING_DIAGRAM, name: CuttingDiagramDisplay, namespace: ViewTypes}
+        - {path: TYPE_OF_DISPLAY.CUTTING_PLANE, name: CuttingPlaneDisplay, namespace: ViewTypes}
+        - {path: TYPE_OF_DISPLAY.APPLIED_LOADS, name: AppliedLoadsDisplay, namespace: ViewTypes}
+        - {path: TYPE_OF_DISPLAY.ISO_SURFACE, name: IsoSurfaceDisplay, namespace: ViewTypes}
+        - {path: TYPE_OF_DISPLAY.ISO_SURFACE.VALUE_MODE, name: IsoSurfaceValueMode, namespace: ViewTypes}
+      documentation: |-
+        docs/manual/16_VIEW.md #7 — /view/RESULTGRAPHIC — Result Graphic.
+
+        ⚠️ Confirmed 2026-08-11: unlike the story family, this route IS
+        registered on Civil NX (v2.2, build 08/11/2026) — `CURRENT_MODE:
+        "reactionforces/moments"` against a blank document (no analysis run)
+        got a clean `MidasResultError`, `"MIDAS CIVIL NX Empty Load Case
+        Type"`, and the session stayed alive. Same shape as Gen's own
+        07/30 result (no analysis run yet), just a Civil-flavored message.
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: CURRENT_MODE
+    description: >-
+      결과 모드 (예: "beamdiagrams", "reactionforces/moments", "Plane-Stress/PlateStresses")
+    type: string
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: manual
+  - key: LOAD_CASE_COMB
+    description: >-
+      하중 케이스/조합
+    type: object
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: TYPE
+        description: >-
+          하중 케이스/조합 유형 (예: "ST")
+        type: string
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: NAME
+        description: >-
+          하중 케이스/조합 이름
+        type: string
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: STEP_INDEX
+        description: >-
+          스텝 번호
+        type: integer
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+  - key: COMPONENTS
+    description: >-
+      성분 - 결과 모드마다 사용 가능한 키가 다릅니다 (예: PART/COMP, COMP/OPT_LOCAL_CHECK)
+    type: object
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: manual
+  - key: DISPLAY_OPTIONS
+    description: >-
+      표시 옵션
+    type: object
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: FIDELITY
+        description: >-
+          Fidelity (예: "Exact")
+        type: string
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: FILL
+        description: >-
+          Fill (예: "line")
+        type: string
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: SCALE
+        description: >-
+          Scale
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+  - key: OPTIONS
+    description: >-
+      결과 옵션
+    type: object
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: LOCAL_UCS
+        description: >-
+          Local/UCS
+        type: object
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: TYPE
+            description: >-
+              유형 (예: "UCS")
+            type: string
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: UCS_NAME
+            description: >-
+              UCS 이름 (예: "CurrentUCS")
+            type: string
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+      - key: AVERAGE_NODAL
+        description: >-
+          Average Nodal
+        type: object
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: TYPE
+            description: >-
+              유형 (예: "Avg.Nodal")
+            type: string
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+      - key: SURFACE
+        description: >-
+          면 (예: "Top")
+        type: string
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+  - key: OUTPUT_SECT_LOCATION
+    description: >-
+      출력 단면 위치
+    type: object
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: OPT_I
+        description: >-
+          I 단
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: OPT_CENTER_MID
+        description: >-
+          중앙
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: OPT_J
+        description: >-
+          J 단
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+  # The six keys above are named by the section's note under its JSON Schema
+  # ("결과 모드 지정용 최상위 키(...)를 함께 전달합니다"), which also says the
+  # keys each result mode takes differ; their members are what the section's
+  # Request Bodies send (extraction.prose). No source states their
+  # requiredness, and COMPONENTS is left without members because the note
+  # says they change with CURRENT_MODE.
+  - key: TYPE_OF_DISPLAY
+    description: >-
+      표시 유형(Type of Display)
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedDefaultNote: System
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: CONTOUR
+        description: >-
+          컨투어 상세(Contour Details)
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: OPT_CHECK
+            description: >-
+              표시 유형 제어 (표시: true / 숨김: false)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: NUM_OF_COLOR
+            description: >-
+              컨투어 색상 개수 (6 / 12 / 18 / 24)
+            type: integer
+            requirement: optional
+            documentedDefault: 12
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: COLOR_TYPE
+            description: >-
+              색상 타입 (V→R→G→B: "vrgb", R→G→B: "rgb", R→B→G: "rbg", Gray Scaled: "gray
+              scaled")
+            type: string
+            requirement: optional
+            documentedDefault: vrgb
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: OPTIONS
+            description: >-
+              컨투어 표현 옵션
+            type: object
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            properties:
+              - key: CONTOUR_FILL
+                description: >-
+                  채움 방식 (Contour Fill: true / 선만 그림: false)
+                type: boolean
+                requirement: optional
+                documentedDefault: true
+                documentedOptional: true
+                safeToOmit: unverified
+                provenance: manual
+              - key: GRADIENT_FILL
+                description: >-
+                  그라디언트 채움 (CONTOUR_FILL이 true일 때)
+                type: boolean
+                requirement: optional
+                documentedDefault: false
+                documentedOptional: true
+                safeToOmit: unverified
+                provenance: manual
+      - key: VALUES
+        description: >-
+          수치 출력 상세(Values Output Details)
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: OPT_CHECK
+            description: >-
+              표시 유형 제어 (표시: true / 숨김: false)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: VALUE_EXP
+            description: >-
+              지수/고정 표기 선택 (지수: true / 고정: false)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: DECIMAL_PT
+            description: >-
+              소수점 자리수
+            type: integer
+            requirement: optional
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: SET_ORIENT
+            description: >-
+              수치 방향(0~180, 15 단위 증가)
+            type: integer
+            requirement: optional
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: MINMAX_ONLY
+            description: >-
+              "MinMax Only" 활성화
+            type: object
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            properties:
+              - key: MAXMIN
+                description: >-
+                  MinMax 유형 (Min.&Max.: "Min & Max", Abs Max.: "Abs Max", Max: "Max", Min:
+                  "Min")
+                type: string
+                requirement: optional
+                documentedDefault: "Min & Max"
+                documentedOptional: true
+                safeToOmit: unverified
+                provenance: manual
+              - key: LIMIT_SCALE
+                description: >-
+                  한계 스케일(Limit Scale, 0~100)
+                type: integer
+                requirement: optional
+                documentedDefault: 0
+                documentedOptional: true
+                safeToOmit: unverified
+                provenance: manual
+      - key: LEGEND
+        description: >-
+          범례 상세(Legend Details)
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: OPT_CHECK
+            description: >-
+              표시 유형 제어 (표시: true / 숨김: false)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: POSITION
+            description: >-
+              범례 위치 (오른쪽: "right", 왼쪽: "left")
+            type: string
+            requirement: optional
+            documentedDefault: left
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: VALUE_EXP
+            description: >-
+              지수/고정 표기 선택 (지수: true / 고정: false)
+            type: boolean
+            requirement: optional
+            documentedDefault: true
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: DECIMAL_PT
+            description: >-
+              소수점 자리수 (VALUE_EXP이 false일 때)
+            type: integer
+            requirement: optional
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+      - key: DEFORM
+        description: >-
+          변형 상세(Deformation Details)
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: OPT_CHECK
+            description: >-
+              표시 유형 제어 (표시: true / 숨김: false)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: SCALE_FACTOR
+            description: >-
+              변형 스케일 계수(변위 확대/축소)
+            type: number
+            requirement: optional
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: REAL_DEFORM
+            description: >-
+              변형 유형 (Real Deform.: true / Nodal Deform: false)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: REL_DISP
+            description: >-
+              상대 변형(Relative Deformation)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: REAL_DISP
+            description: >-
+              실제 구조 변형 (스케일 없이 표시: true / 자동 스케일: false)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+      - key: DISP_OPT
+        description: >-
+          표시 옵션 상세(Display Option Details)
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: OPT_CHECK
+            description: >-
+              표시 유형 제어 (표시: true / 숨김: false)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: ELEMENT_CENTER
+            description: >-
+              요소 중심에 컨투어 배치 (표시: true / 숨김: false)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: VALUE_MAX
+            description: >-
+              최댓값/요소 중심값 표시 선택 (최댓값: true / 요소 중심값: false)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+      - key: MIRRORED
+        description: >-
+          대칭 모델 미러 상세(Symmetric Model Mirror)
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: OPT_CHECK
+            description: >-
+              표시 유형 제어 (표시: true / 숨김: false)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: MIRROR_BY_1
+            description: >-
+              절반 모델 미러(Half)
+            type: object
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            properties:
+              - key: DIRECTION
+                description: >-
+                  미러 방향(Half) (XY-Plane at Z: "XY", YZ-Plane at X: "YZ", XZ-Plane at Y:
+                  "XZ")
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              - key: OFFSET
+                description: >-
+                  미러 오프셋 거리(Half)
+                type: number
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+          - key: MIRROR_BY_2
+            description: >-
+              1/4 모델 미러(Quarter)
+            type: object
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            properties:
+              - key: DIRECTION
+                description: >-
+                  미러 방향(Quarter) ("XY" / "YZ" / "XZ")
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              - key: OFFSET
+                description: >-
+                  미러 오프셋 거리(Quarter)
+                type: number
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+      - key: CUTTING_DIAGRAM
+        description: >-
+          절단 다이어그램(Cutting Diagram)
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: OPT_CHECK
+            description: >-
+              표시 유형 제어 (표시: true / 숨김: false)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: CUTTING_MODE
+            description: >-
+              절단 모드 (Cutting Line: "line", Cutting Plane: "plane")
+            type: string
+            requirement: optional
+            documentedDefault: line
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: CUTTING_NAME
+            description: >-
+              절단선/절단면 선택 (정의된 Cutting Line 이름 ᶜᵁᵀᴸ, 또는 Current UCS 평면 "XY"/"XZ"/"YZ", 또는
+              명명 평면 고유키 db/NPLN)
+            type: array
+            items:
+              type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: NORMAL_TO_PLANE
+            description: >-
+              판 요소 그래프 방향 옵션 (법선방향: true / 면내방향: false)
+            type: boolean
+            requirement: optional
+            documentedDefault: true
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: SCALE_FACTOR
+            description: >-
+              다이어그램 출력 비율 스케일 계수
+            type: number
+            requirement: optional
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: REVERSE
+            description: >-
+              다이어그램 역방향 표현 (Reverse: true / Normal: false)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: VALUE_OUTPUT
+            description: >-
+              수치로 출력 (활성: true / 비활성: false)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: MINMAX_ONLY
+            description: >-
+              최대/최솟값만 표시 (VALUE_OUTPUT이 true일 때)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+      - key: CUTTING_PLANE
+        description: >-
+          절단 평면 상세(Cutting Plane Detail)
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: OPT_CHECK
+            description: >-
+              표시 유형 제어 (표시: true / 숨김: false)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: PLANE_NAME
+            description: >-
+              절단 평면 선택 (Current UCS x-y: "XY", x-z: "XZ", y-z: "YZ", 또는 명명 평면 고유키
+              db/NPLN)
+            type: array
+            items:
+              type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: FREE_EDGE
+            description: >-
+              외곽선 그리기 옵션 (Free Edge: true / Free Face: false)
+            type: boolean
+            requirement: optional
+            documentedDefault: true
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+      - key: APPLIED_LOADS
+        description: >-
+          재하 하중(Applied Loads, 이동하중 추적)
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: OPT_CHECK
+            description: >-
+              표시 유형 제어 (표시: true / 숨김: false)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: SCALE_FACTOR
+            description: >-
+              하중 스케일 계수
+            type: number
+            requirement: optional
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: OPT_LOAD_VALUES
+            description: >-
+              하중값 표시 (활성: true / 비활성: false)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: VALUE_TYPE
+            description: >-
+              값 출력 타입 (OPT_LOAD_VALUES이 true일 때 — 지수: "Exponential", 고정: "Fixed")
+            type: string
+            requirement: optional
+            documentedDefault: Exponential
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: VALUE_DECIMAL_PT
+            description: >-
+              값 출력 소수점 자리 (OPT_LOAD_VALUES이 true일 때, 0 이상)
+            type: integer
+            requirement: optional
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+      - key: ISO_SURFACE
+        description: >-
+          등가면 상세(IsoSurface Detail)
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: OPT_CHECK
+            description: >-
+              표시 유형 제어 (표시: true / 숨김: false)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: DRAW_POLYLINE
+            description: >-
+              폴리곤 외곽선 그리기 (활성: true / 비활성: false)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: TRANSPARENCY
+            description: >-
+              투명도(화면 전용, 최대 255 / 최소 0)
+            type: number
+            requirement: optional
+            documentedDefault: 255
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: FREE_EDGE
+            description: >-
+              솔리드 요소 외곽선 강조 (Free Face: true / Free Edge: false)
+            type: boolean
+            requirement: optional
+            documentedDefault: true
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: VALUE_MODE
+            description: >-
+              응력 표시 값 선택
+            type: object
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            properties:
+              - key: VALUE_TYPE
+                description: >-
+                  등가면 값 타입 (Relative: "relative", Values: "values")
+                type: string
+                requirement: optional
+                documentedDefault: relative
+                documentedOptional: true
+                safeToOmit: unverified
+                provenance: manual
+              - key: VALUE
+                description: >-
+                  등가면 값 (Relative Type: 최대 1 / 최소 0)
+                type: array
+                items:
+                  type: number
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+      - key: UNDEFORMED
+        description: >-
+          미변형 형상 표시(Display Undeformed Shape)
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: ARROW_SCALE_FACTOR
+        description: >-
+          화살표 스케일 계수(Arrow Scale Factor)
+        type: number
+        requirement: optional
+        documentedDefault: 1
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: OPT_CUR_STEP_DISPLACEMENT
+        description: >-
+          현재 스텝 변위
+        type: boolean
+        requirement: optional
+        documentedDefault: false
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: OPT_STAGE_STEP_REAL_DISPLACEMENT
+        description: >-
+          단계/스텝 실제 변위
+        type: boolean
+        requirement: optional
+        documentedDefault: false
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: OPT_INCLUDING_CAMBER_DISPLACEMENT
+        description: >-
+          캠버 변위 포함
+        type: boolean
+        requirement: optional
+        documentedDefault: false
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: OPT_CUR_STEP_FORCE
+        description: >-
+          현재 스텝 힘(Current Step Force)
+        type: boolean
+        requirement: optional
+        documentedDefault: false
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: YIELD_POINT
+        description: >-
+          항복점(Yield Point)
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: OPT_INCLUDE_IMPACT_FACTOR
+        description: >-
+          충격계수 포함(Include Impact Factor)
+        type: boolean
+        requirement: optional
+        documentedDefault: false
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: MODE_SHAPE
+        description: >-
+          모드 형상(Mode Shape)
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: SCALE_FACTOR
+        description: >-
+          스케일 계수(Scale Factor)
+        type: number
+        requirement: optional
+        documentedDefault: 1
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: OPT_CUBIC_INTERPOLATION
+        description: >-
+          3차 보간(Cubic Interpolation)
+        type: boolean
+        requirement: optional
+        documentedDefault: false
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: CUBIC_INTERPOLATION_FACTOR
+        description: >-
+          3차 보간 계수(Cubic Interpolation Factor)
+        type: number
+        requirement: optional
+        documentedDefault: 0.5
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+
+extraction:
+  source: 16_VIEW.md line 1424
+  table: "1) Type of Display — `Argument.TYPE_OF_DISPLAY` (Object, Optional)"
+  # Additional parameter tables in this section were NOT merged. They are
+  # usually conditional variants selected by a type/code field. Decide
+  # whether they belong in this contract's fields, as nested `properties`,
+  # or as a separate contract - do not assume the first table is the whole
+  # schema.
+  structuralTables:
+    - heading: 2) Contour Details — `TYPE_OF_DISPLAY.CONTOUR`
+      line: 1452
+      paths: [TYPE_OF_DISPLAY.CONTOUR]
+      note: >-
+        The heading names the object and the rows are its members; the
+        objects are independently optional, so no discriminator is needed.
+    - heading: 3) Values Output Details — `TYPE_OF_DISPLAY.VALUES`
+      line: 1466
+      paths: [TYPE_OF_DISPLAY.VALUES]
+      note: >-
+        The heading names the object and the rows are its members; the
+        objects are independently optional, so no discriminator is needed.
+    - heading: 4) Legend Details — `TYPE_OF_DISPLAY.LEGEND`
+      line: 1481
+      paths: [TYPE_OF_DISPLAY.LEGEND]
+      note: >-
+        The heading names the object and the rows are its members; the
+        objects are independently optional, so no discriminator is needed.
+    - heading: 5) Deformation Details — `TYPE_OF_DISPLAY.DEFORM`
+      line: 1491
+      paths: [TYPE_OF_DISPLAY.DEFORM]
+      note: >-
+        The heading names the object and the rows are its members; the
+        objects are independently optional, so no discriminator is needed.
+    - heading: 6) Display Option Details — `TYPE_OF_DISPLAY.DISP_OPT`
+      line: 1502
+      paths: [TYPE_OF_DISPLAY.DISP_OPT]
+      note: >-
+        The heading names the object and the rows are its members; the
+        objects are independently optional, so no discriminator is needed.
+    - heading: 7) Symmetric Model Mirror Detail — `TYPE_OF_DISPLAY.MIRRORED`
+      line: 1511
+      paths: [TYPE_OF_DISPLAY.MIRRORED]
+      note: >-
+        The heading names the object and the rows are its members; the
+        objects are independently optional, so no discriminator is needed.
+    - heading: 8) Cutting Diagram — `TYPE_OF_DISPLAY.CUTTING_DIAGRAM`
+      line: 1524
+      paths: [TYPE_OF_DISPLAY.CUTTING_DIAGRAM]
+      note: >-
+        The heading names the object and the rows are its members; the
+        objects are independently optional, so no discriminator is needed.
+    - heading: 9) Cutting Plane Detail Dialog — `TYPE_OF_DISPLAY.CUTTING_PLANE`
+      line: 1540
+      paths: [TYPE_OF_DISPLAY.CUTTING_PLANE]
+      note: >-
+        The heading names the object and the rows are its members; the
+        objects are independently optional, so no discriminator is needed.
+    - heading: 10) Applied Loads (Moving Load Tracer Detail) — `TYPE_OF_DISPLAY.APPLIED_LOADS`
+      line: 1549
+      paths: [TYPE_OF_DISPLAY.APPLIED_LOADS]
+      note: >-
+        The heading names the object and the rows are its members; the
+        objects are independently optional, so no discriminator is needed.
+    - heading: 11) IsoSurface Detail Dialog — `TYPE_OF_DISPLAY.ISO_SURFACE`
+      line: 1560
+      paths: [TYPE_OF_DISPLAY.ISO_SURFACE]
+      note: >-
+        The heading names the object and the rows are its members; the
+        objects are independently optional, so no discriminator is needed.
+  prose:
+    - line: 1419
+      quote: >-
+        실제 요청에서는 `TYPE_OF_DISPLAY`와 함께 결과 모드 지정용 최상위
+        키(`CURRENT_MODE`, `LOAD_CASE_COMB`, `COMPONENTS`, `DISPLAY_OPTIONS`,
+        `OPTIONS`, `OUTPUT_SECT_LOCATION` 등)를 함께 전달합니다.
+      paths: [CURRENT_MODE, LOAD_CASE_COMB, COMPONENTS, DISPLAY_OPTIONS, OPTIONS,
+              OUTPUT_SECT_LOCATION]
+    - line: 1580
+      quote: >-
+        "LOAD_CASE_COMB": { "TYPE": "ST", "NAME": "DL" }, ... "DISPLAY_OPTIONS": {
+        "FIDELITY": "Exact", "FILL": "line", "SCALE": 1.0 }, ...
+        "OUTPUT_SECT_LOCATION": { "OPT_I": true, "OPT_CENTER_MID": true, "OPT_J":
+        true }
+      paths: [LOAD_CASE_COMB.TYPE, LOAD_CASE_COMB.NAME, DISPLAY_OPTIONS.FIDELITY,
+              DISPLAY_OPTIONS.FILL, DISPLAY_OPTIONS.SCALE, OUTPUT_SECT_LOCATION.OPT_I,
+              OUTPUT_SECT_LOCATION.OPT_CENTER_MID, OUTPUT_SECT_LOCATION.OPT_J]
+    - line: 1699
+      quote: >-
+        "STEP_INDEX": 1 }, "OPTIONS": { "LOCAL_UCS": { "TYPE": "UCS", "UCS_NAME":
+        "CurrentUCS" }, "AVERAGE_NODAL": { "TYPE": "Avg.Nodal" }, "SURFACE":
+        "Top" }
+      paths: [LOAD_CASE_COMB.STEP_INDEX, OPTIONS.LOCAL_UCS, OPTIONS.LOCAL_UCS.TYPE,
+              OPTIONS.LOCAL_UCS.UCS_NAME, OPTIONS.AVERAGE_NODAL,
+              OPTIONS.AVERAGE_NODAL.TYPE, OPTIONS.SURFACE]

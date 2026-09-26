@@ -1,0 +1,397 @@
+# /DESIGN/RC/KDS-41-20-2022/DCO
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: design-rc-kds-41-20-2022-dco
+endpoint: /DESIGN/RC/KDS-41-20-2022/DCO
+name: Concrete Design Code Option
+surface:
+  className: ConcreteDesignCodeOption
+  exportName: concreteDesignCodeOption
+  modulePath: [design, rcKds, setup]
+  payloadTypeName: ConcreteDesignCodeOptionPayload
+  nestedTypes:
+    - {path: SEISMIC, name: ConcreteDesignCodeOptionSeismic, namespace: DesignRcKdsSetupTypes}
+    - {path: SEISMIC.JOINT, name: ConcreteDesignCodeOptionJoint, namespace: DesignRcKdsSetupTypes}
+    - {path: SEISMIC.SHEAR_DES, name: ConcreteDesignCodeOptionShearDes, namespace: DesignRcKdsSetupTypes}
+    - {path: SEISMIC.SHEAR_WALL, name: ConcreteDesignCodeOptionShearWall, namespace: DesignRcKdsSetupTypes}
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 26_Design_RC_KDS41202022.md
+    section: "1. `DESIGN/RC/KDS-41-20-2022/DCO` — Concrete Design Code Option (콘크리트 설계 코드 옵션)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-07-26
+    - product: gen
+      ref: db-read-sweep-2026-07-26
+
+operations:
+  - method: DELETE
+    risk: destructive
+    mitigation: none
+    request:
+      wrapper: none
+    response:
+      wrapper: unknown
+    notes: >-
+      The manual shows a bodyless DELETE at this endpoint, but does not
+      state the deletion scope or response shape.
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: Assign
+    description: >-
+      Assign 래퍼 (ID 문자열 키, 1개)
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: DESIGN_CD
+    description: >-
+      설계 코드 (KDS 41 20 : 2022 고정)
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    enum: ["KDS 41 20 : 2022"]
+    safeToOmit: unverified
+    provenance: manual
+  - key: SEISMIC_PROV
+    description: >-
+      내진설계 특별규정 적용
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: TORS_DES
+    description: >-
+      비틀림 설계
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: TORS_RDCT_FACT
+    description: >-
+      보 비틀림 감소계수 (≥0, TORS_DES=true일 때)
+    type: number
+    minimum: 0
+    requirement: optional
+    documentedDefault: 1
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: MOM_REDIST_FACT
+    description: >-
+      보 모멘트 재분배 계수 (>0, ≤1)
+    type: number
+    maximum: 1
+    requirement: optional
+    documentedDefault: 1
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: MOM_CALC_MTHD
+    description: >-
+      보 모멘트 산정법 (Equivalent=등가철근, Each=개별철근)
+    type: string
+    requirement: optional
+    documentedDefault: Equivalent
+    documentedOptional: true
+    enum: [Equivalent, Each]
+    safeToOmit: unverified
+    provenance: manual
+  - key: USE_SUBDIV_FORCE
+    description: >-
+      부재 배정 보에 세분화 부재력 사용
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: EXP_COND
+    description: >-
+      노출조건 kcr (Dry / etc)
+    type: string
+    requirement: optional
+    documentedDefault: Dry
+    documentedOptional: true
+    enum: [Dry, etc]
+    safeToOmit: unverified
+    provenance: manual
+  - key: PM_CRV_CALC
+    description: >-
+      P-M 곡선 산정법 (KeepPConstant=P 고정, KeepMPConstant=M/P 고정)
+    type: string
+    requirement: optional
+    documentedDefault: KeepMPConstant
+    documentedOptional: true
+    enum: [KeepPConstant, KeepMPConstant]
+    safeToOmit: unverified
+    provenance: manual
+  - key: UG_LC
+    description: >-
+      지하부재에 지하 하중조합 타입 사용
+    type: boolean
+    requirement: optional
+    documentedDefault: true
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: CONC_STRS_STRN
+    description: >-
+      휨 콘크리트 응력-변형 타입 (Equivalent=등가 사각형, Parabola=포물선-사각형 평균)
+    type: string
+    requirement: optional
+    documentedDefault: Equivalent
+    documentedOptional: true
+    enum: [Equivalent, Parabola]
+    safeToOmit: unverified
+    provenance: manual
+  - key: FS_MAIN_BAR
+    description: >-
+      보 설계 주철근 fs (2/3fy / ByProgram)
+    type: string
+    requirement: optional
+    documentedDefault: 2/3fy
+    documentedOptional: true
+    enum: [2/3fy, ByProgram]
+    safeToOmit: unverified
+    provenance: manual
+  - key: SEISMIC
+    description: >-
+      내진 설계 파라미터 (SEISMIC_PROV=true일 때)
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: FRAME_TYPE
+        description: >-
+          프레임 타입 (Special=특수, Intermediate=중간, Ordinary=보통 모멘트골조)
+        type: string
+        requirement: optional
+        documentedDefault: Special
+        documentedOptional: true
+        enum: [Special, Intermediate, Ordinary]
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'SEISMIC' by numbering it '14.1', not
+        # by naming a path
+      - key: STRONG_COL_WEAK_LAST
+        description: >-
+          최상층 강기둥-약보 고려
+        type: boolean
+        requirement: optional
+        documentedDefault: true
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'SEISMIC' by numbering it '14.2', not
+        # by naming a path
+      - key: SHEAR_WALL
+        description: >-
+          전단벽 설정 (FRAME_TYPE=Special/Intermediate일 때)
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'SEISMIC' by numbering it '14.3', not
+        # by naming a path
+        properties:
+          - key: SPEC_RC_WALL
+            description: >-
+              특수 철근콘크리트 구조벽
+            type: boolean
+            requirement: optional
+            documentedDefault: true
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'SHEAR_WALL' by numbering it '14.3.1',
+            # not by naming a path
+          - key: BDRY_ELEM_MTHD
+            description: >-
+              경계요소법 (Displacement=변위기반, Stress=응력기반)
+            type: string
+            requirement: optional
+            documentedDefault: Displacement
+            documentedOptional: true
+            enum: [Displacement, Stress]
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'SHEAR_WALL' by numbering it '14.3.2',
+            # not by naming a path
+          - key: DEFL_AMP_FACT
+            description: >-
+              변위 증폭계수 Cd (1.25/1.5/2/2.5/3/3.25/4/4.5/5/5.5/6/6.5)
+            type: number
+            requirement: optional
+            documentedDefault: 4.5
+            documentedOptional: true
+            enum: [1.25, 1.5, 2, 2.5, 3, 3.25, 4, 4.5, 5, 5.5, 6, 6.5]
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'SHEAR_WALL' by numbering it '14.3.3',
+            # not by naming a path
+          - key: IMP_FACT
+            description: >-
+              중요도 계수 Ie (1 / 1.2 / 1.5)
+            type: number
+            requirement: optional
+            documentedDefault: 1.2
+            documentedOptional: true
+            enum: [1, 1.2, 1.5]
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'SHEAR_WALL' by numbering it '14.3.4',
+            # not by naming a path
+      - key: SHEAR_DES
+        description: >-
+          설계용 전단력 설정
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'SEISMIC' by numbering it '14.4', not
+        # by naming a path
+        properties:
+          - key: MTHD
+            description: >-
+              산정법 (MAX(Ve1,Ve2) / MIN(Ve1,Ve2) / Ve1 / Ve2)
+            type: string
+            requirement: optional
+            documentedDefault: MIN
+            documentedOptional: true
+            enum: [MAX, MIN, Ve1, Ve2]
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'SHEAR_DES' by numbering it '14.4.1',
+            # not by naming a path
+          - key: R
+            description: >-
+              R·Vc ≥ max(Ve1,Ve2)/2 의 R (≥0, FRAME_TYPE=Special)
+            type: number
+            minimum: 0
+            requirement: optional
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'SHEAR_DES' by numbering it '14.4.2',
+            # not by naming a path
+          - key: A1
+            description: >-
+              a1: Ve1 = Vg + a1·Σ(Mn)/L
+            type: number
+            requirement: optional
+            documentedDefault: 1
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'SHEAR_DES' by numbering it '14.4.3',
+            # not by naming a path
+          - key: A2
+            description: >-
+              a2: Ve2 = Vg + a2·Veq
+            type: number
+            requirement: optional
+            documentedDefault: 2
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'SHEAR_DES' by numbering it '14.4.4',
+            # not by naming a path
+      - key: BEAM_COL_JNT_DES
+        description: >-
+          보-기둥 접합부 설계
+        type: boolean
+        requirement: optional
+        documentedDefault: false
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'SEISMIC' by numbering it '14.5', not
+        # by naming a path
+      - key: JOINT
+        description: >-
+          보-기둥 접합부 설정
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'SEISMIC' by numbering it '14.6', not
+        # by naming a path
+        properties:
+          - key: EXCL_MEM_TYPES
+            description: >-
+              내진설계 제외 부재타입 (SUBBEAM=소보, CANTIL=캔틸레버, UGBEAMCOL=지하보/기둥)
+            type: array
+            items:
+              type: string
+            requirement: optional
+            documentedDefault: ["SUBBEAM","CANTIL","UGBEAMCOL"]
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'JOINT' by numbering it '14.6.1', not
+            # by naming a path
+          - key: CHK_POS
+            description: >-
+              검토 위치 (Top / Bottom)
+            type: string
+            requirement: optional
+            documentedDefault: Bottom
+            documentedOptional: true
+            enum: [Top, Bottom]
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'JOINT' by numbering it '14.6.2', not
+            # by naming a path
+
+extraction:
+  source: 26_Design_RC_KDS41202022.md line 561
+  table: 파라미터

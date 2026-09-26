@@ -1,0 +1,394 @@
+# /DESIGN/RC/KDS-41-20-2022/REBR
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: design-rc-kds-41-20-2022-rebr
+endpoint: /DESIGN/RC/KDS-41-20-2022/REBR
+name: Modify Brace Rebar Data
+surface:
+  className: ModifyBraceRebarData
+  exportName: modifyBraceRebarData
+  modulePath: [design, rcKds, rebar]
+  payloadTypeName: ModifyBraceRebarDataPayload
+  nestedTypes:
+    - {path: Assign.ITEMS, name: RcBraceRebarItem, namespace: DesignRcKdsRebarTypes}
+    - {path: Assign.ITEMS.ELEMS, name: NodeElemsSelector, namespace: PostBaseTypes}
+    - {path: Assign.ITEMS.MAIN_BAR, name: RcBraceMainBarSpec, namespace: DesignRcKdsRebarTypes}
+    - {path: Assign.ITEMS.SHEAR_BAR_CEN, name: HoopShearBarSpec, namespace: DesignRcKdsRebarTypes}
+    - {path: Assign.ITEMS.SHEAR_BAR_END, name: HoopShearBarSpec, namespace: DesignRcKdsRebarTypes}
+
+products: [gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 26_Design_RC_KDS41202022.md
+    section: "38. `DESIGN/RC/KDS-41-20-2022/REBR` — Modify Brace Rebar Data (가새 철근 데이터 수정)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_gen
+  records:
+    - product: gen
+      ref: db-read-sweep-2026-07-26
+
+operations:
+  - method: DELETE
+    risk: destructive
+    mitigation: none
+    request:
+      wrapper: none
+    response:
+      wrapper: unknown
+    notes: >-
+      The manual shows a bodyless DELETE at this endpoint, but does not
+      state the deletion scope or response shape.
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: Assign
+    description: >-
+      단면 번호 문자열을 키로 갖는 맵
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: ITEMS
+        description: >-
+          콘크리트 가새 철근 항목 (min 1)
+        type: array
+        items:
+          type: object
+        minItems: 1
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: CREATE_SUB_SECTION
+            description: >-
+              서브 단면 생성 여부
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(1)', not
+            # by naming a path
+          - key: ID
+            description: >-
+              서브 단면 ID (읽기 전용)
+            type: integer
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(2)', not
+            # by naming a path
+          - key: ELEMS
+            description: >-
+              요소 번호 입력 (CREATE_SUB_SECTION=true 일 때 필수)
+            type: object
+            requirement: conditional
+            condition: CREATE_SUB_SECTION=true
+            appliesWhen:
+              - path: Assign.ITEMS.CREATE_SUB_SECTION
+                equals: true
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(3)', not
+            # by naming a path
+            properties:
+              - key: KEYS
+                description: >-
+                  요소 ID 배열
+                type: array
+                items:
+                  type: integer
+                requirement: optional
+                documentedDefault: null
+                documentedOptional: true
+                safeToOmit: unverified
+                provenance: manual
+              - key: TO
+                description: >-
+                  ID 범위 (예: "1to160")
+                type: string
+                requirement: optional
+                documentedDefault: null
+                documentedOptional: true
+                safeToOmit: unverified
+                provenance: manual
+              - key: STRUCTURE_GROUP_NAME
+                description: >-
+                  구조 그룹 이름
+                type: string
+                requirement: optional
+                documentedDefault: null
+                documentedOptional: true
+                safeToOmit: unverified
+                provenance: manual
+          - key: MAIN_BAR
+            description: >-
+              주철근
+            type: object
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(4)', not
+            # by naming a path
+            properties:
+              - key: NAME
+                description: >-
+                  주철근 규격 · 19종 (D4 ~ D57)
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+                # RESOLVED: the manual's own description says this has 19 values and lists
+                # 5; the list is a sample, so no enum is transcribed
+              - key: NUM
+                description: >-
+                  철근 총 개수 (min 4)
+                type: integer
+                minimum: 4
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+                # RESOLVED: the JSON Schema writes the bound as `minItems: 4`, a keyword
+                # that applies to arrays and does nothing on an integer. What the bound
+                # is, is stated elsewhere in the same section: the Parameters row for
+                # this field says 철근 총 개수 (min 4). Two statements, one number, one
+                # of them using the wrong keyword - transcribed as `minimum: 4`, which
+                # is what both mean. See MD-30.
+              - key: ROW
+                description: >-
+                  열(row) 수
+                type: integer
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+          - key: SHEAR_BAR_END
+            description: >-
+              단부 전단철근
+            type: object
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(5)', not
+            # by naming a path
+            properties:
+              - key: NAME
+                description: >-
+                  후프 철근 규격 · 19종 (D4 ~ D57)
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+                # RESOLVED: the manual's own description says this has 19 values and lists
+                # 5; the list is a sample, so no enum is transcribed
+              - key: LEG_Y
+                description: >-
+                  다리 수 (local Y)
+                type: integer
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              - key: LEG_Z
+                description: >-
+                  다리 수 (local Z)
+                type: integer
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              - key: DIST
+                description: >-
+                  철근 간격 @
+                type: number
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+          - key: SHEAR_BAR_CEN
+            description: >-
+              중앙부 전단철근
+            type: object
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(6)', not
+            # by naming a path
+            properties:
+              - key: NAME
+                description: >-
+                  후프 철근 규격 · 19종 (D4 ~ D57)
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+                # RESOLVED: the manual's own description says this has 19 values and lists
+                # 5; the list is a sample, so no enum is transcribed
+              - key: LEG_Y
+                description: >-
+                  다리 수 (local Y)
+                type: integer
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              - key: LEG_Z
+                description: >-
+                  다리 수 (local Z)
+                type: integer
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              - key: DIST
+                description: >-
+                  철근 간격 @
+                type: number
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+          - key: DO
+            description: >-
+              콘크리트면~철근중심 거리 (do)
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(7)', not
+            # by naming a path
+          - key: HOOP_TYPE
+            description: >-
+              후프 철근 타입 (Ties | Spirals)
+            type: string
+            requirement: optional
+            documentedDefault: Ties
+            documentedOptional: true
+            enum: [Ties, Spirals]
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(8)', not
+            # by naming a path
+
+variants:
+  - when:
+      - path: CREATE_SUB_SECTION
+        equals: true
+    source:
+      table: CREATE_SUB_SECTION == true 일 때 — ELEMS (KEYS / TO / STRUCTURE_GROUP_NAME 중 택1)
+      line: 7147
+    fields:
+      - key: KEYS
+        description: >-
+          요소 ID 배열
+        type: array
+        items:
+          type: integer
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: TO
+        description: >-
+          ID 범위 (예: "1to160")
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: STRUCTURE_GROUP_NAME
+        description: >-
+          구조 그룹 이름
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+
+extraction:
+  source: 26_Design_RC_KDS41202022.md line 7115
+  table: Root / Item
+  structuralTables:
+    - heading: Root / Item
+      line: 7130
+      paths:
+        - Assign.ITEMS.MAIN_BAR
+    - heading: SHEAR_BAR_END / SHEAR_BAR_CEN 객체 (동일 구조)
+      line: 7138
+      paths:
+        - Assign.ITEMS.SHEAR_BAR_END
+        - Assign.ITEMS.SHEAR_BAR_CEN
+    - heading: CREATE_SUB_SECTION == true 일 때 — ELEMS (KEYS / TO / STRUCTURE_GROUP_NAME 중 택1)
+      line: 7147
+      paths:
+        - Assign.ITEMS.ELEMS

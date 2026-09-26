@@ -1,0 +1,490 @@
+# /db/REBC
+#
+# The second contract here whose fields come from the server rather than the
+# manual, and the one with the longest paper trail: three sources disagreed
+# about this endpoint over two days and the product settled it.
+#
+# The sibling manual repo's 2026-08-26 re-verification changed this section,
+# then reverted itself on 2026-08-27 as having invented `vMAIN_BAR` and an
+# integer `HOOP_TYPE`. The revert restored what MIDASIT's own Zendesk article
+# says. A live POST comparison the same day showed the restored shape is the
+# one the product refuses: the single-object `MAIN_BAR` answers `Wrong Field`,
+# while the array shape answers a domain error - "Column Rebars has been
+# entered in the section no. 1, which has not been specified" - meaning the
+# shape was accepted and only the target was missing. So the 8/26 pass had the
+# field names right for the wrong reasons, the revert was right that its
+# reasoning was wrong, and both were wrong about the answer.
+contractVersion: 1
+id: db-rebc
+endpoint: /db/REBC
+name: Modify Column Rebar
+surface:
+  className: ColumnRebar
+  exportName: columnRebar
+  modulePath: [db, design]
+  payloadTypeName: ColumnRebarPayload
+  nestedTypes:
+    - {path: ITEMS, name: ColumnRebarItem, namespace: DbDesignTypes}
+    - {path: ITEMS.SHEAR_BAR_CEN, name: HoopShearBarSpec, namespace: DbDesignTypes}
+    - {path: ITEMS.SHEAR_BAR_END, name: HoopShearBarSpec, namespace: DbDesignTypes}
+    - {path: ITEMS.vMAIN_BAR, name: ColumnMainBarItem, namespace: DbDesignTypes}
+
+products: [gen]
+productsEvidence: >-
+  Gen only. GET /info/db/REBC answers on Gen and 404s on Civil NX, confirmed
+  independently twice on 2026-07-29 - an earlier sweep, then a live re-check
+  with both products connected in one session. Recorded in db/base.py's
+  GEN_ONLY.
+
+recordKey:
+  kind: record_id
+  description: >-
+    The section number, as the manual states. The live domain error names it
+    back - "the section no. 1, which has not been specified" - which is how the
+    key's meaning was confirmed rather than assumed.
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 24_DB_Design.md
+    section: "11. `/db/REBC` — Modify Column Rebar Data (기둥 철근 데이터 수정)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_gen
+  records:
+    - product: gen
+      ref: db-rebc-live-shape-2026-08-27
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/REBC/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented twice over - the manual says this endpoint has no DELETE at
+      all, and the per-id route is undocumented for every /db/* endpoint. The
+      2026-08-27 round trip confirmed it removes the record. See risk
+      db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The form the manual documents for every other /db/* endpoint. The ids
+        in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      The manual says this endpoint does not support GET. It answers cleanly,
+      which is one of the two things that disproved the POST-only claim.
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      A record whose target section does not exist is refused with a domain
+      error naming the section, not a shape error. That distinction is what
+      separated a wrong payload shape from a missing target when the two
+      candidate shapes were compared live.
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: ITEMS
+    description: >-
+      Concrete Column Rebar Items
+    type: array
+    items:
+      type: object
+    minItems: 1
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: live_verified
+    provenanceNote: >-
+      The array itself is the one thing the manual, the official article and
+      the server agree on. Its contents are live_corrected.
+    properties:
+      - key: ID
+        description: >-
+          ID
+        type: integer
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: live_corrected
+        provenanceNote: >-
+          The manual calls this a read-only Sub Section ID, which belongs to
+          the `CREATE_SUB_SECTION` feature the server does not have here. What
+          the server declares is a plain ID.
+      - key: vMAIN_BAR
+        description: >-
+          Main Bar List
+        type: array
+        items:
+          type: object
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: live_corrected
+        provenanceNote: >-
+          The centre of the defect. The manual and the official article both
+          give a single `MAIN_BAR` object; the server takes a list, one entry
+          per rebar arrangement, and refuses the single-object form outright.
+        properties:
+          - key: NAME
+            description: >-
+              Main Name
+            type: string
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_corrected
+          - key: NUM
+            description: >-
+              Number
+            type: integer
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_corrected
+          - key: ROW
+            description: >-
+              Row
+            type: integer
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_corrected
+          - key: D0
+            description: >-
+              Concrete Face ~ Center of Rebar
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_corrected
+            provenanceNote: >-
+              The manual's top-level `DO` - the letter O, not a zero - and it
+              is neither top-level nor spelled that way. It is `D0` and it
+              belongs to each main-bar entry, which is what a list of
+              arrangements needs.
+          - key: bUSE_CORNER
+            description: >-
+              Use Corner Bar
+            type: boolean
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_corrected
+            provenanceNote: The manual's `USE_CORNER`.
+          - key: NAME_CORNER
+            description: >-
+              Corner Name
+            type: string
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_corrected
+      - key: SHEAR_BAR_END
+        description: >-
+          Shear Bar-End
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: live_verified
+        provenanceNote: >-
+          Name and members match the manual exactly. Recorded from /info like
+          the rest, and agreeing with it.
+        properties:
+          - key: NAME
+            description: >-
+              Name
+            type: string
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_verified
+          - key: LEG_Y
+            description: >-
+              Leg y
+            type: integer
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_verified
+          - key: LEG_Z
+            description: >-
+              Leg z
+            type: integer
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_verified
+          - key: DIST
+            description: >-
+              Dist
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_verified
+      - key: SHEAR_BAR_CEN
+        description: >-
+          Shear Bar-Center
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: live_verified
+        properties:
+          - key: NAME
+            description: >-
+              Name
+            type: string
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_verified
+          - key: LEG_Y
+            description: >-
+              Leg y
+            type: integer
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_verified
+          - key: LEG_Z
+            description: >-
+              Leg z
+            type: integer
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_verified
+          - key: DIST
+            description: >-
+              Dist
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_verified
+      - key: HOOP_TYPE
+        description: >-
+          Hoop Type (1=Tied, 2=Spiral)
+        type: integer
+        requirement: optional
+        documentedDefault: null
+        documentedDefaultNote: >-
+          The manual's default is the string `"Ties"`, which this field cannot
+          hold: the server types it integer. A default is a value an SDK may
+          apply, so a string one on an integer field is not recorded. What the
+          manual claims is under manualDefects instead.
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: live_corrected
+        provenanceNote: >-
+          An integer, and the two values are the server's own description.
+          The manual types it String with `"Ties"` / `"Spirals"`. No enum is
+          declared here because /info states none - the meanings are prose in a
+          description, and reading an enum out of a description is how a gate
+          gets invented.
+      - key: bSAME_SPACE_END_CEN
+        description: >-
+          Same Rebar Spaces at End and Center
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+        provenanceNote: >-
+          Undocumented. Neither the vendored chapter nor the official article
+          mentions it.
+      - key: NUM_BAR_BC_JOINT
+        description: >-
+          Number of Rebars of Beam-Column Joint
+        type: integer
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+        provenanceNote: >-
+          Undocumented, and specific to certain design codes. Recorded by name
+          only; what it does has not been measured.
+      - key: HOOK_TYPE
+        description: >-
+          Hook Type (0: 90+(135 or 180) / 1: Both(135 or 180))
+        type: integer
+        enum: [0, 1]
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: live_verified
+        provenanceNote: >-
+          The one field in this section where the manual survives intact. It
+          names the field, types it integer, gives it two titled values and a
+          default, and GET /info/db/REBC declares the same name and type - it
+          simply attaches no meaning, which is silence rather than
+          contradiction. Kept as documented. This SDK was missing the field
+          entirely until the /info pull on 2026-08-27 put it back.
+
+manualDefects:
+  - describes: field_name
+    manualSays: >-
+      Each `ITEMS` entry carries a single `MAIN_BAR` object
+      (`NAME`/`NUM`/`ROW`/`USE_CORNER`/`NAME_CORNER`), a top-level `DO`, and an
+      optional `CREATE_SUB_SECTION` with an `ELEMS` object.
+    actual: >-
+      The server takes `vMAIN_BAR`, an array of `{NAME, NUM, ROW, D0,
+      bUSE_CORNER, NAME_CORNER}` - the cover distance lives inside each entry
+      as `D0`, spelled with a zero. `CREATE_SUB_SECTION` and `ELEMS` do not
+      exist here at all, and two fields the chapter never mentions do:
+      `bSAME_SPACE_END_CEN` and `NUM_BAR_BC_JOINT`. This is not a drift a
+      caller can work around: the documented shape is refused outright with
+      `Wrong Field`.
+    evidence: >-
+      docs/live_verification_notes.md, "the sibling manual repo reverted its own
+      REBB/REBC/REBW re-verification, and got 2 of 3 wrong" (2026-08-27). Both
+      candidate shapes were POSTed to the same live Gen NX session: the
+      documented single-object form answered `Wrong Field`, the array form
+      answered `Column Rebars has been entered in the section no. 1, which has
+      not been specified` - a domain error, so the shape was accepted. A fresh
+      GET /info/db/REBC confirms every field name.
+    reportedToVendor: B-5
+  - describes: field_value
+    manualSays: >-
+      `HOOP_TYPE` is a String with `oneOf` `"Ties"` and `"Spirals"`, defaulting
+      to `"Ties"`.
+    actual: >-
+      It is an integer, and the server's own schema description gives the two
+      values as 1=Tied and 2=Spiral.
+    evidence: >-
+      GET /info/db/REBC, 2026-08-27, captured in schema/info-schemas.json.
+  - describes: default
+    manualSays: >-
+      `HOOP_TYPE` defaults to the string `"Ties"`.
+    actual: >-
+      The field is an integer, so no string can be its default. There is no
+      replacement value to record either: the server's schema states the two
+      meanings in a description and declares no default at all. The row is
+      wrong rather than merely stale, and this contract records no default for
+      the field instead of translating one.
+    evidence: >-
+      GET /info/db/REBC, 2026-08-27, captured in schema/info-schemas.json.
+  - describes: method
+    manualSays: >-
+      A callout at the top of the chapter states that `/db/REBC` supports POST
+      only, and that the other twelve endpoints in it support full CRUD.
+    actual: >-
+      Full CRUD, confirmed by a POST -> GET -> PUT -> DELETE -> GET round trip
+      on 2026-08-27 in which the DELETE actually removed the record. `GET
+      /db/REBC` answers cleanly on its own, which is the cheapest way to see
+      the claim is wrong.
+    evidence: >-
+      docs/live_verification_notes.md and docs/coverage.json's /db/REBC entry,
+      2026-08-27. The SDK's METHODS override was removed in the same change.
+  - describes: behaviour
+    manualSays: >-
+      Nothing about where this section's schema came from.
+    actual: >-
+      The defect is upstream. MIDASIT's own Zendesk article 49513980544793,
+      "Modify Column Rebar Data", documents the same single-object `MAIN_BAR`
+      and the same POST-only claim, fetched directly on 2026-08-27 before any
+      of this was reported. So the vendored chapter transcribes its source
+      correctly. Worth recording because the manual repo cannot fix this one on
+      its own: it reverted to the article and the article is what is wrong.
+    evidence: >-
+      docs/live_verification_notes.md (2026-08-27), the article fetched through
+      the Zendesk Help Center JSON API.
+    reportedToVendor: B-5
+
+sdkRules:
+  - id: db-rebc-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-rebc-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog. Column rebar is design input a caller cannot
+      reconstruct from the model geometry.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 24_DB_Design.md line 1
+  table: none
+  note: >-
+    No table. The extractor's draft was discarded rather than reviewed, for the
+    same reason as /db/REBW's: it transcribes a schema the server refuses. The
+    fields come from GET /info/db/REBC, corroborated by a live POST comparison
+    of the documented and the actual shape against one session.

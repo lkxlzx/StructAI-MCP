@@ -1,0 +1,89 @@
+# /DESIGN/SRC/AIK-SRC2K/MEMB
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: design-src-aik-src2k-memb
+endpoint: /DESIGN/SRC/AIK-SRC2K/MEMB
+name: Member Assignment
+surface:
+  className: SrcMemberAssignment
+  exportName: srcMemberAssignment
+  modulePath: [design, srcAiksrc2k]
+  payloadTypeName: SrcMemberAssignmentPayload
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 27_Design_SRC_AIKSRC2K.md
+    section: "26. `DESIGN/SRC/AIK-SRC2K/MEMB` — Member Assignment (부재 배정)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-07-26
+    - product: gen
+      ref: db-read-sweep-2026-07-26
+
+operations:
+  - method: DELETE
+    risk: destructive
+    mitigation: none
+    request:
+      wrapper: none
+    response:
+      wrapper: unknown
+    notes: >-
+      The manual shows a bodyless DELETE at this endpoint, but does not
+      state the deletion scope or response shape.
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: AELEM
+    description: >-
+      요소 목록
+    type: array
+    items:
+      type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: bREVERSE
+    description: >-
+      부재축 방향 반전
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+
+extraction:
+  source: 27_Design_SRC_AIKSRC2K.md line 6024
+  table: 파라미터

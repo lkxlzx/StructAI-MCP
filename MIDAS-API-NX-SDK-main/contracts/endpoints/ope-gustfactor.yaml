@@ -1,0 +1,332 @@
+# /ope/GUSTFACTOR
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: ope-gustfactor
+endpoint: /ope/GUSTFACTOR
+name: Gust Factor Calculator
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 15_OPE.md
+    section: "14. `/ope/GUSTFACTOR` — Gust Factor Calculator"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-07-30
+    - product: gen
+      ref: db-read-sweep-2026-07-30
+
+operations:
+  - method: POST
+    surface:
+      exportName: calculateGustFactor
+      modulePath: [ope]
+      argumentTypeName: GustFactorArgument
+      documentation: |-
+        docs/manual/15_OPE.md #14 — /ope/GUSTFACTOR — Gust Factor Calculator.
+      nestedTypes:
+        - {path: FLEXIBLE_PARAM, name: FlexibleGustFactorParam, namespace: OpeTypes}
+        - {path: FLEXIBLE_PARAM.TOPOGRAPHIC_EFFECT, name: TopographicEffect, namespace: OpeTypes}
+        - {path: RIGID_PARAM, name: RigidGustFactorParam, namespace: OpeTypes}
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: WIND_CODE
+    description: >-
+      풍하중 기준코드 · "KDS(41-12:2022)"
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    enum: ["KDS(41-12:2022)"]
+    safeToOmit: unverified
+    provenance: manual
+  - key: STRUCTURE_TYPE
+    description: >-
+      구조물 타입 · 강성: "RIGID" / 유연: "FLEXIBLE"
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    enum: [RIGID, FLEXIBLE]
+    safeToOmit: unverified
+    provenance: manual
+  - key: RIGID_PARAM
+    description: >-
+      강성구조 파라미터
+    type: object
+    requirement: conditional
+    condition: STRUCTURE_TYPE = RIGID인 경우
+    appliesWhen:
+      - path: STRUCTURE_TYPE
+        equals: RIGID
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    # RESOLVED: the condition is stated elsewhere in the same section and
+    # retained without inventing a stricter selector
+    properties:
+      - key: EXP_CATEGORY
+        description: >-
+          지표면 노출유형
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: ROOF_HEIGHT
+        description: >-
+          지붕높이
+        type: number
+        minimum: 0
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: BREADTH_X
+        description: >-
+          평면 폭(X방향)
+        type: number
+        minimum: 0
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: BREADTH_Y
+        description: >-
+          평면 폭(Y방향)
+        type: number
+        minimum: 0
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+  - key: FLEXIBLE_PARAM
+    description: >-
+      유연구조 파라미터
+    type: object
+    requirement: conditional
+    condition: STRUCTURE_TYPE = FLEXIBLE인 경우
+    appliesWhen:
+      - path: STRUCTURE_TYPE
+        equals: FLEXIBLE
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    # RESOLVED: the condition is stated elsewhere in the same section and
+    # retained without inventing a stricter selector
+    properties:
+      - key: EXP_CATEGORY
+        description: >-
+          지표면 노출유형
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: BASIC_WIND_SPEED
+        description: >-
+          기본풍속(m/s)
+        type: number
+        minimum: 0
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: IMPORTANCE_FACTOR
+        description: >-
+          중요도계수
+        type: number
+        minimum: 0
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: TOPOGRAPHIC_EFFECT
+        description: >-
+          지형효과 고려 옵션
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual qualifies this Optional with '생략 시 미사용'; this
+        # documents the effect of omission rather than a condition on the field
+        properties:
+          - key: OPT_USE
+            description: >-
+              사용 여부
+            type: boolean
+            requirement: required
+            documentedDefault: false
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: KZT
+            description: >-
+              지형계수 Kzt (OPT_USE=true일 때 필수)
+            type: number
+            minimum: 0
+            requirement: conditional
+            condition: OPT_USE=true
+            appliesWhen:
+              - path: FLEXIBLE_PARAM.TOPOGRAPHIC_EFFECT.OPT_USE
+                equals: true
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+      - key: DIRECTION_FACTOR_X
+        description: >-
+          방향계수(X)
+        type: number
+        minimum: 0
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: DIRECTION_FACTOR_Y
+        description: >-
+          방향계수(Y)
+        type: number
+        minimum: 0
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: BREADTH_X
+        description: >-
+          평면 폭(X방향)
+        type: number
+        minimum: 0
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: BREADTH_Y
+        description: >-
+          평면 폭(Y방향)
+        type: number
+        minimum: 0
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: STORY_HEIGHT_MAX
+        description: >-
+          최대 층고/지붕높이
+        type: number
+        minimum: 0
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: FREQUENCY_X
+        description: >-
+          고유진동수(X, Hz)
+        type: number
+        minimum: 0
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: FREQUENCY_Y
+        description: >-
+          고유진동수(Y, Hz)
+        type: number
+        minimum: 0
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: DAMPING
+        description: >-
+          감쇠비
+        type: number
+        minimum: 0
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: TOTAL_MASS
+        description: >-
+          총 질량
+        type: number
+        minimum: 0
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: MX
+        description: >-
+          질량항(X)
+        type: number
+        minimum: 0
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: MY
+        description: >-
+          질량항(Y)
+        type: number
+        minimum: 0
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: VIBRATION
+        description: >-
+          진동 관련 계수
+        type: number
+        minimum: 0
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+
+extraction:
+  source: 15_OPE.md line 1964
+  table: Parameters

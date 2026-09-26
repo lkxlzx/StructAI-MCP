@@ -1,0 +1,227 @@
+# /DESIGN/STEEL/KDS-41-30-2022/SMODI
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: design-steel-kds-41-30-2022-smodi
+endpoint: /DESIGN/STEEL/KDS-41-30-2022/SMODI
+name: Modify Steel Material
+surface:
+  className: ModifySteelMaterial
+  exportName: modifySteelMaterial
+  modulePath: [design, steelKds]
+  payloadTypeName: ModifySteelMaterialPayload
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 25_Design_Steel_KDS41302022.md
+    section: "22. `DESIGN/STEEL/KDS-41-30-2022/SMODI` — Modify Steel Material (강재 재질 수정)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-07-26
+    - product: gen
+      ref: db-read-sweep-2026-07-26
+
+operations:
+  - method: DELETE
+    risk: destructive
+    mitigation: none
+    request:
+      wrapper: none
+    response:
+      wrapper: unknown
+    notes: >-
+      The manual shows a bodyless DELETE at this endpoint, but does not
+      state the deletion scope or response shape.
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: Assign
+    description: >-
+      Assign 래퍼 (재질 ID 문자열 키)
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: CODE
+    description: >-
+      재질 코드 타입 ("None"=사용자정의, "Standard"=표준코드)
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    enum: [None, Standard]
+    safeToOmit: unverified
+    provenance: manual
+  - key: STANDARD_CODE
+    description: >-
+      표준 코드 (CODE=Standard, 현재 "KS22(S)"만 지원)
+    type: string
+    requirement: conditional
+    condition: "CODE=\"Standard\""
+    appliesWhen:
+      - path: CODE
+        equals: Standard
+    documentedDefault: null
+    documentedOptional: false
+    enum: [KS22(S)]
+    safeToOmit: unverified
+    provenance: manual
+  - key: GRADE
+    description: >-
+      강종 Grade (CODE=Standard) —
+      SS235/SS275/…/SM355/…/SN460/SHN460/HSB690/HSA650/… 등 KS22(S) 68종
+    type: string
+    requirement: conditional
+    condition: "CODE=\"Standard\""
+    appliesWhen:
+      - path: CODE
+        equals: Standard
+    documentedDefault: null
+    documentedOptional: false
+    enum: [SS235, SS275, SS315, SS410, SS450, SS550, SM275, SM355, SM420, SM460, SM275TMC, SM355TMC, SM420TMC, SM460TMC, SMA275A, SMA275B, SMA275C, SMA355A, SMA355B, SMA355C, SMA460, HSM500, SN275A, SN275B, SN275C, SN355, SN460, SHN275, SHN355, SHN420, SHN460, HSB380, HSB460, HSB690, HSA650, SGT275, SGT355, SGT410, SGT450, SGT550, SRT275, SRT355, SRT410, SRT450, SRT550, SNT275, SNT355, SNT460, SHT410, SHT460, SNRT295E, SNRT390E, SNRT275A, SNRT355A, SSC275, SWH275, SWH355, SWH420, SWH460, SF490, SF540, SDP1, SDP2, SDP3, SWPC1, SWPD1, SWPC, SWPD]
+    safeToOmit: unverified
+    provenance: manual
+  - key: NAME
+    description: >-
+      사용자 정의 재질명 (CODE=None)
+    type: string
+    requirement: conditional
+    condition: "CODE=\"None\""
+    appliesWhen:
+      - path: CODE
+        equals: None
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: FY
+    description: >-
+      항복강도 Fy (CODE=None)
+    type: number
+    requirement: conditional
+    condition: "CODE=\"None\""
+    appliesWhen:
+      - path: CODE
+        equals: None
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: ES
+    description: >-
+      탄성계수 Es (CODE=None 입력 / Standard 자동채움)
+    type: number
+    requirement: conditional
+    condition: "CODE=\"None\""
+    appliesWhen:
+      - path: CODE
+        equals: None
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: PS
+    description: >-
+      포아송비 Ps (CODE=None 입력 / Standard 자동채움)
+    type: number
+    requirement: conditional
+    condition: "CODE=\"None\""
+    appliesWhen:
+      - path: CODE
+        equals: None
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: FU
+    description: >-
+      인장강도 Fu (CODE=None 입력 / Standard 자동채움)
+    type: number
+    requirement: conditional
+    condition: "CODE=\"None\""
+    appliesWhen:
+      - path: CODE
+        equals: None
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: FY1
+    description: >-
+      항복강도 Fy1 (CODE=Standard 자동채움)
+    type: number
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: FY2
+    description: >-
+      항복강도 Fy2 (CODE=Standard 자동채움)
+    type: number
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: FY3
+    description: >-
+      항복강도 Fy3 (CODE=Standard 자동채움)
+    type: number
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: FY4
+    description: >-
+      항복강도 Fy4 (CODE=Standard 자동채움)
+    type: number
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: FY5
+    description: >-
+      항복강도 Fy5 (CODE=Standard 자동채움)
+    type: number
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+
+extraction:
+  source: 25_Design_Steel_KDS41302022.md line 4151
+  table: 파라미터

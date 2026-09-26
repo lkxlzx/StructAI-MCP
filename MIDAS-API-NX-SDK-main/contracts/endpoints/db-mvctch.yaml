@@ -1,0 +1,1237 @@
+# /db/MVCTch
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-mvctch
+endpoint: /db/MVCTch
+name: Moving Load Analysis Control – China
+surface:
+  className: MovingLoadAnalysisControlChina
+  exportName: movingLoadAnalysisControlChina
+  modulePath: [db, analysisControl]
+  payloadTypeName: MovingLoadAnalysisControlChinaPayload
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 12_DB_Analysis_Control.md
+    section: 10. /db/MVCTch — Moving Load Analysis Control – China
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-write-sweep-2026-08-31
+    - product: gen
+      ref: db-write-sweep-2026-08-31
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/MVCTch/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: POINT
+    description: >-
+      Load Point ("INF" / "ALL")
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: iIGP
+    description: >-
+      Influence Generating Points (0/1)
+    type: integer
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: UNUMT
+    description: >-
+      Number/Line Element (when iIGP=0)
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: DIST
+    description: >-
+      Distance between Points (when iIGP=1)
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: PLATE
+    description: >-
+      Plate Options ("CENTER" / "NODAL")
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: bSTRCALC
+    description: >-
+      Plate – Stress
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: FRAME
+    description: >-
+      Frame Options ("NORMAL" / "AXIAL")
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: bCSTRCALC
+    description: >-
+      Frame – Combined Stress
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bREAC
+    description: >-
+      Filter – Reactions
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bRG
+    description: >-
+      Reactions Option (All/Group)
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: RGN
+    description: >-
+      Reactions Group Name
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: bDISP
+    description: >-
+      Filter – Displacements
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bDG
+    description: >-
+      Displacements Option (All/Group)
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: DGN
+    description: >-
+      Displacements Group Name
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: bFM
+    description: >-
+      Filter – Forces/Moments
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bFG
+    description: >-
+      Forces/Moments Option (All/Group)
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: FGN
+    description: >-
+      Forces/Moments Group Name
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: bL
+    description: >-
+      Filter – Elastic/General Links
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bLG
+    description: >-
+      Links Option (All/Group)
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: LGN
+    description: >-
+      Links Group Name
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: bIF
+    description: >-
+      Impact Factor 사용
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: iCODETYPE
+    description: >-
+      Code Type (0=JTG D60-2015/JTG04 / 1=Other Codes / 2=TB 10002-2017 / 3=Q/CR
+      9300-2018)
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: iNFM
+    description: >-
+      Natural Frequency Method (iCODETYPE=0일 때 필수. 0=User Input / 1=Simple Beam
+      / 2=Continuous Beam / 3=Arch Bridge / 4=Cable Stayed Bridge / 5=Suspension
+      Bridge)
+    type: integer
+    requirement: conditional
+    condition: 조건부
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: iSLCM
+    description: >-
+      Span Length (0=Span Length by Lane Input / 1=Loaded Length by Influence
+      Line)
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: bBC
+    description: >-
+      Vehicle Load Class 사용
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: iBC
+    description: >-
+      Vehicle Load Class Type (0=Class I / 1=Class II)
+    type: integer
+    requirement: required
+    documentedDefault: 0
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: FREQ
+    description: >-
+      Frequency Data (iCODETYPE=0일 때 필수)
+    type: object
+    requirement: conditional
+    condition: 조건부
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: USER_F
+        description: >-
+          f [Hz]
+        type: unstated
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: CBEM_A
+        description: >-
+          연속보 a/b/L/E/Ic/mc
+        type: unstated
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: CBEM_B
+        description: >-
+          연속보 a/b/L/E/Ic/mc
+        type: unstated
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: CBEM_L
+        description: >-
+          연속보 a/b/L/E/Ic/mc
+        type: unstated
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: CBEM_E
+        description: >-
+          연속보 a/b/L/E/Ic/mc
+        type: unstated
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: CBEM_IC
+        description: >-
+          연속보 a/b/L/E/Ic/mc
+        type: unstated
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: CBEM_MC
+        description: >-
+          연속보 a/b/L/E/Ic/mc
+        type: unstated
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: ARCH_N
+        description: >-
+          아치교 n/f/L/E/Ic/mc
+        type: unstated
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: ARCH_F
+        description: >-
+          아치교 n/f/L/E/Ic/mc
+        type: unstated
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: ARCH_L
+        description: >-
+          아치교 n/f/L/E/Ic/mc
+        type: unstated
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: ARCH_E
+        description: >-
+          아치교 n/f/L/E/Ic/mc
+        type: unstated
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: ARCH_IC
+        description: >-
+          아치교 n/f/L/E/Ic/mc
+        type: unstated
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: ARCH_MC
+        description: >-
+          아치교 n/f/L/E/Ic/mc
+        type: unstated
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: SUSP_L
+        description: >-
+          현수교 L/E/I/Hg/m
+        type: unstated
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: SUSP_E
+        description: >-
+          현수교 L/E/I/Hg/m
+        type: unstated
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: SUSP_I
+        description: >-
+          현수교 L/E/I/Hg/m
+        type: unstated
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: SUSP_HG
+        description: >-
+          현수교 L/E/I/Hg/m
+        type: unstated
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: SUSP_M
+        description: >-
+          현수교 L/E/I/Hg/m
+        type: unstated
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      # The FREQ table is Key/설명 only and states no Value Type, so these
+      # seven stay `unstated` like the eighteen siblings from the same table
+      # rather than taking /info's `number` - widening all 25 from /info is a
+      # separate change with its own evidence. `iARCH_TYPE` is the exception:
+      # the chapter types every other `i`-prefixed key Integer and /info agrees.
+      - key: SBEM_L
+        description: >-
+          단순보 L/E/Ic/mc
+        type: unstated
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: SBEM_E
+        description: >-
+          단순보 L/E/Ic/mc
+        type: unstated
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: SBEM_IC
+        description: >-
+          단순보 L/E/Ic/mc
+        type: unstated
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: SBEM_MC
+        description: >-
+          단순보 L/E/Ic/mc
+        type: unstated
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: iARCH_TYPE
+        description: >-
+          아치교 형식
+        type: integer
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: CABL_A
+        description: >-
+          사장교 a/L
+        type: unstated
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: CABL_L
+        description: >-
+          사장교 a/L
+        type: unstated
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+  - key: BRIDGE1
+    description: >-
+      Bridge Data — Other Codes (iCODETYPE=1일 때 필수)
+    type: object
+    requirement: conditional
+    condition: 조건부
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: BTYPE
+        description: >-
+          Bridge Type — 이 표의 필드가 어느 형식에 속하는지 고르는 선택자
+        type: string
+        enum: ["RC", "STEEL", "MBRG", "TRAIN"]
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: RC_C1L1
+        description: >-
+          RC — Case 1 L1/F1/L2/F2
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: RC_C1F1
+        description: >-
+          RC — Case 1 L1/F1/L2/F2
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: RC_C1L2
+        description: >-
+          RC — Case 1 L1/F1/L2/F2
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: RC_C1F2
+        description: >-
+          RC — Case 1 L1/F1/L2/F2
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: RC_bCASE2
+        description: >-
+          RC — Case 2 사용 여부
+        type: boolean
+        requirement: unstated
+        documentedDefault: false
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: RC_C2L1
+        description: >-
+          RC — Case 2 L1/F1/L2/F2 (RC_bCASE2=true 시)
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: RC_C2F1
+        description: >-
+          RC — Case 2 L1/F1/L2/F2 (RC_bCASE2=true 시)
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: RC_C2L2
+        description: >-
+          RC — Case 2 L1/F1/L2/F2 (RC_bCASE2=true 시)
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: RC_C2F2
+        description: >-
+          RC — Case 2 L1/F1/L2/F2 (RC_bCASE2=true 시)
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: RC_GROUP
+        description: >-
+          RC — 구조 그룹명
+        type: string
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: STL_C1V1
+        description: >-
+          Steel — Case 1 V1/V2
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: STL_C1V2
+        description: >-
+          Steel — Case 1 V1/V2
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: STL_bCASE2
+        description: >-
+          Steel — Case 2 사용 여부
+        type: boolean
+        requirement: unstated
+        documentedDefault: false
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: STL_C2V1
+        description: >-
+          Steel — Case 2 V1/V2 (STL_bCASE2=true 시)
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: STL_C2V2
+        description: >-
+          Steel — Case 2 V1/V2 (STL_bCASE2=true 시)
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: STL_GROUP
+        description: >-
+          Steel — 구조 그룹명
+        type: string
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: MBRG_RL1
+        description: >-
+          Old Urban Bridge — 차로하중 충격계수 L1/F1/L2/F2/F3/F4
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: MBRG_RF1
+        description: >-
+          Old Urban Bridge — 차로하중 충격계수 L1/F1/L2/F2/F3/F4
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: MBRG_RL2
+        description: >-
+          Old Urban Bridge — 차로하중 충격계수 L1/F1/L2/F2/F3/F4
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: MBRG_RF2
+        description: >-
+          Old Urban Bridge — 차로하중 충격계수 L1/F1/L2/F2/F3/F4
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: MBRG_RF3
+        description: >-
+          Old Urban Bridge — 차로하중 충격계수 L1/F1/L2/F2/F3/F4
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: MBRG_RF4
+        description: >-
+          Old Urban Bridge — 차로하중 충격계수 L1/F1/L2/F2/F3/F4
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: MBRG_CF1
+        description: >-
+          Old Urban Bridge — 차량하중 충격계수 F1/F2/F3
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: MBRG_CF2
+        description: >-
+          Old Urban Bridge — 차량하중 충격계수 F1/F2/F3
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: MBRG_CF3
+        description: >-
+          Old Urban Bridge — 차량하중 충격계수 F1/F2/F3
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: TRAIN_SUB_TYPE
+        description: >-
+          Train — Sub-Type("SIMPLE"/"COMPOSITE"/"RCCONC"/"RCARCH")
+        type: string
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: TRAIN_NUMERATOR
+        description: >-
+          Train — Value 1 / Value 2
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: TRAIN_DENOMINATOR
+        description: >-
+          Train — Value 1 / Value 2
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: TRAIN_H
+        description: >-
+          Train — Surcharge Thickness (TRAIN_SUB_TYPE="RCCONC" 전용)
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: TRAIN_bCLSL
+        description: >-
+          Train — Apply Loaded Span Length (RCCONC 전용, 0=미고려/1=고려)
+        type: integer
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: TRAIN_LAMBDA
+        description: >-
+          Train — Lambda / f (RCARCH 전용)
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: TRAIN_F
+        description: >-
+          Train — Lambda / f (RCARCH 전용)
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: TRAIN_bALSL
+        description: >-
+          Train — Apply Loaded Span Length (RCARCH 전용, 0=미고려/1=고려)
+        type: integer
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: TRAIN_GROUP
+        description: >-
+          Train — 구조 그룹명
+        type: string
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+  - key: BRIDGE2
+    description: >-
+      Bridge Data — TB 10002-2017 / Q·CR 9300-2018 (iCODETYPE=2 또는 3일 때 필수)
+    type: object
+    requirement: conditional
+    condition: 조건부
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: BTYPE
+        description: >-
+          Bridge Type — 이 표의 필드가 어느 형식에 속하는지 고르는 선택자
+        type: string
+        enum: ["RAILWAY", "RAILBRG", "RAILCUL"]
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: METHOD
+        description: >-
+          RAILWAY — Sub-Type("SIMPLE"/"COMPOSITE"/"RCCONC"/"RCARCH")
+        type: string
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: SIMPLE_U
+        description: >-
+          RAILWAY(METHOD="SIMPLE") — Value 1/2
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: SIMPLE_L
+        description: >-
+          RAILWAY(METHOD="SIMPLE") — Value 1/2
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: COMPO_U
+        description: >-
+          RAILWAY(METHOD="COMPOSITE") — Value 1/2
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: COMPO_L
+        description: >-
+          RAILWAY(METHOD="COMPOSITE") — Value 1/2
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: CONC_U
+        description: >-
+          RAILWAY(METHOD="RCCONC") — Value 1/2, Surcharge Thickness
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: CONC_L
+        description: >-
+          RAILWAY(METHOD="RCCONC") — Value 1/2, Surcharge Thickness
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: CONC_H
+        description: >-
+          RAILWAY(METHOD="RCCONC") — Value 1/2, Surcharge Thickness
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: ARCH_U
+        description: >-
+          RAILWAY(METHOD="RCARCH") — Value 1/2, Lambda, f
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: ARCH_L
+        description: >-
+          RAILWAY(METHOD="RCARCH") — Value 1/2, Lambda, f
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: ARCH_LAMBDA
+        description: >-
+          RAILWAY(METHOD="RCARCH") — Value 1/2, Lambda, f
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: ARCH_F
+        description: >-
+          RAILWAY(METHOD="RCARCH") — Value 1/2, Lambda, f
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: bCHECK
+        description: >-
+          RAILWAY(RCCONC/RCARCH) — Apply Loaded Span Length 여부
+        type: boolean
+        requirement: unstated
+        documentedDefault: false
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: GROUP
+        description: >-
+          RAILWAY(RCCONC/RCARCH) — 구조 그룹명
+        type: string
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: MU1
+        description: >-
+          RAILBRG·RAILCUL 공통 — mu 산정용 Value 1/2/3
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: MU2
+        description: >-
+          RAILBRG·RAILCUL 공통 — mu 산정용 Value 1/2/3
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: MU3
+        description: >-
+          RAILBRG·RAILCUL 공통 — mu 산정용 Value 1/2/3
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: bLFAI
+        description: >-
+          RAILBRG·RAILCUL 공통 — Apply Loaded Span Length 여부
+        type: boolean
+        requirement: unstated
+        documentedDefault: false
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: LFAI
+        description: >-
+          RAILBRG·RAILCUL 공통 — Lfai (bLFAI=false 시)
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: bLENGTH
+        description: >-
+          RAILCUL 전용 — Apply Loaded Span Length (bLFAI=true 시)
+        type: boolean
+        requirement: unstated
+        documentedDefault: false
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: MUR1
+        description: >-
+          RAILCUL 전용 — mu Reduction 산정용 Value 1/2/3
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: MUR2
+        description: >-
+          RAILCUL 전용 — mu Reduction 산정용 Value 1/2/3
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: MUR3
+        description: >-
+          RAILCUL 전용 — mu Reduction 산정용 Value 1/2/3
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: HC
+        description: >-
+          RAILCUL 전용 — Surcharge Thickness
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+
+manualDefects:
+  - describes: field_name
+    manualSays: >-
+      Section 10's "FREQ 객체 주요 키" table is laid out as two Key/설명
+      column pairs side by side, and it documents all 25 of the object's keys
+      between them.
+    actual: >-
+      The manual is right and this repo could not read it. Every key in the
+      table's *second* Key column was dropped whole - `SBEM_L`, `SBEM_E`,
+      `SBEM_IC`, `SBEM_MC` (단순보), `iARCH_TYPE` (아치교 형식) and `CABL_A`,
+      `CABL_L` (사장교) - while the first column's cells extracted correctly,
+      packed ones included. So this is not MD-48's packed Key cell: it is a
+      table shape the parser reads half of. `GET /info/db/MVCTch` declares all
+      seven and they are transcribed here from the manual.
+    evidence: >-
+      docs/manual/12_DB_Analysis_Control.md line 1121 for the table, and
+      GET /info/db/MVCTch on both products, captured 2026-09-03, which agrees
+      with it. Registered as MD-50.
+
+  - describes: field_name
+    manualSays: >-
+      `BRIDGE1` and `BRIDGE2` each have a field table with no `BTYPE` row.
+    actual: >-
+      Each object's `BTYPE` is stated in the bold sentence that introduces its
+      table rather than in a row of it - "BRIDGE1 객체 — `\"BTYPE\"`(Bridge
+      Type: `\"RC\"` / `\"STEEL\"` / ...)별 필드" - together with the enum
+      each accepts. It is the selector that decides which of that table's
+      fields apply, so a caller cannot use either object without it. Recorded
+      under extraction.prose with the sentence quoted.
+    evidence: >-
+      docs/manual/12_DB_Analysis_Control.md lines 1130 and 1153, and
+      GET /info/db/MVCTch on both products, captured 2026-09-03, which
+      declares `BTYPE` on both objects. Registered as MD-50.
+sdkRules:
+  - id: db-mvctch-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-mvctch-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 12_DB_Analysis_Control.md line 1078
+  table: Parameters — 기본 (MVCT와 공통 결과 옵션)
+  missingColumns:
+    - heading: Parameters — 충격계수 (Impact Factor)
+      line: 1122
+      columns: [Default]
+    - heading: Parameters — 충격계수 (Impact Factor)
+      line: 1132
+      columns: [Default]
+    - heading: Parameters — 충격계수 (Impact Factor)
+      line: 1156
+      columns: [Default]
+  prose:
+    - line: 1130
+      quote: >-
+        **BRIDGE1 객체 — `"BTYPE"`(Bridge Type: `"RC"` / `"STEEL"` /
+        `"MBRG"`(Old Urban Bridge) / `"TRAIN"`(Train·Subway))별 필드:**
+      paths: [BRIDGE1.BTYPE]
+    - line: 1153
+      quote: >-
+        **BRIDGE2 객체** (`iCODETYPE`=2 TB 10002-2017 / 3 Q·CR 9300-2018 전용)
+        — `"BTYPE"`(Bridge Type: `"RAILWAY"`(Passenger-Freight Mixed
+        Line·Heavy Haul Railway Bridge) / `"RAILBRG"`(High Speed·Intercity
+        Railway Bridge) / `"RAILCUL"`(High Speed·Intercity Railway
+        Culvert))별 필드:
+      paths: [BRIDGE2.BTYPE]
+  structuralTables:
+    - heading: Parameters — 충격계수 (Impact Factor)
+      line: 1103
+      paths:
+        - "<root>"
+    - heading: Parameters — 충격계수 (Impact Factor)
+      line: 1122
+      paths:
+        - FREQ
+    - heading: Parameters — 충격계수 (Impact Factor)
+      line: 1132
+      paths:
+        - BRIDGE1
+    - heading: Parameters — 충격계수 (Impact Factor)
+      line: 1156
+      paths:
+        - BRIDGE2

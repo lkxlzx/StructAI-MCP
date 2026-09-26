@@ -1,0 +1,187 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    # The language-neutral contracts under contracts/ are the source of truth for
+    # both SDKs. This job is what stops a safety rule from reaching one language
+    # and not the other, which is exactly how the npm package shipped without
+    # /db/NMAS's crash workaround for its first month.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # The manual repo is one of the contracts' permitted sources, so drift
+      # between a chapter and a contract drawn from it is checkable here rather
+      # than only in the weekly manual-drift job.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Dennis5882/MIDAS-API
+          path: MIDAS-API
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: packages/typescript/package-lock.json
+      - run: pip install -e ".[dev]"
+      - run: npm ci
+        working-directory: packages/typescript
+      - name: Validate contracts and check both SDKs against them
+        run: python scripts/validate_contracts.py
+      - name: Check promoted contracts against the official manual
+        run: python scripts/extract_contracts.py --manual-api-repo MIDAS-API --check
+      - name: Fail if /info-to-contract differences grow
+        run: python scripts/info_baseline.py --against-contracts --check
+      - name: Fail if product-divergence tagging regresses
+        run: python scripts/info_baseline.py --divergence --check
+      - name: Fail if keyed manual-table rows begin dropping
+        run: python scripts/report_dropped_manual_rows.py --manual-api-repo MIDAS-API --check
+      - name: Fail if the shared live CRUD fixture drifted
+        run: python scripts/live_crud_check.py --check-cases
+      - name: Fail if a live fixture and its contract disagree in a new way
+        run: python scripts/check_fixture_contract.py --check
+      - name: Fail if more contracts fall behind the live ledger
+        run: python scripts/check_verification_lag.py --check
+      - name: Fail if the unmerged-table report is out of date
+        run: python scripts/report_unmerged_tables.py --check
+      - name: Fail if a document states a number the repository disagrees with
+        run: python scripts/check_state_numbers.py --check
+      - name: Fail if npm generation reads more types out of the Python tree
+        run: python scripts/report_npm_type_provenance.py --check
+
+  typescript:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: packages/typescript/package-lock.json
+      # The dev extra, not the bare install: npm generation reads the safety
+      # rules out of contracts/, which needs PyYAML. The generator refuses to
+      # run without it rather than emitting a surface with the rules silently
+      # missing - that silence is the bug this whole arrangement exists to
+      # prevent.
+      - run: pip install -e ".[dev]"
+      - run: npm ci
+        working-directory: packages/typescript
+      - run: npm run generate
+        working-directory: packages/typescript
+      - name: Fail if generated ROADMAP.md drifted
+        run: |
+          python scripts/gen_roadmap.py
+          git diff --exit-code -- ROADMAP.md
+      - name: Fail if generated TypeScript files drifted
+        run: git diff --exit-code -- schema/typescript-resources.json schema/typescript-coverage.json packages/typescript/src/generated
+      - run: npm run typecheck
+        working-directory: packages/typescript
+      - run: npm test
+        working-directory: packages/typescript
+      - run: mkdir -p ../../package-artifact && npm pack --pack-destination ../../package-artifact
+        working-directory: packages/typescript
+      - name: Verify safety JSDoc reached the published declarations
+        run: |
+          grep -q "WARNING: Confirmed crashing Gen NX" packages/typescript/dist/index.d.ts
+          grep -q "A timeout is not a rollback" packages/typescript/dist/index.d.ts
+          grep -q "payloadDefaults" packages/typescript/dist/index.d.ts
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: npm-package
+          path: package-artifact/*.tgz
+
+  typescript-package-smoke:
+    needs: typescript
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ["18", "22"]
+    steps:
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ matrix.node-version }}
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: npm-package
+          path: package-artifact
+      - run: mkdir smoke
+      - name: Install and import the packed npm artifact
+        working-directory: smoke
+        run: |
+          set -euxo pipefail
+          npm init -y >/dev/null
+          npm install --ignore-scripts ../package-artifact/midas-nx-*.tgz
+          node -e "const m = require('midas-nx'); if (m.resourceCount !== 305) process.exit(1)"
+          node --input-type=module -e "const m = await import('midas-nx'); if (m.tableCount !== 87) process.exit(1)"
+          # The /db/NMAS crash workaround must survive packing, not just exist in
+          # the source tree. Checked against the real artifact for that reason.
+          node -e "
+            const d = require('midas-nx').resources.db.staticLoads.nodalMass.metadata.payloadDefaults;
+            if (!d || d.rmX !== 0 || d.rmY !== 0 || d.rmZ !== 0) {
+              console.error('packed artifact lost the /db/NMAS payload defaults:', d);
+              process.exit(1);
+            }
+          "
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Every version pyproject.toml's classifiers claim support for.
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -e ".[dev]"
+      - run: ruff check src tests scripts
+      - run: pytest
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - run: pip install -e ".[dev]"
+      - run: mypy
+
+  package:
+    # Builds the real artifact and installs it where the source tree can't be
+    # imported instead, so packaging bugs (a missing py.typed, a module left
+    # out of the wheel) fail here rather than after publishing.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - run: pip install build twine
+      - run: python -m build
+      - run: twine check dist/*
+
+      - name: Install the built wheel into a clean venv and smoke-test it
+        run: |
+          set -euxo pipefail
+          python -m venv /tmp/smoke
+          /tmp/smoke/bin/pip install --quiet dist/*.whl
+          cp scripts/wheel_smoke_test.py /tmp/wheel_smoke_test.py
+          # Run from / so a stray import can't resolve against ./src.
+          cd /
+          /tmp/smoke/bin/python /tmp/wheel_smoke_test.py

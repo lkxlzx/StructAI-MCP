@@ -1,0 +1,29 @@
+# Source: 18_POST_PreProcess.md section 2. Manual transcription only.
+contractVersion: 1
+id: post-nodal-body-force
+endpoint: /post/TABLE
+name: Nodal Body Force Table
+summary: Nodal body-force components by load case.
+products: [gen, civil]
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 18_POST_PreProcess.md
+    section: "2. Nodal Body Force Table"
+verification:
+  status: manual_only
+risk: read_only
+surface:
+  exportName: getNodalBodyForceTable
+  modulePath: [preProcess]
+  tableType: NODALBODYFORCE
+  factory: fixed
+  optionNames: [tableName]
+  documentation: |-
+    docs/manual/18_POST_PreProcess.md #2 — Nodal Body Force Table.
+tableTypes:
+  - value: NODALBODYFORCE
+    description: Nodal body force
+    head: [Index, LoadCase, Node, FX, FY, FZ]
+    provenance: manual

@@ -1,0 +1,24 @@
+# Source: 20_POST_AnalysisResult_2.md section 1. No SDK source was used.
+contractVersion: 1
+id: post-plate-force-local
+endpoint: /post/TABLE
+name: Plate Force Local
+summary: Local-coordinate plate force components at each node.
+products: [gen, civil]
+source:
+  manual: {status: documented, repo: Dennis5882/MIDAS-API, chapterFile: 20_POST_AnalysisResult_2.md, section: "1. Plate Force (Local)"}
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getPlateForceLocalTable
+  modulePath: [result1]
+  tableType: PLATEFORCEL
+  factory: fixed
+  optionNames: [components, constructionStage, loadCaseNames, nodeElements, stageSteps, styles, tableName, unit]
+  documentation: |-
+    docs/manual/20_POST_AnalysisResult_2.md #1 — Plate Force (Local).
+tableTypes:
+  - value: PLATEFORCEL
+    description: Local plate force
+    head: [Index, Elem, Load, Node, Fx, Fy, Fz, Mx, My, Mz]
+    provenance: manual

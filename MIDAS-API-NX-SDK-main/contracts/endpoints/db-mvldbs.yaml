@@ -1,0 +1,903 @@
+# /db/MVLDbs
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-mvldbs
+endpoint: /db/MVLDbs
+name: Moving Load Cases – BS
+surface:
+  className: MovingLoadCaseBs
+  exportName: movingLoadCaseBs
+  modulePath: [db, movingLoads]
+  payloadTypeName: MovingLoadCaseBsPayload
+  nestedTypes:
+    - {path: LCDATA_ALLMODE, name: MovingLoadCaseBsAllModeData, namespace: DbMovingLoadsTypes}
+    - {path: LCDATA_ALLMODE.STRAD_LANE, name: MovingLoadCaseBsStraddleLaneItem, namespace: DbMovingLoadsTypes}
+    - {path: LCDATA_ALLMODE_OPTI, name: MovingLoadCaseBsAllModeOptiData, namespace: DbMovingLoadsTypes}
+    - {path: LCDATA_ALLMODE_OPTI.OPTI_BASE, name: MovingLoadCaseBsOptiBase, namespace: DbMovingLoadsTypes}
+    - {path: LCDATA_SPECIAL, name: MovingLoadCaseBsSpecialData, namespace: DbMovingLoadsTypes}
+    - {path: LCDATA_SPECIAL.STRAD_LANE, name: MovingLoadCaseBsStraddleLaneItem, namespace: DbMovingLoadsTypes}
+    - {path: LCDATA_SPECIAL_OPTI, name: MovingLoadCaseBsSpecialOptiData, namespace: DbMovingLoadsTypes}
+    - {path: LCDATA_SPECIAL_OPTI.OPTI_BASE, name: MovingLoadCaseBsOptiBase, namespace: DbMovingLoadsTypes}
+    - {path: LCDATA_STANDARD, name: MovingLoadCaseBsStandardData, namespace: DbMovingLoadsTypes}
+    - {path: LCDATA_STANDARD.SUBLOADDATA, name: MovingLoadCaseBsSubLoadDataItem, namespace: DbMovingLoadsTypes}
+    - {path: LCDATA_STANDARD.SUBLOADDATA.STRAD_LANE, name: MovingLoadCaseBsStraddleLaneItem, namespace: DbMovingLoadsTypes}
+    - {path: LCDATA_STANDARD_OPTI, name: MovingLoadCaseBsStandardOptiData, namespace: DbMovingLoadsTypes}
+    - {path: LCDATA_STANDARD_OPTI.OPTI_BASE, name: MovingLoadCaseBsOptiBase, namespace: DbMovingLoadsTypes}
+    - {path: LCDATA_STANDARD_OPTI.OPTI_VEHICLE_BASE, name: MovingLoadCaseBsOptiVehicleBaseItem, namespace: DbMovingLoadsTypes}
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 08_DB_Moving_Loads.md
+    section: 15. /db/MVLDbs – Moving Load Cases – BS
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-07-26
+    - product: gen
+      ref: db-read-sweep-2026-07-26
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/MVLDbs/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: LCNAME
+    description: >-
+      Load Case Name
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: DESC
+    description: >-
+      Description
+    type: string
+    requirement: optional
+    documentedDefault: ""
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bAUTOOPTIMIZE
+    description: >-
+      Moving Load Optimization
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: LOADMODEL
+    description: >-
+      Load Model · Standard(BD37/01,BS5400):"STANDER" ·
+      Special(BD86/11):"SPECAIL" · CS454 ALL Mode1:"ALL_MODE_1" · CS454 ALL
+      Mode2:"ALL_MODE_2"
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: bAUTOLIVELOADCOMB
+    description: >-
+      Auto Live Load Combination
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: DGNCOMBFACTORTYPE
+    description: >-
+      Design Combination Factor Type · "bAUTOLIVELOADCOMB"=true 시 ·
+      Ultimate:"ULTIMATE" · Serviceability:"SERVICEABIL"
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: COMBMETHOD
+    description: >-
+      Combination Method · "bAUTOLIVELOADCOMB"=true 시 · Comb.1:"COMB_1" ·
+      Comb.2/3:"COMB_2_3"
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: LCDATA_STANDARD
+    description: >-
+      Standard Load Case Data(General, LOADMODEL="STANDER")
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: LOADINGEFFECT
+        description: >-
+          Loading Effect ("INDEPEND")
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: stated elsewhere in the same section - the
+        # "LCDATA_STANDARD" table at line 1858 gives these rows, using the
+        # path notation SUBLOADDATA[].SCALEFACTOR for the array's members.
+        # The parser reads a Key column as a flat name, so a section whose
+        # second table describes one object's insides looked like a second
+        # list of the record's own fields; this contract carried the six
+        # LCDATA_* objects with no members at all until 2026-09-04.
+      - key: SUBLOADDATA
+        description: >-
+          Sub-Load Cases
+        type: array
+        items:
+          type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: SCALEFACTOR
+            description: >-
+              Scale Factor
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: NUMLOADEDLANE
+            description: >-
+              Number of Loaded Lanes
+            type: integer
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: VEHICLE_NAME
+            description: >-
+              Vehicle Name
+            type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: SELECTEDLANES
+            description: >-
+              Selected Lanes
+            type: array
+            items:
+              type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: STRAD_LANE
+            description: >-
+              HB Straddling Two Lanes (STARDD_LANE_1/STARDD_LANE_2)
+            type: array
+            items:
+              type: object
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            properties:
+              - key: STARDD_LANE_1
+                description: >-
+                  HB Straddling Two Lanes - lane 1
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              - key: STARDD_LANE_2
+                description: >-
+                  HB Straddling Two Lanes - lane 2
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+  - key: LCDATA_SPECIAL
+    description: >-
+      Special Load Case Data(General, LOADMODEL="SPECAIL")
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: VEHICLE_NAME
+        description: >-
+          Standard vehicle name
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual flags it in its own callout - the ⚠️ note
+        # at line 1868 says the article is too large to transcribe whole,
+        # so LCDATA_STANDARD is given in full and the other five objects
+        # are summarised in the 주요 필드 table below it. What is here is that
+        # summary, complete as far as the manual states it and explicitly
+        # not the whole object; the full field list is the cited article.
+        # That is a narrower gap than extraction.unmergedTables describes
+        # - the table is merged, not skipped - so this contract keeps its
+        # published payload type.
+      - key: SPECIAL_VIHICLE_NAME
+        description: >-
+          Special vehicle name (the manual's own key spelling)
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: SELECTEDLANES
+        description: >-
+          Selected Lanes
+        type: array
+        items:
+          type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: STRAD_LANE
+        description: >-
+          HB Straddling Two Lanes pairs
+        type: array
+        items:
+          type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: STARDD_LANE_1
+            description: >-
+              HB Straddling Two Lanes - lane 1
+            type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: STARDD_LANE_2
+            description: >-
+              HB Straddling Two Lanes - lane 2
+            type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+  - key: LCDATA_ALLMODE
+    description: >-
+      CS 454 Assessment Data(General, LOADMODEL="ALL_MODE_1"/"ALL_MODE_2")
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: VEHICLE_NAME
+        description: >-
+          Standard vehicle name
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual flags it in its own callout - the ⚠️ note
+        # at line 1868 says the article is too large to transcribe whole,
+        # so LCDATA_STANDARD is given in full and the other five objects
+        # are summarised in the 주요 필드 table below it. What is here is that
+        # summary, complete as far as the manual states it and explicitly
+        # not the whole object; the full field list is the cited article.
+        # That is a narrower gap than extraction.unmergedTables describes
+        # - the table is merged, not skipped - so this contract keeps its
+        # published payload type.
+      - key: SPECIAL_VIHICLE_NAME
+        description: >-
+          Special vehicle name (the manual's own key spelling)
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: SELECTEDLANES
+        description: >-
+          Selected Lanes
+        type: array
+        items:
+          type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: STRAD_LANE
+        description: >-
+          HB Straddling Two Lanes pairs
+        type: array
+        items:
+          type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: STARDD_LANE_1
+            description: >-
+              HB Straddling Two Lanes - lane 1
+            type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: STARDD_LANE_2
+            description: >-
+              HB Straddling Two Lanes - lane 2
+            type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+      - key: REMAINING_LANE
+        description: >-
+          Remaining lanes
+        type: array
+        items:
+          type: string
+        requirement: conditional
+        condition: 'ALL_MODE_1 전용'
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+  - key: LCDATA_STANDARD_OPTI
+    description: >-
+      Standard Load Case Data(Optimization, bAUTOOPTIMIZE=true &
+      LOADMODEL="STANDER")
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: LOADINGEFFECT
+        description: >-
+          Loading Effect
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual flags it in its own callout - the ⚠️ note
+        # at line 1868 says the article is too large to transcribe whole,
+        # so LCDATA_STANDARD is given in full and the other five objects
+        # are summarised in the 주요 필드 table below it. What is here is that
+        # summary, complete as far as the manual states it and explicitly
+        # not the whole object; the full field list is the cited article.
+        # That is a narrower gap than extraction.unmergedTables describes
+        # - the table is merged, not skipped - so this contract keeps its
+        # published payload type.
+      - key: OPTI_BASE
+        description: >-
+          Optimization base settings
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: MINVEHLDIST
+            description: >-
+              Minimum vehicle distance
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: ASSIGN_LANE
+            description: >-
+              Assign Lane
+            type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: NUMLOADEDLANES
+            description: >-
+              Number of Loaded Lanes
+            type: integer
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+      - key: OPTI_VEHICLE_BASE
+        description: >-
+          Optimization vehicle list
+        type: array
+        items:
+          type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: VEHICLE_TYPE
+            description: >-
+              Vehicle Type ("VL" vehicle load / "VC" vehicle class)
+            type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: VEHICLE_NAME
+            description: >-
+              Vehicle Name
+            type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: SCALE_FACTOR
+            description: >-
+              Scale Factor
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+  - key: LCDATA_SPECIAL_OPTI
+    description: >-
+      Special Load Case Data(Optimization, LOADMODEL="SPECAIL")
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: VEHICLE_NAME
+        description: >-
+          Standard vehicle name
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual flags it in its own callout - the ⚠️ note
+        # at line 1868 says the article is too large to transcribe whole,
+        # so LCDATA_STANDARD is given in full and the other five objects
+        # are summarised in the 주요 필드 table below it. What is here is that
+        # summary, complete as far as the manual states it and explicitly
+        # not the whole object; the full field list is the cited article.
+        # That is a narrower gap than extraction.unmergedTables describes
+        # - the table is merged, not skipped - so this contract keeps its
+        # published payload type.
+      - key: SPECIAL_VIHICLE_NAME
+        description: >-
+          Special vehicle name (the manual's own key spelling)
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: OPTI_BASE
+        description: >-
+          Optimization base settings
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: MINVEHLDIST
+            description: >-
+              Minimum vehicle distance
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: ASSIGN_LANE
+            description: >-
+              Assign Lane
+            type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: NUMLOADEDLANES
+            description: >-
+              Number of Loaded Lanes
+            type: integer
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+  - key: LCDATA_ALLMODE_OPTI
+    description: >-
+      CS 454 Assessment Data(Optimization, LOADMODEL="ALL_MODE_1"/"ALL_MODE_2")
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: VEHICLE_NAME
+        description: >-
+          Standard vehicle name
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual flags it in its own callout - the ⚠️ note
+        # at line 1868 says the article is too large to transcribe whole,
+        # so LCDATA_STANDARD is given in full and the other five objects
+        # are summarised in the 주요 필드 table below it. What is here is that
+        # summary, complete as far as the manual states it and explicitly
+        # not the whole object; the full field list is the cited article.
+        # That is a narrower gap than extraction.unmergedTables describes
+        # - the table is merged, not skipped - so this contract keeps its
+        # published payload type.
+      - key: SPECIAL_VIHICLE_NAME
+        description: >-
+          Special vehicle name (the manual's own key spelling)
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: OPTI_BASE
+        description: >-
+          Optimization base settings
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: MINVEHLDIST
+            description: >-
+              Minimum vehicle distance
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: ASSIGN_LANE
+            description: >-
+              Assign Lane
+            type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: NUMLOADEDLANES
+            description: >-
+              Number of Loaded Lanes
+            type: integer
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+      - key: REMAINING_LANE
+        description: >-
+          Remaining lanes
+        type: array
+        items:
+          type: string
+        requirement: conditional
+        condition: 'ALL_MODE_1 전용'
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+
+variants:
+  - when:
+      - path: LOADMODEL
+        equals: STANDER
+    source:
+      table: "LCDATA_STANDARD (LOADMODEL=\"STANDER\", General Load 시 대표 예시)"
+      line: 1858
+    fields:
+      - key: LOADINGEFFECT
+        description: >-
+          Loading Effect("INDEPEND")
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: SUBLOADDATA
+        description: >-
+          Sub-Load Cases
+        type: array
+        items:
+          type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: SCALEFACTOR
+            description: >-
+              Scale Factor
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: NUMLOADEDLANE
+            description: >-
+              Number of Loaded Lanes
+            type: integer
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: VEHICLE_NAME
+            description: >-
+              Vehicle Name
+            type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: SELECTEDLANES
+            description: >-
+              Selected Lanes
+            type: array
+            items:
+              type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: STRAD_LANE
+            description: >-
+              HB Straddling Two Lanes(STARDD_LANE_1/STARDD_LANE_2)
+            type: array
+            items:
+              type: object
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+
+sdkRules:
+  - id: db-mvldbs-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-mvldbs-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 08_DB_Moving_Loads.md line 1840
+  table: Parameters
+  missingColumns:
+    - heading: "LCDATA_STANDARD (LOADMODEL=\"STANDER\", General Load 시 대표 예시)"
+      line: 1858
+      columns: [Default]
+  structuralTables:
+    - heading: LCDATA_STANDARD (LOADMODEL="STANDER", General Load 시 대표 예시)
+      line: 1858
+      paths: [LCDATA_STANDARD.LOADINGEFFECT, LCDATA_STANDARD.SUBLOADDATA,
+              LCDATA_STANDARD.SUBLOADDATA.SCALEFACTOR,
+              LCDATA_STANDARD.SUBLOADDATA.NUMLOADEDLANE,
+              LCDATA_STANDARD.SUBLOADDATA.VEHICLE_NAME,
+              LCDATA_STANDARD.SUBLOADDATA.SELECTEDLANES,
+              LCDATA_STANDARD.SUBLOADDATA.STRAD_LANE]
+      note: >-
+        The heading names the destination and the rows name their own depth
+        with a path notation the parser does not read - `SUBLOADDATA[].
+        SCALEFACTOR` and four siblings. It saw the table (its Default column
+        is recorded under missingColumns at the same line) and merged none of
+        it, so this contract carried all six LCDATA_* objects with no members
+        at all until 2026-09-04. Every member path is listed here rather than
+        just the destination, because the parser holds none of these names and
+        a prefix exemption would waive a subtree nobody had read.
+  prose:
+    - line: 1867
+      quote: >-
+        | (5) | └ HB Straddling Two Lanes(`STARDD_LANE_1`/`STARDD_LANE_2`) |
+        `SUBLOADDATA[].STRAD_LANE` | Array [Object] | Required |
+      paths: [LCDATA_STANDARD.SUBLOADDATA.STRAD_LANE.STARDD_LANE_1,
+              LCDATA_STANDARD.SUBLOADDATA.STRAD_LANE.STARDD_LANE_2]
+    - line: 1879
+      quote: >-
+        | `LCDATA_SPECIAL` | General, `LOADMODEL`="SPECAIL" |
+        `VEHICLE_NAME`(표준차량)·`SPECIAL_VIHICLE_NAME`(특수차량)·`SELECTEDLANES`·
+        `STRAD_LANE`(모두 String/Array[String]/Array[Object], Required) |
+      paths: [LCDATA_SPECIAL.VEHICLE_NAME, LCDATA_SPECIAL.SPECIAL_VIHICLE_NAME,
+              LCDATA_SPECIAL.SELECTEDLANES, LCDATA_SPECIAL.STRAD_LANE,
+              LCDATA_SPECIAL.STRAD_LANE.STARDD_LANE_1,
+              LCDATA_SPECIAL.STRAD_LANE.STARDD_LANE_2]
+    - line: 1880
+      quote: >-
+        | `LCDATA_ALLMODE` | General, `LOADMODEL`="ALL_MODE_1"/"ALL_MODE_2" |
+        `LCDATA_SPECIAL`과 동일 4필드 + `REMAINING_LANE`(Array[String],
+        ALL_MODE_1 전용) |
+      paths: [LCDATA_ALLMODE.VEHICLE_NAME, LCDATA_ALLMODE.SPECIAL_VIHICLE_NAME,
+              LCDATA_ALLMODE.SELECTEDLANES, LCDATA_ALLMODE.STRAD_LANE,
+              LCDATA_ALLMODE.STRAD_LANE.STARDD_LANE_1,
+              LCDATA_ALLMODE.STRAD_LANE.STARDD_LANE_2,
+              LCDATA_ALLMODE.REMAINING_LANE]
+    - line: 1881
+      quote: >-
+        | `LCDATA_STANDARD_OPTI` | Optimization, `LOADMODEL`="STANDER" |
+        `LOADINGEFFECT` + `OPTI_BASE`(`MINVEHLDIST`/`ASSIGN_LANE`/
+        `NUMLOADEDLANES`) + `OPTI_VEHICLE_BASE`(Array, `VEHICLE_TYPE`"VL"/"VC"·
+        `VEHICLE_NAME`·`SCALE_FACTOR`) |
+      paths: [LCDATA_STANDARD_OPTI.LOADINGEFFECT, LCDATA_STANDARD_OPTI.OPTI_BASE,
+              LCDATA_STANDARD_OPTI.OPTI_BASE.MINVEHLDIST,
+              LCDATA_STANDARD_OPTI.OPTI_BASE.ASSIGN_LANE,
+              LCDATA_STANDARD_OPTI.OPTI_BASE.NUMLOADEDLANES,
+              LCDATA_STANDARD_OPTI.OPTI_VEHICLE_BASE,
+              LCDATA_STANDARD_OPTI.OPTI_VEHICLE_BASE.VEHICLE_TYPE,
+              LCDATA_STANDARD_OPTI.OPTI_VEHICLE_BASE.VEHICLE_NAME,
+              LCDATA_STANDARD_OPTI.OPTI_VEHICLE_BASE.SCALE_FACTOR]
+    - line: 1882
+      quote: >-
+        | `LCDATA_SPECIAL_OPTI` | Optimization, `LOADMODEL`="SPECAIL" |
+        `VEHICLE_NAME`·`SPECIAL_VIHICLE_NAME` + `OPTI_BASE`(위와 동일 3필드) |
+      paths: [LCDATA_SPECIAL_OPTI.VEHICLE_NAME,
+              LCDATA_SPECIAL_OPTI.SPECIAL_VIHICLE_NAME,
+              LCDATA_SPECIAL_OPTI.OPTI_BASE,
+              LCDATA_SPECIAL_OPTI.OPTI_BASE.MINVEHLDIST,
+              LCDATA_SPECIAL_OPTI.OPTI_BASE.ASSIGN_LANE,
+              LCDATA_SPECIAL_OPTI.OPTI_BASE.NUMLOADEDLANES]
+    - line: 1883
+      quote: >-
+        | `LCDATA_ALLMODE_OPTI` | Optimization,
+        `LOADMODEL`="ALL_MODE_1"/"ALL_MODE_2" | `LCDATA_SPECIAL_OPTI`와 동일 +
+        `REMAINING_LANE`(ALL_MODE_1 전용) |
+      paths: [LCDATA_ALLMODE_OPTI.VEHICLE_NAME,
+              LCDATA_ALLMODE_OPTI.SPECIAL_VIHICLE_NAME,
+              LCDATA_ALLMODE_OPTI.OPTI_BASE,
+              LCDATA_ALLMODE_OPTI.OPTI_BASE.MINVEHLDIST,
+              LCDATA_ALLMODE_OPTI.OPTI_BASE.ASSIGN_LANE,
+              LCDATA_ALLMODE_OPTI.OPTI_BASE.NUMLOADEDLANES,
+              LCDATA_ALLMODE_OPTI.REMAINING_LANE]

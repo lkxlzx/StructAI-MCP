@@ -1,0 +1,326 @@
+# /db/PNLA
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-pnla
+endpoint: /db/PNLA
+name: Assign Plane Loads
+surface:
+  className: PlaneLoad
+  exportName: planeLoad
+  modulePath: [db, staticLoads]
+  payloadTypeName: PlaneLoadPayload
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 06_DB_Static_Loads.md
+    section: 12. /db/PNLA — Assign Plane Loads
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-write-sweep-2026-08-16
+    - product: gen
+      ref: db-write-sweep-2026-08-16
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/PNLA/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: LCNAME
+    description: >-
+      Load Case Name
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: LOAD_GROUP
+    description: >-
+      Load Group Name
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's PlaneLoad case completed a live
+      create-read-update-delete round trip on gen and civil without this field
+      in its payload. That is evidence the call is accepted, not that the
+      resulting model is what an engineer wanted.
+    provenance: manual
+  - key: PNLD_KEY
+    description: >-
+      Defined Plane Load Key
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: ELEM_TYPE
+    description: >-
+      Element Type ("PLATE" / "SOLID")
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: POINT_ORIGIN
+    description: >-
+      First Point / Origin [x, y, z]
+    type: array
+    items:
+      type: number
+    minItems: 3
+    maxItems: 3
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: AXIS_X
+    description: >-
+      Second Point / on x-Axis [x, y, z]
+    type: array
+    items:
+      type: number
+    minItems: 3
+    maxItems: 3
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: AXIS_Y
+    description: >-
+      Third Point / on x-y Plane [x, y, z]
+    type: array
+    items:
+      type: number
+    minItems: 3
+    maxItems: 3
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: TOL
+    description: >-
+      Tolerance
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: SELECT_TYPE
+    description: >-
+      Element Selection ("ON_PLANE" / "IN_GROUP")
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: LOAD_DIR
+    description: >-
+      Load Direction ("NORMAL_PLANE" / "NORMAL_ELEM" / "GLOBAL_X" / "GLOBAL_Y" /
+      "GLOBAL_Z")
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: PROJECT_TYPE
+    description: >-
+      Projection Type ("NO" / "LOAD_DIR" / "LOAD_PLANE")
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: DESC
+    description: >-
+      Description
+    type: string
+    requirement: optional
+    documentedDefault: ""
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's PlaneLoad case completed a live
+      create-read-update-delete round trip on gen and civil without this field
+      in its payload. That is evidence the call is accepted, not that the
+      resulting model is what an engineer wanted.
+    provenance: manual
+  - key: bDEFINE_NODE
+    description: >-
+      Node Defining Loading Area
+    type: boolean
+    requirement: optional
+    condition: "ELEM_TYPE = \"PLATE\""
+    appliesWhen:
+      - path: ELEM_TYPE
+        equals: PLATE
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's PlaneLoad case completed a live
+      create-read-update-delete round trip on gen and civil without this field
+      in its payload. That is evidence the call is accepted, not that the
+      resulting model is what an engineer wanted.
+    provenance: manual
+  - key: CONNECT_NODE
+    description: >-
+      Loading Boundary Connecting Node
+    type: array
+    items:
+      type: integer
+    minItems: 15
+    maxItems: 15
+    requirement: optional
+    condition: "ELEM_TYPE = \"PLATE\""
+    appliesWhen:
+      - path: ELEM_TYPE
+        equals: PLATE
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's PlaneLoad case completed a live
+      create-read-update-delete round trip on gen and civil without this field
+      in its payload. That is evidence the call is accepted, not that the
+      resulting model is what an engineer wanted.
+    provenance: manual
+  - key: ELEM_GROUP
+    description: >-
+      Element Group Name
+    type: string
+    requirement: optional
+    condition: "SELECT_TYPE = \"IN_GROUP\""
+    appliesWhen:
+      - path: SELECT_TYPE
+        equals: IN_GROUP
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's PlaneLoad case completed a live
+      create-read-update-delete round trip on gen and civil without this field
+      in its payload. That is evidence the call is accepted, not that the
+      resulting model is what an engineer wanted.
+    provenance: manual
+  - key: FACE_NO
+    description: >-
+      Solid Face No. (1~6)
+    type: integer
+    requirement: optional
+    condition: "ELEM_TYPE = \"SOLID\""
+    appliesWhen:
+      - path: ELEM_TYPE
+        equals: SOLID
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's PlaneLoad case completed a live
+      create-read-update-delete round trip on gen and civil without this field
+      in its payload. That is evidence the call is accepted, not that the
+      resulting model is what an engineer wanted.
+    provenance: manual
+
+sdkRules:
+  - id: db-pnla-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-pnla-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 06_DB_Static_Loads.md line 1074
+  table: 파라미터

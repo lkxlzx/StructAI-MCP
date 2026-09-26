@@ -1,0 +1,1059 @@
+# /db/THIS
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-this
+endpoint: /db/THIS
+name: Time History Load Cases
+surface:
+  className: TimeHistoryLoadCase
+  exportName: timeHistoryLoadCase
+  modulePath: [db, dynamicLoads]
+  payloadTypeName: TimeHistoryLoadCasePayload
+  nestedTypes:
+    - {path: COMMON, name: TimeHistoryLoadCaseCommon, namespace: DbDynamicLoadsTypes}
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 09_DB_Dynamic_Loads.md
+    section: 6. /db/THIS – Time History Load Cases
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-write-sweep-2026-08-16
+    - product: gen
+      ref: db-write-sweep-2026-08-16
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/THIS/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: COMMON
+    description: >-
+      공통 설정 오브젝트
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: NAME
+        description: >-
+          하중 케이스명
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'COMMON' by numbering it '(1)',
+        # not by naming a path
+      - key: DESC
+        description: >-
+          설명
+        type: string
+        requirement: optional
+        documentedDefault: ""
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'COMMON' by numbering it '(2)',
+        # not by naming a path
+      - key: iATYPE
+        description: >-
+          해석 타입 (1=Linear, 2=Nonlinear)
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'COMMON' by numbering it '(3)',
+        # not by naming a path
+      - key: iAMETHOD
+        description: >-
+          해석 방법 (1=Modal, 2=Direct Integration, 3=Static)
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'COMMON' by numbering it '(4)',
+        # not by naming a path
+      - key: iTHTYPE
+        description: >-
+          시간이력 타입 (1=Transient, 2=Periodic)
+        type: integer
+        requirement: required
+        appliesWhen:
+          - path: COMMON.iAMETHOD
+            in: [1, 2]
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: live_corrected
+        # RESOLVED: the manual nests this under 'COMMON' by numbering it '(5)',
+        # not by naming a path
+        # Marked Required, but both of the section's Nonlinear + Static bodies
+        # omit it, and Civil NX accepts them and stores iTHTYPE: 1 (2026-09-22).
+        # Transient/Periodic is a dynamic-analysis choice, so it is required
+        # for Modal and Direct Integration only.
+      - key: ENDTIME
+        description: >-
+          종료 시간
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: INC
+        description: >-
+          시간 증분
+        type: number
+        requirement: required
+        appliesWhen:
+          - path: COMMON.iAMETHOD
+            in: [1, 2]
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: iISTEP
+        description: >-
+          증분 스텝
+        type: integer
+        requirement: unstated
+        appliesWhen:
+          - path: COMMON.iATYPE
+            equals: 2
+          - path: COMMON.iAMETHOD
+            equals: 3
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: iOUT
+        description: >-
+          출력 스텝 증분 수
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: iGEOM
+        description: >-
+          기하 비선형 (Nonlinear Direct Integration / Static의 COMMON 추가 파라미터)
+        type: integer
+        requirement: unstated
+        appliesWhen:
+          - path: COMMON.iATYPE
+            equals: 2
+          - path: COMMON.iAMETHOD
+            in: [2, 3]
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: INITMETHOD
+        description: >-
+          하중 적용 방법 (`"ORDER"`)
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: iMDTYPE
+        description: >-
+          감쇠 방법 (1=Modal, 2=M&S, 3=StrainEnergy; Nonlinear Direct Integration은 4=Element Mass & Stiffness Proportional도)
+        type: integer
+        requirement: required
+        appliesWhen:
+          - path: COMMON.iAMETHOD
+            in: [1, 2]
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: bSUBSEQ
+        description: >-
+          후속 하중 옵션 사용 여부
+        type: boolean
+        requirement: optional
+        appliesWhen:
+          - path: COMMON.INITMETHOD
+            equals: "ORDER"
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: SUBSEQ
+        description: >-
+          후속 하중 타입 (0=하중케이스, 1=초기요소력)
+        type: integer
+        requirement: optional
+        appliesWhen:
+          - path: COMMON.INITMETHOD
+            equals: "ORDER"
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: LCTYPE
+        description: >-
+          하중 케이스 타입 (`"ST"` / `"CS"` / `"TH"`)
+        type: string
+        requirement: optional
+        appliesWhen:
+          - path: COMMON.INITMETHOD
+            equals: "ORDER"
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: CASE
+        description: >-
+          하중 케이스명
+        type: string
+        requirement: optional
+        appliesWhen:
+          - path: COMMON.INITMETHOD
+            equals: "ORDER"
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: INITLOAD
+        description: >-
+          초기 하중 사용 여부 (0=사용, 1=미사용)
+        type: integer
+        requirement: optional
+        appliesWhen:
+          - path: COMMON.INITMETHOD
+            equals: "INIT"
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: bDVA
+        description: >-
+          D/V/A 결과 누적
+        type: boolean
+        requirement: optional
+        appliesWhen:
+          - path: COMMON.INITMETHOD
+            equals: "INIT"
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: bKEEP
+        description: >-
+          최종 스텝 하중 유지
+        type: boolean
+        requirement: optional
+        appliesWhen:
+          - path: COMMON.INITMETHOD
+            equals: "INIT"
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+  - key: iNMM
+    description: >-
+      Newmark 방법 타입 (1=Constant Accel, 2=Linear Accel, 3=User Input)
+    type: integer
+    requirement: required
+    appliesWhen:
+      - path: COMMON.iAMETHOD
+        equals: 2
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: GAMMA
+    description: >-
+      Gamma 값 (User Input 시)
+    type: number
+    requirement: optional
+    appliesWhen:
+      - path: COMMON.iAMETHOD
+        equals: 2
+    documentedDefault: 0.5
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: BETA
+    description: >-
+      Beta 값 (User Input 시)
+    type: number
+    requirement: optional
+    appliesWhen:
+      - path: COMMON.iAMETHOD
+        equals: 2
+    documentedDefault: 0.25
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bITER
+    description: >-
+      반복 수행 여부
+    type: boolean
+    requirement: optional
+    appliesWhen:
+      - path: COMMON.iATYPE
+        equals: 2
+      - path: COMMON.iAMETHOD
+        in: [2, 3]
+    documentedDefault: true
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: DMUPDATE
+    description: >-
+      감쇠 매트릭스 업데이트 여부 (Modal·Strain Energy: 미사용 / M&S·Element M&S: 사용)
+    type: boolean
+    requirement: optional
+    appliesWhen:
+      - path: COMMON.iATYPE
+        equals: 2
+      - path: COMMON.iAMETHOD
+        equals: 2
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: MINSSS
+    description: >-
+      최소 스텝 크기
+    type: number
+    requirement: required
+    appliesWhen:
+      - path: COMMON.iATYPE
+        equals: 2
+      - path: COMMON.iAMETHOD
+        in: [1, 2]
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: bCUMULATE
+    description: >-
+      누적 하중 증분 이력 출력
+    type: boolean
+    requirement: optional
+    appliesWhen:
+      - path: COMMON.iATYPE
+        equals: 2
+      - path: COMMON.iAMETHOD
+        equals: 3
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: iINCCTRL
+    description: >-
+      증분 방법 (0=하중 제어, 1=변위 제어)
+    type: integer
+    requirement: optional
+    appliesWhen:
+      - path: COMMON.iATYPE
+        equals: 2
+      - path: COMMON.iAMETHOD
+        equals: 3
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: SCALE
+    description: >-
+      Scale Factor
+    type: number
+    requirement: required
+    appliesWhen:
+      - path: COMMON.iATYPE
+        equals: 2
+      - path: COMMON.iAMETHOD
+        equals: 3
+      - path: iINCCTRL
+        equals: 0
+    documentedDefault: 1
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: iCTRL
+    description: >-
+      Displacement Control Option (0=Global Control, 1=Master Node Control)
+    type: integer
+    requirement: required
+    appliesWhen:
+      - path: COMMON.iATYPE
+        equals: 2
+      - path: COMMON.iAMETHOD
+        equals: 3
+      - path: iINCCTRL
+        equals: 1
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: TINC
+    description: >-
+      Displacement (Global: 최대 병진 변위 / Master Node: 최대 변위)
+    type: number
+    requirement: required
+    appliesWhen:
+      - path: COMMON.iATYPE
+        equals: 2
+      - path: COMMON.iAMETHOD
+        equals: 3
+      - path: iINCCTRL
+        equals: 1
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: MNODE
+    description: >-
+      Master Node No. (iCTRL=1일 때)
+    type: integer
+    requirement: required
+    appliesWhen:
+      - path: COMMON.iATYPE
+        equals: 2
+      - path: COMMON.iAMETHOD
+        equals: 3
+      - path: iINCCTRL
+        equals: 1
+      - path: iCTRL
+        equals: 1
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: MDIR
+    description: >-
+      Master Direction (1=DX, 2=DY, 3=DZ, iCTRL=1일 때)
+    type: integer
+    requirement: required
+    appliesWhen:
+      - path: COMMON.iATYPE
+        equals: 2
+      - path: COMMON.iAMETHOD
+        equals: 3
+      - path: iINCCTRL
+        equals: 1
+      - path: iCTRL
+        equals: 1
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: bCONV
+    description: >-
+      수렴 실패 허용
+    type: boolean
+    requirement: optional
+    appliesWhen:
+      - path: COMMON.iATYPE
+        equals: 2
+      - path: COMMON.iAMETHOD
+        in: [2, 3]
+    documentedDefault: true
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: iMSTEP
+    description: >-
+      최대 부분 스텝 수
+    type: integer
+    requirement: required
+    appliesWhen:
+      - path: COMMON.iATYPE
+        equals: 2
+      - path: COMMON.iAMETHOD
+        equals: 3
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: bEN
+    description: >-
+      에너지 노름 사용
+    type: boolean
+    requirement: optional
+    appliesWhen:
+      - path: COMMON.iATYPE
+        equals: 2
+      - path: COMMON.iAMETHOD
+        in: [2, 3]
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: EN
+    description: >-
+      에너지 노름 값(bEN=true 시)
+    type: number
+    requirement: optional
+    appliesWhen:
+      - path: COMMON.iATYPE
+        equals: 2
+      - path: COMMON.iAMETHOD
+        in: [2, 3]
+      - path: bEN
+        equals: true
+    documentedDefault: 0.001
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: iMAXITER
+    description: >-
+      최대 반복 횟수
+    type: integer
+    requirement: required
+    appliesWhen:
+      - path: COMMON.iATYPE
+        equals: 2
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: bDN
+    description: >-
+      변위 노름 사용
+    type: boolean
+    requirement: optional
+    appliesWhen:
+      - path: COMMON.iATYPE
+        equals: 2
+    documentedDefault: true
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: DN
+    description: >-
+      변위 노름 값(bDN=true 시)
+    type: number
+    requirement: optional
+    appliesWhen:
+      - path: COMMON.iATYPE
+        equals: 2
+      - path: bDN
+        equals: true
+    documentedDefault: 0.001
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bFN
+    description: >-
+      하중 노름 사용
+    type: boolean
+    requirement: optional
+    appliesWhen:
+      - path: COMMON.iATYPE
+        equals: 2
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: FN
+    description: >-
+      하중 노름 값(bFN=true 시)
+    type: number
+    requirement: optional
+    appliesWhen:
+      - path: COMMON.iATYPE
+        equals: 2
+      - path: bFN
+        equals: true
+    documentedDefault: 0.001
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bULSM
+    description: >-
+      선형 탐색 방법 사용
+    type: boolean
+    requirement: optional
+    appliesWhen:
+      - path: COMMON.iATYPE
+        equals: 2
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: ULSM
+    description: >-
+      선형 탐색 시작 반복 수(bULSM=true 시)
+    type: integer
+    requirement: optional
+    appliesWhen:
+      - path: COMMON.iATYPE
+        equals: 2
+      - path: bULSM
+        equals: true
+    documentedDefault: 5
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: iRKM
+    description: >-
+      Runge-Kutta 방법 (0=Fehlberg, 1=Cash-Karp)
+    type: integer
+    requirement: optional
+    appliesWhen:
+      - path: COMMON.iATYPE
+        equals: 2
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: dTOL
+    description: >-
+      허용 오차
+    type: number
+    requirement: optional
+    appliesWhen:
+      - path: COMMON.iATYPE
+        equals: 2
+    documentedDefault: 1e-08
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: DALL
+    description: >-
+      전체 모드 감쇠비
+    type: number
+    requirement: unstated
+    appliesWhen:
+      - path: COMMON.iMDTYPE
+        equals: 1
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: manual
+  - key: aDAMP
+    description: >-
+      모드별 감쇠비 오버라이드 목록
+    type: array
+    items:
+      type: object
+    requirement: unstated
+    appliesWhen:
+      - path: COMMON.iMDTYPE
+        equals: 1
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: iMODE
+        description: >-
+          모드 번호
+        type: integer
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: DAMPING
+        description: >-
+          감쇠비
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+  - key: iCOEF
+    description: >-
+      계수 산정 방식 (1=직접 지정, 2=모달 감쇠로부터 계산)
+    type: integer
+    requirement: required
+    appliesWhen:
+      - path: COMMON.iMDTYPE
+        equals: 2
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: bMASSP
+    description: >-
+      질량 비례 사용 여부
+    type: boolean
+    requirement: required
+    appliesWhen:
+      - path: COMMON.iMDTYPE
+        equals: 2
+      - path: iCOEF
+        equals: 1
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: MASSC
+    description: >-
+      질량 비례 계수(bMASSP=true 시)
+    type: number
+    requirement: required
+    appliesWhen:
+      - path: COMMON.iMDTYPE
+        equals: 2
+      - path: iCOEF
+        equals: 1
+      - path: bMASSP
+        equals: true
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: bSTIFFP
+    description: >-
+      강성 비례 사용 여부
+    type: boolean
+    requirement: required
+    appliesWhen:
+      - path: COMMON.iMDTYPE
+        equals: 2
+      - path: iCOEF
+        equals: 1
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: STIFFC
+    description: >-
+      강성 비례 계수(bSTIFFP=true 시)
+    type: number
+    requirement: required
+    appliesWhen:
+      - path: COMMON.iMDTYPE
+        equals: 2
+      - path: iCOEF
+        equals: 1
+      - path: bSTIFFP
+        equals: true
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: iCALC
+    description: >-
+      계산 방법 (1=주파수, 2=주기)
+    type: integer
+    requirement: required
+    appliesWhen:
+      - path: COMMON.iMDTYPE
+        equals: 2
+      - path: iCOEF
+        equals: 2
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: FP1
+    description: >-
+      모드1 주파수/주기
+    type: number
+    requirement: required
+    appliesWhen:
+      - path: COMMON.iMDTYPE
+        equals: 2
+      - path: iCOEF
+        equals: 2
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: DR1
+    description: >-
+      모드1 감쇠비
+    type: number
+    requirement: required
+    appliesWhen:
+      - path: COMMON.iMDTYPE
+        equals: 2
+      - path: iCOEF
+        equals: 2
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: FP2
+    description: >-
+      모드2 주파수/주기
+    type: number
+    requirement: required
+    appliesWhen:
+      - path: COMMON.iMDTYPE
+        equals: 2
+      - path: iCOEF
+        equals: 2
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: DR2
+    description: >-
+      모드2 감쇠비
+    type: number
+    requirement: required
+    appliesWhen:
+      - path: COMMON.iMDTYPE
+        equals: 2
+      - path: iCOEF
+        equals: 2
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  # Each mode's tables (6-3 to 6-8) are headed with their iATYPE/iAMETHOD
+  # pair, and the section's opening line names COMMON.iATYPE x
+  # COMMON.iAMETHOD as the selector. Rows listed as "COMMON 추가 파라미터"
+  # go in COMMON and the rest at record root, which is where GET /info
+  # declares every one of them on both products and where the four
+  # Request Bodies send them. A row several modes list is gated on all of
+  # them. Measured 2026-09-22 (live_manual_feedback.py --case c5): the
+  # Linear + Modal body round-trips on both products; the three Nonlinear
+  # bodies are refused on Gen NX and the Direct Integration one on Civil
+  # NX, on a scratch model without nonlinear properties, so no row is
+  # corrected from them.
+
+
+manualDefects:
+  - describes: requiredness
+    manualSays: >-
+      COMMON's table marks iTHTYPE (1=Transient, 2=Periodic) Required with no
+      condition.
+    actual: >-
+      Both Nonlinear + Static Request Bodies in the same section omit it, and
+      Civil NX accepts them and stores iTHTYPE: 1. Gen NX refused those bodies
+      for another reason on a model without nonlinear properties, so its
+      answer is not known.
+    evidence: >-
+      scripts/live_manual_feedback.py --case c5, 2026-09-22;
+      docs/live_verification_notes.md.
+
+sdkRules:
+  - id: db-this-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-this-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  prose:
+    - line: 1375
+      quote: >-
+        COMMON 추가 파라미터: `ENDTIME`, `INC`, `iOUT`, `iGEOM`, `INITMETHOD`, `iMDTYPE`
+      paths: [COMMON.iGEOM]
+    - line: 1400
+      quote: >-
+        COMMON 추가 파라미터: `ENDTIME`, `iISTEP` (증분 스텝), `iOUT`, `iGEOM`, `INITMETHOD`
+      paths: [COMMON.iISTEP, COMMON.iGEOM]
+  source: 09_DB_Dynamic_Loads.md line 1312
+  table: 6-2. COMMON 공통 파라미터
+  missingColumns:
+    - heading: 6-3. Linear + Modal (Transient / Periodic)
+      line: 1325
+      columns: [Default]
+    - heading: ORDER 방법 사용 시 순차 하중 파라미터
+      line: 1335
+      columns: [Default]
+    - heading: INIT 방법 사용 시 파라미터
+      line: 1344
+      columns: [Default]
+    - heading: Modal 감쇠 (iMDTYPE=1)
+      line: 1459
+      columns: [Default]
+    - heading: "Mass & Stiffness Proportional 감쇠 (iMDTYPE=2)"
+      line: 1474
+      columns: [Default]
+    - heading: iCOEF=1(직접 지정)
+      line: 1477
+      columns: [Default]
+    - heading: iCOEF=2(모달 감쇠로부터 계산)
+      line: 1482
+      columns: [Default]
+  structuralTables:
+    - heading: "6-3. Linear + Modal (Transient / Periodic)"
+      line: 1325
+      paths: [COMMON]
+      note: >-
+        Merged as fields gated by appliesWhen on the mode and switch its
+        heading names; see the note above the root fields.
+    - heading: "ORDER 방법 사용 시 순차 하중 파라미터"
+      line: 1335
+      paths: [COMMON]
+      note: >-
+        Merged as fields gated by appliesWhen on the mode and switch its
+        heading names; see the note above the root fields.
+    - heading: "INIT 방법 사용 시 파라미터"
+      line: 1344
+      paths: [COMMON]
+      note: >-
+        Merged as fields gated by appliesWhen on the mode and switch its
+        heading names; see the note above the root fields.
+    - heading: "6-4. Linear + Direct Integration (Transient)"
+      line: 1356
+      paths: [<root>]
+      note: >-
+        Merged as fields gated by appliesWhen on the mode and switch its
+        heading names; see the note above the root fields.
+    - heading: "6-5. Nonlinear + Modal (Transient)"
+      line: 1368
+      paths: [<root>]
+      note: >-
+        Merged as fields gated by appliesWhen on the mode and switch its
+        heading names; see the note above the root fields.
+    - heading: "6-6. Nonlinear + Direct Integration (Transient)"
+      line: 1380
+      paths: [<root>]
+      note: >-
+        Merged as fields gated by appliesWhen on the mode and switch its
+        heading names; see the note above the root fields.
+    - heading: "6-6. Nonlinear + Direct Integration (Transient)"
+      line: 1390
+      paths: [<root>]
+      note: >-
+        Merged as fields gated by appliesWhen on the mode and switch its
+        heading names; see the note above the root fields.
+    - heading: "6-7. Nonlinear + Static"
+      line: 1403
+      paths: [<root>]
+      note: >-
+        Merged as fields gated by appliesWhen on the mode and switch its
+        heading names; see the note above the root fields.
+    - heading: "Load Control (iINCCTRL=0)"
+      line: 1416
+      paths: [<root>]
+      note: >-
+        Merged as fields gated by appliesWhen on the mode and switch its
+        heading names; see the note above the root fields.
+    - heading: "Displacement Control (iINCCTRL=1)"
+      line: 1418
+      paths: [<root>]
+      note: >-
+        Merged as fields gated by appliesWhen on the mode and switch its
+        heading names; see the note above the root fields.
+    - heading: "증분 방법(iINCCTRL) 세부 파라미터"
+      line: 1426
+      paths: [<root>]
+      note: >-
+        Merged as fields gated by appliesWhen on the mode and switch its
+        heading names; see the note above the root fields.
+    - heading: "6-8. 반복 제어 파라미터 (Nonlinear 공통)"
+      line: 1440
+      paths: [<root>]
+      note: >-
+        Merged as fields gated by appliesWhen on the mode and switch its
+        heading names; see the note above the root fields.
+    - heading: "Modal 감쇠 (iMDTYPE=1)"
+      line: 1459
+      paths: [<root>]
+      note: >-
+        Merged as fields gated by appliesWhen on the mode and switch its
+        heading names; see the note above the root fields.
+    - heading: "Mass & Stiffness Proportional 감쇠 (iMDTYPE=2)"
+      line: 1474
+      paths: [<root>]
+      note: >-
+        Merged as fields gated by appliesWhen on the mode and switch its
+        heading names; see the note above the root fields.
+    - heading: "iCOEF=1(직접 지정)"
+      line: 1477
+      paths: [<root>]
+      note: >-
+        Merged as fields gated by appliesWhen on the mode and switch its
+        heading names; see the note above the root fields.
+    - heading: "iCOEF=2(모달 감쇠로부터 계산)"
+      line: 1482
+      paths: [<root>]
+      note: >-
+        Merged as fields gated by appliesWhen on the mode and switch its
+        heading names; see the note above the root fields.

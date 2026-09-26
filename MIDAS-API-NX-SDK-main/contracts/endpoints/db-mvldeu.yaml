@@ -1,0 +1,561 @@
+# /db/MVLDeu
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-mvldeu
+endpoint: /db/MVLDeu
+name: Moving Load Cases – Eurocode
+surface:
+  className: MovingLoadCaseEurocode
+  exportName: movingLoadCaseEurocode
+  modulePath: [db, movingLoads]
+  payloadTypeName: MovingLoadCaseEurocodePayload
+  nestedTypes:
+    - {path: STL_LIST, name: MovingLoadCaseEurocodeStraddlingLaneItem, namespace: DbMovingLoadsTypes}
+    - {path: SUB_LOAD_LIST, name: MovingLoadCaseEurocodeSubLoadItem, namespace: DbMovingLoadsTypes}
+    - {path: OPTIMIZE_LIST, name: MovingLoadCaseEurocodeOptimizeItem, namespace: DbMovingLoadsTypes}
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 08_DB_Moving_Loads.md
+    section: 16. /db/MVLDeu – Moving Load Cases – Eurocode
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-07-26
+    - product: gen
+      ref: db-read-sweep-2026-07-26
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/MVLDeu/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: LCNAME
+    description: >-
+      Load Case Name
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: DESC
+    description: >-
+      Description
+    type: string
+    requirement: optional
+    documentedDefault: ""
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: TYPE_LOADMODEL
+    description: >-
+      Load Model Type
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: OPT_AUTO_OPTIMIZE
+    description: >-
+      Moving Load Optimization (General Load: false / Optimization: true)
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: OPT_LEADING
+    description: >-
+      Ignore ψ(1) factor
+    type: boolean
+    requirement: conditional
+    condition: LM1/3/4, General·Optimization
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: VHLNAME1
+    description: >-
+      Load Case – Vehicle
+    type: string
+    requirement: conditional
+    condition: LM1/3/4
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: VHLNAME2
+    description: >-
+      Load Case – Footway
+    type: string
+    requirement: conditional
+    condition: Optional (LM1) / Required (LM3/4, Optimization)
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: SLN_LIST
+    description: >-
+      Selected Lanes
+    type: array
+    items:
+      type: string
+    requirement: conditional
+    condition: LM1/3/4
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: SRA_LIST
+    description: >-
+      Remaining Area
+    type: array
+    items:
+      type: string
+    requirement: conditional
+    condition: LM1/3/4
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: FLN_LIST
+    description: >-
+      Footway Lanes (LM1)
+    type: array
+    items:
+      type: string
+    requirement: conditional
+    condition: LM1
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: STL_LIST
+    description: >-
+      Straddling Lanes — (1) Start Lane "NAME1", (2) End Lane "NAME2"
+    type: array
+    items:
+      type: object
+    requirement: conditional
+    condition: LM4
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: NAME1
+        description: >-
+          Start Lane
+        type: string
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under its parent by numbering it
+        # '(1)' inside the row's own description, not by naming a path; the
+        # section's Request Example sends it nested and fixes the type.
+      - key: NAME2
+        description: >-
+          End Lane
+        type: string
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under its parent by numbering it
+        # '(2)' inside the row's own description, not by naming a path; the
+        # section's Request Example sends it nested and fixes the type.
+  - key: OPT_COMB
+    description: >-
+      Loading Effect (Combined: 0 / Independent: 1)
+    type: integer
+    requirement: conditional
+    condition: LM2/5
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: SUB_LOAD_LIST
+    description: >-
+      Sub-Load Cases — (1) Vehicle Load Type "TYPE", (2) Name "NAME", (3) Scale
+      Factor "SCALE_FACTOR", (4) Min. Loaded Lanes "MIN_LOAD_LANE_TYPE", (5)
+      Max. Loaded Lanes "MAX_LOAD_LANE_TYPE", (6) Selected Lanes "SLN_LIST"
+    type: array
+    items:
+      type: object
+    requirement: conditional
+    condition: LM2/5, General
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: TYPE
+        description: >-
+          Vehicle Load Type
+        type: integer
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under its parent by numbering it
+        # '(1)' inside the row's own description, not by naming a path; the
+        # section's Request Example sends it nested and fixes the type.
+      - key: NAME
+        description: >-
+          Name
+        type: string
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under its parent by numbering it
+        # '(2)' inside the row's own description, not by naming a path; the
+        # section's Request Example sends it nested and fixes the type.
+      - key: SCALE_FACTOR
+        description: >-
+          Scale Factor
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under its parent by numbering it
+        # '(3)' inside the row's own description, not by naming a path; the
+        # section's Request Example sends it nested and fixes the type.
+      - key: MIN_LOAD_LANE_TYPE
+        description: >-
+          Min. Loaded Lanes
+        type: integer
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under its parent by numbering it
+        # '(4)' inside the row's own description, not by naming a path; the
+        # section's Request Example sends it nested and fixes the type.
+      - key: MAX_LOAD_LANE_TYPE
+        description: >-
+          Max. Loaded Lanes
+        type: integer
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under its parent by numbering it
+        # '(5)' inside the row's own description, not by naming a path; the
+        # section's Request Example sends it nested and fixes the type.
+      - key: SLN_LIST
+        description: >-
+          Selected Lanes
+        type: array
+        items:
+          type: string
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under its parent by numbering it
+        # '(6)' inside the row's own description, not by naming a path; the
+        # section's Request Example sends it nested and fixes the type.
+  - key: OPT_PSI_FACTOR
+    description: >-
+      Ignore ψ1 factor
+    type: boolean
+    requirement: conditional
+    condition: LM5
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: SCALE_FACTOR1
+    description: >-
+      ψ1 factor for Lane 1/2/3+
+    type: number
+    requirement: conditional
+    condition: LM5
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: SCALE_FACTOR2
+    description: >-
+      ψ1 factor for Lane 1/2/3+
+    type: number
+    requirement: conditional
+    condition: LM5
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: SCALE_FACTOR3
+    description: >-
+      ψ1 factor for Lane 1/2/3+
+    type: number
+    requirement: conditional
+    condition: LM5
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: MULTI_FACTOR1
+    description: >-
+      Multi Presence Factor for Lane 1/2/3+
+    type: number
+    requirement: conditional
+    condition: LM5
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: MULTI_FACTOR2
+    description: >-
+      Multi Presence Factor for Lane 1/2/3+
+    type: number
+    requirement: conditional
+    condition: LM5
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: MULTI_FACTOR3
+    description: >-
+      Multi Presence Factor for Lane 1/2/3+
+    type: number
+    requirement: conditional
+    condition: LM5
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: MINVHLDIST
+    description: >-
+      Min. Vehicle Distance
+    type: number
+    requirement: conditional
+    condition: Optimization
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: OPTIMIZE_LANE_NAME
+    description: >-
+      Assignment Lane
+    type: string
+    requirement: conditional
+    condition: Optimization
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: LOADEDLANE
+    description: >-
+      Number of Loaded Lane
+    type: integer
+    requirement: conditional
+    condition: Optimization, LM1/3/4
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: MIN_NUM_VHL
+    description: >-
+      Min./Max. Number of Vehicle
+    type: integer
+    requirement: conditional
+    condition: Optimization, LM2/5
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: MAX_NUM_VHL
+    description: >-
+      Min./Max. Number of Vehicle
+    type: integer
+    requirement: conditional
+    condition: Optimization, LM2/5
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: OPTIMIZE_LIST
+    description: >-
+      Sub-Load Cases for Optimization — (1) Type "TYPE", (2) Name "NAME", (3)
+      Scale Factor "SCALE_FACTOR"
+    type: array
+    items:
+      type: object
+    requirement: conditional
+    condition: Optimization, LM2/5
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: TYPE
+        description: >-
+          Type
+        type: integer
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: NAME
+        description: >-
+          Name
+        type: string
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: SCALE_FACTOR
+        description: >-
+          Scale Factor
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+    # The row names the three keys in its own description and states no type or
+    # requiredness per key, and the section has no request example that sends them;
+    # the types are /info's, which declares these members on both products.
+
+sdkRules:
+  - id: db-mvldeu-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-mvldeu-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+manualDefects:
+  - describes: field_value
+    manualSays: >-
+      The Specifications table types `OPT_COMB` as `String`, in the same row
+      whose description gives its two values as `0` and `1`.
+    actual: >-
+      An integer. Both of the section's Request Body examples that set it send
+      `"OPT_COMB": 1` unquoted. Same family as MD-11: a Value Type column its
+      own section contradicts.
+    evidence: >-
+      docs/manual/08_DB_Moving_Loads.md, the row at line 2087 read against the
+      Request Body examples at lines 1957 and 2027. Registered as MD-25.
+  - describes: field_name
+    manualSays: >-
+      `STL_LIST` and `SUB_LOAD_LIST` are typed `Array[Object]` with no member
+      rows of their own; their members are named only inside the parent row's
+      description, as `(1)` Start Lane `"NAME1"`, `(2)` End Lane `"NAME2"` and
+      the six keys of a sub-load case.
+    actual: >-
+      Both are objects with the members the description names, in that order,
+      and the section's Request Body examples send them literally -
+      `{"NAME1": "LL_03", "NAME2": "LL_04"}` and a sub-load case carrying all
+      six. The numbering is the same convention this chapter uses in rows of
+      its own elsewhere; here it is compressed into one cell. Transcribed as
+      nested `properties` so the published payload type keeps describing them,
+      which it did before this endpoint was contracted.
+    evidence: >-
+      docs/manual/08_DB_Moving_Loads.md rows 11 and 13 at lines 2086 and 2088,
+      read against the Request Body examples at lines 1959 and 2009.
+      Registered as MD-25.
+
+extraction:
+  prose:
+    - line: 2096
+      quote: >-
+        Sub-Load Cases for Optimization - (1) Type "TYPE", (2) Name "NAME", (3) Scale Factor "SCALE_FACTOR"
+      paths: [OPTIMIZE_LIST.TYPE, OPTIMIZE_LIST.NAME, OPTIMIZE_LIST.SCALE_FACTOR]
+  source: 08_DB_Moving_Loads.md line 2073
+  table: Parameters

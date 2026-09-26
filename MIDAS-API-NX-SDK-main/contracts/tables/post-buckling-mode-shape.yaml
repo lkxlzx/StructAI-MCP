@@ -1,0 +1,31 @@
+# Source: 20_POST_AnalysisResult_2.md section 29. No SDK source was used.
+contractVersion: 1
+id: post-buckling-mode-shape
+endpoint: /post/TABLE
+name: Buckling Mode Shape
+summary: Buckling mode shapes with eigenvalue summary data.
+products: [gen, civil]
+source: {manual: {status: documented, repo: Dennis5882/MIDAS-API, chapterFile: 20_POST_AnalysisResult_2.md, section: "29. Buckling Mode Shape"}}
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getBucklingModeShapeTable
+  modulePath: [result1]
+  tableType: BUCKLINGMODE
+  factory: fixed
+  optionNames: [components, nodeElements, styles, tableName, unit]
+  documentation: |-
+    docs/manual/20_POST_AnalysisResult_2.md #29 — Buckling Mode Shape.
+
+    Mode shapes are not load-case scoped, so LOAD_CASE_NAMES/OPT_CS/STAGE_STEP
+    are not exposed here.
+tableTypes:
+  - value: BUCKLINGMODE
+    description: Buckling mode shape
+    head: [Index, Node, Mode, UX, UY, UZ, RX, RY, RZ]
+    subTables:
+      - {name: BUCKLINGANALYSIS, head: [Mode, Eigenvalue, Tolerance]}
+    provenance: manual
+requestFields:
+  additional:
+    - {key: MODES, description: Optional mode-name list such as Mode1., type: array, requirement: optional, provenance: manual}

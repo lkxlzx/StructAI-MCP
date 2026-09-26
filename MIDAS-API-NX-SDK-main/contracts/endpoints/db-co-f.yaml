@@ -1,0 +1,166 @@
+# /db/CO_F
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products, verification status and the DELETE
+# shape come from docs/coverage.json's live record and the measured /db/* DELETE
+# behaviour, not from the manual's framing. safeToOmit is answered `true` only
+# where a confirmed live payload actually omitted the field.
+contractVersion: 1
+id: db-co-f
+endpoint: /db/CO_F
+name: Floor Load Color
+surface:
+  className: FloorLoadColor
+  exportName: floorLoadColor
+  modulePath: [db, project]
+  payloadTypeName: FloorLoadColorPayload
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 02_DB_Project_Structure.md
+    section: "13. `/db/CO_F` — Floor Load Color"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-write-sweep-2026-08-16
+    - product: gen
+      ref: db-write-sweep-2026-08-16
+
+operations:
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: NAME
+    description: >-
+      Floor Load Type Name
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: WF_R
+    description: >-
+      Wire Frame Red (0–255)
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: WF_G
+    description: >-
+      Wire Frame Green (0–255)
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: WF_B
+    description: >-
+      Wire Frame Blue (0–255)
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: HF_R
+    description: >-
+      Hidden Fill Red (0–255)
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: HF_G
+    description: >-
+      Hidden Fill Green (0–255)
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: HF_B
+    description: >-
+      Hidden Fill Blue (0–255)
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: HE_R
+    description: >-
+      Hidden Edge Red (0–255)
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: HE_G
+    description: >-
+      Hidden Edge Green (0–255)
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: HE_B
+    description: >-
+      Hidden Edge Blue (0–255)
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: OPT_BLEND
+    description: >-
+      Blending
+    type: boolean
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: BLEND_FACTOR
+    description: >-
+      Blending Factor (0.0–1.0)
+    type: number
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+
+extraction:
+  source: 02_DB_Project_Structure.md line 1108
+  table: Specifications

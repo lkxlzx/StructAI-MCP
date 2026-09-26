@@ -1,0 +1,1192 @@
+# /db/STCT-M1
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then reviewed
+# by hand. Four of the section's six supplementary tables are now merged by the
+# extractor's structural-split registry; the two that are not - NONL_CONTROL and
+# "나머지 객체" - are resolved here against the section's own Request Body example,
+# for the reasons recorded under manualDefects. products and verification status
+# come from docs/coverage.json's live record, not from the manual's framing. For
+# /db/* endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-stct-m1
+endpoint: /db/STCT-M1
+name: Construction Stage Analysis Control Data (Hyper-S)
+surface:
+  className: ConstructionStageAnalysisControlDataHyperS
+  exportName: constructionStageAnalysisControlDataHyperS
+  modulePath: [db, analysisControl]
+  payloadTypeName: ConstructionStageAnalysisControlDataHyperSPayload
+  nestedTypes:
+    - {path: ANAL_TYPE, name: ConstructionStageAnalysisTypeHyperS, namespace: DbAnalysisControlTypes}
+    - {path: CABLE_CONTROL, name: CableControlHyperS, namespace: DbAnalysisControlTypes}
+    - {path: ERECTION_LOAD, name: ErectionLoadItem, namespace: DbAnalysisControlTypes}
+    - {path: FRAME_OUTPUT, name: FrameOutputHyperS, namespace: DbAnalysisControlTypes}
+    - {path: INITIAL_CONTROL, name: InitialForceControlHyperS, namespace: DbAnalysisControlTypes}
+    - {path: INITIAL_DISP, name: InitialDisplacementHyperS, namespace: DbAnalysisControlTypes}
+    - {path: INITIAL_DISP.ITD_CONTROL, name: InitialTangentDisplacementControlHyperS, namespace: DbAnalysisControlTypes}
+    - {path: NONL_CONTROL, name: NonlinearControlHyperSStct, namespace: DbAnalysisControlTypes}
+    - {path: NONL_CONTROL.ADVANCED, name: NonlinearAdvancedHyperSStct, namespace: DbAnalysisControlTypes}
+    - {path: NONL_CONTROL.ADVANCED.LINE_SEARCH, name: LineSearchHyperSStct, namespace: DbAnalysisControlTypes}
+    - {path: NONL_CONTROL.DISP, name: ConvergenceCriterionHyperSStct, namespace: DbAnalysisControlTypes}
+    - {path: NONL_CONTROL.LOAD, name: ConvergenceCriterionHyperSStct, namespace: DbAnalysisControlTypes}
+    - {path: NONL_CONTROL.WORK, name: ConvergenceCriterionHyperSStct, namespace: DbAnalysisControlTypes}
+    - {path: RESTART_CS_ANAL, name: ConstructionStageRestartHyperS, namespace: DbAnalysisControlTypes}
+    - {path: STRESS_DECREASE, name: StressDecreaseHyperS, namespace: DbAnalysisControlTypes}
+    - {path: TIME_DEP_CONTROL, name: TimeDependentControlHyperS, namespace: DbAnalysisControlTypes}
+    - {path: TIME_DEP_CONTROL.CREEP_SHRINKAGE, name: CreepShrinkageControlHyperS, namespace: DbAnalysisControlTypes}
+    - {path: TIME_DEP_CONTROL.CREEP_SHRINKAGE.AUTO_TIME_STEP, name: AutoTimeStepHyperS, namespace: DbAnalysisControlTypes}
+    - {path: TIME_DEP_CONTROL.CREEP_SHRINKAGE.INTERNAL_STEP, name: InternalTimeStepHyperS, namespace: DbAnalysisControlTypes}
+
+products: [civil]
+productsEvidence: >-
+  Hyper-S. The draft carried the extractor's `[gen, civil]` placeholder;
+  docs/coverage.json records civil, and the 2026-09-03 /info sweep answered for
+  civil and not for gen, which is the HYPER_S_ONLY gate both SDKs already apply.
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 12_DB_Analysis_Control.md
+    section: 18. /db/STCT-M1 – Construction Stage Analysis Control Data (Hyper-S)
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_civil
+  records:
+    - product: civil
+      ref: db-write-sweep-2026-08-25
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/STCT-M1/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      The only DELETE form that deletes a selection rather than the whole table
+      - see risk db-delete-body-empties-table. Unusually, this section
+      documents it: the methods table gives `DELETE {base_url}/db/STCT-M1/{id}`
+      rather than the bare endpoint most chapters print.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The undocumented body form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: bLAST_FINAL
+    description: >-
+      Final Stage Option (Last: true / Other: false)
+    type: boolean
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: FINAL_STAGE
+    description: >-
+      Final Stage Name
+    type: string
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: info_schema
+    provenanceNote: >-
+      Undocumented. The section's top-level Parameters table lists fourteen rows
+      and this is not one of them, but `GET /info/db/STCT-M1` declares it, and
+      it is the field `bLAST_FINAL: false` exists to be answered by - "Other
+      Stage" has to name the stage somewhere. `unstated` rather than `optional`:
+      /info declares no `required` array, and the manual has made no claim about
+      it at all. Captured 2026-09-03 on Civil NX.
+  - key: ANAL_TYPE
+    description: >-
+      Analysis Type 설정
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: iINC_NLA
+        description: >-
+          해석 타입 (Linear: 0 / Geometric Nonlinear: 1 / Material Nonlinear: 2 /
+          Geometric+Material Nonlinear: 3)
+        type: integer
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual types this 'Integer' and the values live in the
+        # description, so no enum is transcribed
+      - key: iNLA_TYPE
+        description: >-
+          단계 옵션 (Independent: 0 / Accumulative: 1) — `iINC_NLA`=2 또는 3이면
+          `iNLA_TYPE`=1만 허용
+        type: integer
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual types this 'Integer' and the values live in the
+        # description, so no enum is transcribed
+      - key: bIEMF
+        description: >-
+          Include Equilibrium Element Nodal Forces (`iINC_NLA`=1 &
+          `iNLA_TYPE`=0일 때만)
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: bINC_PDL
+        description: >-
+          Include P-Delta Effect (`iINC_NLA`=0일 때만)
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: bINC_TDE
+        description: >-
+          Include Time Dependent Effect (`iNLA_TYPE`=1 & `iINC_NLA`∈{0,1}일 때만)
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+  - key: RESTART_CS_ANAL
+    description: >-
+      Restart C.S. Analysis 설정
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's confirmed
+      ConstructionStageAnalysisControlDataHyperS case completed
+      PUT/read/per-id DELETE/read on Civil without this top-level field. The
+      public SDK sends no endpoint-specific normalization for this record.
+    provenance: manual
+    properties:
+      - key: OPT_USE
+        description: >-
+          Restart 해석 사용 여부
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: RESTART_STAGE
+        description: >-
+          Restart 대상 시공단계 목록
+        type: array
+        items:
+          type: string
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+  - key: ERECTION_LOAD
+    description: >-
+      Erection Load 목록
+    type: array
+    items:
+      type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's confirmed
+      ConstructionStageAnalysisControlDataHyperS case completed
+      PUT/read/per-id DELETE/read on Civil without this top-level field. The
+      public SDK sends no endpoint-specific normalization for this record.
+    provenance: manual
+    properties:
+      - key: LTYPECC
+        description: >-
+          Erection Load Case Name
+        type: string
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: EREC
+        description: >-
+          Load Type for C.S (`"D"`, `"W"`, …)
+        type: string
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual's own list ends in an ellipsis, so no enum is
+        # transcribed
+      - key: vLCNAME
+        description: >-
+          Load Case Name List
+        type: array
+        items:
+          type: string
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+  - key: bSDLE
+    description: >-
+      Self-weight Dead Load for Erection 사용
+    type: boolean
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's confirmed
+      ConstructionStageAnalysisControlDataHyperS case completed
+      PUT/read/per-id DELETE/read on Civil without this top-level field. The
+      public SDK sends no endpoint-specific normalization for this record.
+    provenance: live_corrected
+    provenanceNote: >-
+      Split out of the manual's row 5, which gives one Key cell -
+      `"bSDLE"` / `"vSDLE"` - to two properties. `GET /info/db/STCT-M1`
+      declares them separately, `bSDLE` a boolean "Secondary Dead Load Effect"
+      and `vSDLE` an array "SDL Load Case Names", and the section's own Request
+      Body sends both as sibling keys. Registered as MD-21. The Required column
+      is the row's, and applies to both halves.
+  - key: vSDLE
+    description: >-
+      Self-weight Dead Load for Erection 목록
+    type: array
+    items:
+      type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's confirmed
+      ConstructionStageAnalysisControlDataHyperS case completed
+      PUT/read/per-id DELETE/read on Civil without this top-level field. The
+      public SDK sends no endpoint-specific normalization for this record.
+    provenance: live_corrected
+    provenanceNote: >-
+      The second half of the manual's row 5 - see `bSDLE`. Registered as MD-21.
+  - key: TIME_DEP_CONTROL
+    description: >-
+      Time Dependent Control
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's confirmed
+      ConstructionStageAnalysisControlDataHyperS case completed
+      PUT/read/per-id DELETE/read on Civil without this top-level field. The
+      public SDK sends no endpoint-specific normalization for this record.
+    provenance: manual
+    properties:
+      - key: CREEP_SHRINKAGE
+        description: >-
+          크리프·건조수축 설정
+        type: object
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: OPT_USE
+            description: >-
+              사용 여부
+            type: boolean
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: TYPE
+            description: >-
+              (`"CREEP"`/`"SHRINKAGE"`/`"BOTH"`)
+            type: string
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual types this 'String' and the values live in the
+            # description, so no enum is transcribed. Its own callout warns that
+            # the second value is "SHRINKAGE" here and "SHRINK" on the legacy
+            # /db/STCT - do not carry one spelling to the other endpoint.
+          - key: bOUCC
+            description: >-
+              Only User's Creep Coefficient
+            type: boolean
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: INTERNAL_STEP
+            description: >-
+              내부 스텝 설정
+            type: object
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+            properties:
+              # RESOLVED: the manual states both children inside the Value Type
+              # cell as `{ "OPT_USE": bool, "iITS": int }` rather than as rows;
+              # the section's Request Example sends them nested here.
+              - key: OPT_USE
+                description: >-
+                  사용 여부
+                type: boolean
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: manual
+              - key: iITS
+                description: >-
+                  내부 스텝 수
+                type: integer
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: manual
+          - key: AUTO_TIME_STEP
+            description: >-
+              자동 시간 스텝 설정
+            type: object
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+            properties:
+              # RESOLVED: stated inside the Value Type cell as
+              # `{ "OPT_USE": bool, "iT10","iT100","iT1K","iT5K","iT10K": int }`;
+              # the section's Request Example sends all six nested here.
+              - key: OPT_USE
+                description: >-
+                  사용 여부
+                type: boolean
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: manual
+              - key: iT10
+                description: >-
+                  10일까지의 분할 수
+                type: integer
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: manual
+              - key: iT100
+                description: >-
+                  100일까지의 분할 수
+                type: integer
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: manual
+              - key: iT1K
+                description: >-
+                  1,000일까지의 분할 수
+                type: integer
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: manual
+              - key: iT5K
+                description: >-
+                  5,000일까지의 분할 수
+                type: integer
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: manual
+              - key: iT10K
+                description: >-
+                  10,000일까지의 분할 수
+                type: integer
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: manual
+          - key: bTTLE_CS
+            description: >-
+              Tendon Tension Loss Effect
+            type: boolean
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: bRCE
+            description: >-
+              Re-bar Confinement Effect
+            type: boolean
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+      - key: bVAR
+        description: >-
+          Variation of Comp. Strength
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: bAPPLY_ELA
+        description: >-
+          Apply Time Dep. Elastic Modulus to Post C.S
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: bTTLE_ES
+        description: >-
+          Tendon Tension Loss (Elastic Shortening)
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: iTTLE_ES
+        description: >-
+          Tendon Tension Loss (Elastic Shortening) Type
+        type: integer
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+  - key: CABLE_CONTROL
+    description: >-
+      Cable Control
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's confirmed
+      ConstructionStageAnalysisControlDataHyperS case completed
+      PUT/read/per-id DELETE/read on Civil without this top-level field. The
+      public SDK sends no endpoint-specific normalization for this record.
+    provenance: manual
+    properties:
+      # RESOLVED: merged from the section's "나머지 객체" table, whose parent for
+      # each row is in an `Object` column the extractor does not read. The
+      # section's Request Example nests exactly these two keys here.
+      - key: CPFC
+        description: >-
+          Cable-Pretension Force Type (`"INTERNAL"`/`"EXTERNAL"`)
+        type: string
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual types this 'String' and the values live in the
+        # description, so no enum is transcribed
+      - key: bEXT_REPL
+        description: >-
+          External Force Replace
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+  - key: INITIAL_CONTROL
+    description: >-
+      Initial Force Control
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's confirmed
+      ConstructionStageAnalysisControlDataHyperS case completed
+      PUT/read/per-id DELETE/read on Civil without this top-level field. The
+      public SDK sends no endpoint-specific normalization for this record.
+    provenance: manual
+    properties:
+      # RESOLVED: merged from the "나머지 객체" table; its `bTRUSS` / `bBEAM` row
+      # names two keys in one cell, which the section's Request Example sends as
+      # siblings. See MD-21.
+      - key: bCONV
+        description: >-
+          Convert Final Stage Forces to Initial Forces
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: bTRUSS
+        description: >-
+          Truss
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: bBEAM
+        description: >-
+          Beam
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: bCHANGE_CABLE
+        description: >-
+          Change Cable to Equivalent Truss
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: bAPPLY_IMF
+        description: >-
+          Apply Initial Member Force to C.S
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+  - key: INITIAL_DISP
+    description: >-
+      Initial Displacement Control
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's confirmed
+      ConstructionStageAnalysisControlDataHyperS case completed
+      PUT/read/per-id DELETE/read on Civil without this top-level field. The
+      public SDK sends no endpoint-specific normalization for this record.
+    provenance: manual
+    properties:
+      # RESOLVED: merged from the "나머지 객체" table; `ITD_CONTROL`'s five children
+      # are stated inside its Value Type cell and sent nested by the section's
+      # Request Example.
+      - key: ITD_CONTROL
+        description: >-
+          Initial Tangent Displacement Control
+        type: object
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: OPT_USE
+            description: >-
+              사용 여부
+            type: boolean
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: ITD
+            description: >-
+              적용 대상 구분
+            type: string
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: GROUP
+            description: >-
+              대상 그룹명
+            type: string
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: LFFC_OPT_USE
+            description: >-
+              Lack of Fit Force 사용 여부
+            type: boolean
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: LFFGR
+            description: >-
+              Lack of Fit 그룹명
+            type: string
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+      - key: bCAMBER
+        description: >-
+          Apply Camber Displacement
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+  - key: STRESS_DECREASE
+    description: >-
+      Stress Decrease Control
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's confirmed
+      ConstructionStageAnalysisControlDataHyperS case completed
+      PUT/read/per-id DELETE/read on Civil without this top-level field. The
+      public SDK sends no endpoint-specific normalization for this record.
+    provenance: manual
+    properties:
+      # RESOLVED: merged from the "나머지 객체" table, whose single row names all
+      # three keys - `"OPT_USE"` / `"iSDOPT"` / `"SDCONST"` - against a matching
+      # list of three Value Types. The section's Request Example sends them as
+      # siblings. See MD-21.
+      - key: OPT_USE
+        description: >-
+          Stress Decrease 사용
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: iSDOPT
+        description: >-
+          Stress Decrease 옵션
+        type: integer
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: SDCONST
+        description: >-
+          Stress Decrease 상수
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+  - key: iBSC
+    description: >-
+      Beam Section Property Option (Constant: 0 / Change with Tendon: 1)
+    type: integer
+    requirement: optional
+    documentedDefault: 1
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's confirmed
+      ConstructionStageAnalysisControlDataHyperS case completed
+      PUT/read/per-id DELETE/read on Civil without this top-level field. The
+      public SDK sends no endpoint-specific normalization for this record.
+    provenance: manual
+    # RESOLVED: the manual types this 'Integer' and the values live in the
+    # description, so no enum is transcribed. Its own callout warns that the
+    # default differs from the legacy /db/STCT's, which is 0.
+  - key: FRAME_OUTPUT
+    description: >-
+      Frame Output 설정
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's confirmed
+      ConstructionStageAnalysisControlDataHyperS case completed
+      PUT/read/per-id DELETE/read on Civil without this top-level field. The
+      public SDK sends no endpoint-specific normalization for this record.
+    provenance: manual
+    properties:
+      # RESOLVED: no Parameters table describes this object anywhere in the
+      # section; the three keys below appear only in its Request Example, which
+      # is why each is `unstated` rather than optional. `GET /info/db/STCT-M1`
+      # confirms the parent is an object but says nothing about its members.
+      - key: bCALC_CFF
+        description: >-
+          Request Example only - no Parameters row describes this key
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: bCALC_CSP
+        description: >-
+          Request Example only - no Parameters row describes this key
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: bSELFCONS
+        description: >-
+          Request Example only - no Parameters row describes this key
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+  - key: bSAVE_OCS
+    description: >-
+      Save Output of Current Stage (Beam/Truss)
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's confirmed
+      ConstructionStageAnalysisControlDataHyperS case completed
+      PUT/read/per-id DELETE/read on Civil without this top-level field. The
+      public SDK sends no endpoint-specific normalization for this record.
+    provenance: manual
+  - key: NONL_CONTROL
+    description: >-
+      Nonlinear Analysis Control (`iINC_NLA` ≠ 0일 때)
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's confirmed
+      ConstructionStageAnalysisControlDataHyperS case completed
+      PUT/read/per-id DELETE/read on Civil without this top-level field. The
+      public SDK sends no endpoint-specific normalization for this record.
+    provenance: manual
+    properties:
+      # RESOLVED: merged from the section's NONL_CONTROL table. Two of its four
+      # rows are not readable as written - `ADVANCED`'s entire subtree is prose
+      # inside one Description cell, and one row keys three sibling objects
+      # `"DISP"/"LOAD"/"WORK"`. Both are resolved against the section's Request
+      # Example, which sends every key below. See MD-21.
+      - key: iLSTEP
+        description: >-
+          증분 스텝 수
+        type: integer
+        minimum: 1
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: INTOUT
+        description: >-
+          중간 출력 요청
+        type: string
+        requirement: unstated
+        documentedDefault: LAST
+        documentedOptional: null
+        enum: [EVERY, LAST]
+        safeToOmit: unverified
+        provenance: manual
+      - key: ADVANCED
+        description: >-
+          고급 설정
+        type: object
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: USE_DEF_SETTINGS
+            description: >-
+              기본 설정 사용
+            type: boolean
+            requirement: required
+            documentedDefault: true
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: STIFF_UPD_SCHEME
+            description: >-
+              강성 업데이트 방식 (0=Custom, 1=Full Newton-Raphson,
+              2=Initial Stiffness)
+            type: integer
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            enum: [0, 1, 2]
+            safeToOmit: unverified
+            provenance: manual
+            # NOTE: unlike this endpoint's other integer options the manual
+            # names this one an enum outright, so its values are transcribed.
+            # §16 NLCT-M1 has an ADVANCED object with the same concepts under
+            # different names and string enums - the manual warns against
+            # mixing the two.
+          - key: ITER_BEF_UPDATE
+            description: >-
+              강성 업데이트 전 반복 횟수
+            type: integer
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: TERMINATE_ON_FAIL_CONV
+            description: >-
+              수렴 실패 시 종료
+            type: boolean
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: MAX_ITER_INCREMENT
+            description: >-
+              증분당 최대 반복 횟수
+            type: integer
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: MAX_BISECT_LEVEL
+            description: >-
+              최대 이분법 수준
+            type: integer
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: SMART_BISECT
+            description: >-
+              스마트 이분법
+            type: boolean
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: DIVERG_THRESH
+            description: >-
+              발산 임계값
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: ENABLE_LINE_SEARCH
+            description: >-
+              선형 탐색 사용
+            type: boolean
+            requirement: unstated
+            documentedDefault: true
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: LINE_SEARCH
+            description: >-
+              선형 탐색 설정
+            type: object
+            requirement: conditional
+            condition: ENABLE_LINE_SEARCH=true일 때 필수
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            properties:
+              - key: OPT_USE
+                description: >-
+                  사용 여부
+                type: boolean
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              - key: LINE_SEARCH_TYPE
+                description: >-
+                  선형 탐색 방식
+                type: string
+                requirement: unstated
+                documentedDefault: AUTO
+                documentedOptional: null
+                enum: [AUTO, USER]
+                safeToOmit: unverified
+                provenance: manual
+              - key: MAX_LN_SRCH_ITER
+                description: >-
+                  최대 선형 탐색 반복 횟수
+                type: integer
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: manual
+              - key: LN_SEARCH_TOL
+                description: >-
+                  선형 탐색 허용오차
+                type: number
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: manual
+      - key: DISP
+        description: >-
+          변위 수렴기준
+        type: object
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: OPT_USE
+            description: >-
+              사용 여부
+            type: boolean
+            requirement: required
+            documentedDefault: false
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: VALUE
+            description: >-
+              수렴 허용값
+            type: number
+            exclusiveMinimum: 0
+            requirement: conditional
+            condition: OPT_USE=true일 때 필수
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+      - key: LOAD
+        description: >-
+          하중 수렴기준
+        type: object
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: OPT_USE
+            description: >-
+              사용 여부
+            type: boolean
+            requirement: required
+            documentedDefault: false
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: VALUE
+            description: >-
+              수렴 허용값
+            type: number
+            exclusiveMinimum: 0
+            requirement: conditional
+            condition: OPT_USE=true일 때 필수
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+      - key: WORK
+        description: >-
+          일 수렴기준
+        type: object
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: OPT_USE
+            description: >-
+              사용 여부
+            type: boolean
+            requirement: required
+            documentedDefault: false
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: VALUE
+            description: >-
+              수렴 허용값
+            type: number
+            exclusiveMinimum: 0
+            requirement: conditional
+            condition: OPT_USE=true일 때 필수
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+
+manualDefects:
+  - describes: field_name
+    manualSays: >-
+      Five Key cells in this section name more than one wire property, and one
+      table states its rows' destinations outside the Key column entirely.
+      Row 5 of the top-level table is keyed `"bSDLE"` / `"vSDLE"`; the
+      TIME_DEP_CONTROL table has `"bTTLE_ES"` / `"iTTLE_ES"`; the NONL_CONTROL
+      table keys three sibling objects `"DISP"/"LOAD"/"WORK"` and states
+      `ADVANCED`'s entire subtree as prose inside one Description cell; and the
+      "나머지 객체" table gives each row's parent in an `Object` column, keying
+      one row `"bTRUSS"` / `"bBEAM"` and another
+      `"OPT_USE"` / `"iSDOPT"` / `"SDCONST"`.
+    actual: >-
+      Every one of them is a set of sibling properties, and the section's own
+      Request Body example sends them that way. `GET /info/db/STCT-M1`
+      independently confirms the top-level split: `bSDLE` is a boolean
+      "Secondary Dead Load Effect" and `vSDLE` an array "SDL Load Case Names",
+      two of the sixteen root properties it declares. Same family as MD-07,
+      MD-08, MD-13 and MD-20. Four of the six supplementary tables need no
+      correction and are merged mechanically by
+      `scripts/extract_contracts.py`'s structural-split registry; the two that
+      do are resolved by hand in this contract.
+    evidence: >-
+      docs/manual/12_DB_Analysis_Control.md section 18's Parameters tables
+      against its Request Body (PUT) example, plus GET /info/db/STCT-M1 on
+      Civil NX captured 2026-09-03. Registered as MD-21.
+  - describes: field_name
+    manualSays: >-
+      The top-level Parameters table lists fourteen rows and presents itself as
+      the record's root, and no row names a final-stage name.
+    actual: >-
+      `GET /info/db/STCT-M1` declares sixteen root properties, and the one the
+      table has no counterpart for is `FINAL_STAGE`, a string "Final Stage
+      Name". It is what `bLAST_FINAL: false` - the table's own "Other Stage"
+      option - has to be answered with. Recorded `requirement: unstated`: /info
+      declares no `required` array and the manual makes no claim at all, so
+      "Optional" would be a claim nobody has made. Same shape as MD-10.
+    evidence: >-
+      GET /info/db/STCT-M1 on Civil NX, captured 2026-09-03 during the full
+      /info sweep. Registered as MD-22.
+
+extraction:
+  source: 12_DB_Analysis_Control.md line 2291
+  table: Parameters — 최상위
+  note: >-
+    All six supplementary tables are structural, not conditional: each states a
+    named object or array of the one record, and the section's Request Body
+    example carries all of them in a single payload with no discriminator
+    selecting between them. None is listed under `unmergedTables` because none
+    is unresolved - the field list below is complete.
+  structuralTables:
+    - heading: Parameters — ANAL_TYPE 객체
+      line: 2314
+      paths: [ANAL_TYPE]
+    - heading: Parameters — RESTART_CS_ANAL 객체
+      line: 2327
+      paths: [RESTART_CS_ANAL]
+    - heading: Parameters — ERECTION_LOAD 항목
+      line: 2334
+      paths: [ERECTION_LOAD]
+    - heading: Parameters — TIME_DEP_CONTROL 객체
+      line: 2342
+      paths: [TIME_DEP_CONTROL]
+    - heading: Parameters — NONL_CONTROL 객체 (`iINC_NLA` ≠ 0일 때 사용 — 레거시 `NLCT`/`NLCT-M1`에 대응)
+      line: 2363
+      paths: [NONL_CONTROL]
+      note: >-
+        Hand-resolved rather than registered. `ADVANCED`'s ten children and its
+        nested `LINE_SEARCH` are stated as prose inside one Description cell,
+        and a single row keys three sibling objects `"DISP"/"LOAD"/"WORK"`.
+        Merged as parsed this table would contribute a field named
+        `DISP"/"LOAD"/"WORK` and no `ADVANCED` members at all, so the subtree
+        here follows the section's Request Example instead. See MD-21.
+    - heading: Parameters — 나머지 객체
+      line: 2376
+      paths: [CABLE_CONTROL, INITIAL_CONTROL, INITIAL_DISP, STRESS_DECREASE]
+      note: >-
+        Hand-resolved rather than registered, and the reason is structural: this
+        table's rows have four different destinations, named in an `Object`
+        column the extractor does not read. A `StructuralTableMerge` appends a
+        table's whole field list to each of its targets, so no registry entry
+        could place these twelve rows correctly. Two of them also key more than
+        one property - `"bTRUSS"` / `"bBEAM"` and
+        `"OPT_USE"` / `"iSDOPT"` / `"SDCONST"`. See MD-21.

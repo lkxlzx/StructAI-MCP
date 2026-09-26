@@ -1,0 +1,696 @@
+# /db/REBB
+#
+# Contracted from the server's own schema and from the manual's worked example,
+# which agree with each other and disagree with the manual's parameter table.
+# The vendored chapter is unusually honest about this: its table annotates two
+# of its own keys with the example's different spelling, and a 참고 note under
+# it says to follow the example. So this is not a chapter transcribing its
+# source badly - the source contradicts itself, and the chapter says so.
+#
+# What no source can settle is whether any of it is writable. Every POST tried
+# on 2026-08-27 against a purpose-built target answered `Wrong Field`, including
+# a literally empty item - which is what rules out the payload as the cause.
+# See risk db-rebb-write-path-refuses-every-payload.
+contractVersion: 1
+id: db-rebb
+endpoint: /db/REBB
+name: Modify Beam Rebar
+surface:
+  className: BeamRebar
+  exportName: beamRebar
+  modulePath: [db, design]
+  payloadTypeName: BeamRebarPayload
+  nestedTypes:
+    - {path: ITEMS, name: BeamRebarItem, namespace: DbDesignTypes}
+    - {path: ITEMS.BAR_SECTOR_I, name: BeamRebarSector, namespace: DbDesignTypes}
+    - {path: ITEMS.BAR_SECTOR_I.SHEAR_BAR, name: BeamShearBarSpec, namespace: DbDesignTypes}
+    - {path: ITEMS.BAR_SECTOR_I.vMAIN_BAR_BOT, name: BeamMainBarLayerEntry, namespace: DbDesignTypes}
+    - {path: ITEMS.BAR_SECTOR_I.vMAIN_BAR_TOP, name: BeamMainBarLayerEntry, namespace: DbDesignTypes}
+    - {path: ITEMS.BAR_SECTOR_J, name: BeamRebarSector, namespace: DbDesignTypes}
+    - {path: ITEMS.BAR_SECTOR_J.SHEAR_BAR, name: BeamShearBarSpec, namespace: DbDesignTypes}
+    - {path: ITEMS.BAR_SECTOR_J.vMAIN_BAR_BOT, name: BeamMainBarLayerEntry, namespace: DbDesignTypes}
+    - {path: ITEMS.BAR_SECTOR_J.vMAIN_BAR_TOP, name: BeamMainBarLayerEntry, namespace: DbDesignTypes}
+    - {path: ITEMS.BAR_SECTOR_M, name: BeamRebarSector, namespace: DbDesignTypes}
+    - {path: ITEMS.BAR_SECTOR_M.SHEAR_BAR, name: BeamShearBarSpec, namespace: DbDesignTypes}
+    - {path: ITEMS.BAR_SECTOR_M.vMAIN_BAR_BOT, name: BeamMainBarLayerEntry, namespace: DbDesignTypes}
+    - {path: ITEMS.BAR_SECTOR_M.vMAIN_BAR_TOP, name: BeamMainBarLayerEntry, namespace: DbDesignTypes}
+
+products: [gen]
+productsEvidence: >-
+  Gen only. Both the route and GET /info/db/REBB 404 on Civil NX, confirmed
+  independently twice on 2026-07-29. Recorded in db/base.py's GEN_ONLY.
+
+recordKey:
+  kind: record_id
+  description: The section number, as the manual states.
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 24_DB_Design.md
+    section: "10. `/db/REBB` — Modify Beam Rebar Data (보 철근 데이터 수정)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_gen
+  records:
+    - product: gen
+      ref: db-rebb-write-path-2026-08-27
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/REBB/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Works. It is the only method here anyone has seen succeed, and it is
+      where the field names below were corroborated against real data.
+  - method: POST
+    risk: write
+    mitigation: none
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Not known to work. Every payload tried on 2026-08-27 - this shape, the
+      official article's own embedded schema, and an empty item - answered
+      `Wrong Field` against a real target section built for the test. See risk
+      db-rebb-write-path-refuses-every-payload. The fields below are therefore
+      the read contract, corroborated by /info, and nobody has confirmed them
+      on the write path.
+  - method: PUT
+    risk: write
+    mitigation: none
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: Same standing failure as POST.
+
+fields:
+  - key: ITEMS
+    description: >-
+      Concrete Beam Rebar Items
+    type: array
+    items:
+      type: object
+    minItems: 1
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: live_verified
+    properties:
+      - key: ID
+        description: >-
+          ID
+        type: integer
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+        provenanceNote: >-
+          The manual declares an `ID` too, but only inside its
+          `CREATE_SUB_SECTION == true` table - a feature the server's schema
+          does not have here at all. The name surviving is a coincidence of
+          spelling, so this is recorded from /info rather than carried over.
+      - key: BAR_SECTOR_I
+        description: >-
+          Bar Sector-I
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: live_verified
+        provenanceNote: >-
+          The three sector objects are the part every source agrees on: a beam
+          carries separate rebar at its I end, mid-span and J end.
+        properties:
+          - key: vMAIN_BAR_TOP
+            description: >-
+              Main Bar List : Top (size = 1 or 2)
+            type: array
+            items:
+              type: object
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: live_corrected
+            provenanceNote: >-
+              The manual's parameter table gives a `MAIN_BAR_TOP` object with
+              `LAYER1` and `LAYER2` members. The server takes a list and the
+              position in it is the layer, which is why its description says
+              "size = 1 or 2". The section's own worked example uses this array
+              form, and the chapter's 참고 note says to follow the example.
+            properties:
+              - key: NAME
+                description: >-
+                  Name
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: live_verified
+              - key: NUM
+                description: >-
+                  Number
+                type: integer
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: live_verified
+          - key: vMAIN_BAR_BOT
+            description: >-
+              Main Bar List : Bottom (size = 1 or 2)
+            type: array
+            items:
+              type: object
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: live_corrected
+            provenanceNote: The manual's `MAIN_BAR_BOT`, same layer-as-position change.
+            properties:
+              - key: NAME
+                description: >-
+                  Name
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: live_verified
+              - key: NUM
+                description: >-
+                  Number
+                type: integer
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: live_verified
+          - key: SHEAR_BAR
+            description: >-
+              Shear Bar
+            type: object
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: live_verified
+            properties:
+              - key: NAME
+                description: >-
+                  Name
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: live_verified
+              - key: LEG
+                description: >-
+                  Leg
+                type: integer
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: live_verified
+              - key: DIST
+                description: >-
+                  Dist
+                type: number
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: live_verified
+          - key: SKIN_BAR_NAME
+            description: >-
+              Skin Bar Name
+            type: string
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_corrected
+            provenanceNote: >-
+              The manual nests the two skin-bar values in a `SKIN_BAR` object
+              as `NAME` and `NUM`. The server has them flat, with the parent's
+              name folded into each key.
+          - key: SKIN_BAR_NUM
+            description: >-
+              Skin Bar Number
+            type: integer
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_corrected
+      - key: BAR_SECTOR_M
+        description: >-
+          Bar Sector-M
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: live_verified
+        properties:
+          - key: vMAIN_BAR_TOP
+            description: >-
+              Main Bar List : Top (size = 1 or 2)
+            type: array
+            items:
+              type: object
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: live_corrected
+            properties:
+              - key: NAME
+                description: >-
+                  Name
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: live_verified
+              - key: NUM
+                description: >-
+                  Number
+                type: integer
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: live_verified
+          - key: vMAIN_BAR_BOT
+            description: >-
+              Main Bar List : Bottom (size = 1 or 2)
+            type: array
+            items:
+              type: object
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: live_corrected
+            properties:
+              - key: NAME
+                description: >-
+                  Name
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: live_verified
+              - key: NUM
+                description: >-
+                  Number
+                type: integer
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: live_verified
+          - key: SHEAR_BAR
+            description: >-
+              Shear Bar
+            type: object
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: live_verified
+            properties:
+              - key: NAME
+                description: >-
+                  Name
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: live_verified
+              - key: LEG
+                description: >-
+                  Leg
+                type: integer
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: live_verified
+              - key: DIST
+                description: >-
+                  Dist
+                type: number
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: live_verified
+          - key: SKIN_BAR_NAME
+            description: >-
+              Skin Bar Name
+            type: string
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_corrected
+          - key: SKIN_BAR_NUM
+            description: >-
+              Skin Bar Number
+            type: integer
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_corrected
+      - key: BAR_SECTOR_J
+        description: >-
+          Bar Sector-J
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: live_verified
+        properties:
+          - key: vMAIN_BAR_TOP
+            description: >-
+              Main Bar List : Top (size = 1 or 2)
+            type: array
+            items:
+              type: object
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: live_corrected
+            properties:
+              - key: NAME
+                description: >-
+                  Name
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: live_verified
+              - key: NUM
+                description: >-
+                  Number
+                type: integer
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: live_verified
+          - key: vMAIN_BAR_BOT
+            description: >-
+              Main Bar List : Bottom (size = 1 or 2)
+            type: array
+            items:
+              type: object
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: live_corrected
+            properties:
+              - key: NAME
+                description: >-
+                  Name
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: live_verified
+              - key: NUM
+                description: >-
+                  Number
+                type: integer
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: live_verified
+          - key: SHEAR_BAR
+            description: >-
+              Shear Bar
+            type: object
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: live_verified
+            properties:
+              - key: NAME
+                description: >-
+                  Name
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: live_verified
+              - key: LEG
+                description: >-
+                  Leg
+                type: integer
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: live_verified
+              - key: DIST
+                description: >-
+                  Dist
+                type: number
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: live_verified
+          - key: SKIN_BAR_NAME
+            description: >-
+              Skin Bar Name
+            type: string
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_corrected
+          - key: SKIN_BAR_NUM
+            description: >-
+              Skin Bar Number
+            type: integer
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_corrected
+      - key: MAIN_BAR_DC_TOP
+        description: >-
+          Dc Top : Outest bar center ~ Concrete Face
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: live_verified
+        provenanceNote: >-
+          The manual's parameter table keys this `DT` and then annotates the
+          row with the example's spelling in the same cell. The example and
+          /info both say `MAIN_BAR_DC_TOP`, and the chapter's own 참고 note
+          points at the example, so two of the manual's three statements agree
+          with the server.
+      - key: MAIN_BAR_DC_BOT
+        description: >-
+          Dc Bottom : Outest bar center ~ Concrete Face
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: live_verified
+        provenanceNote: The manual's `DB`, resolved the same way as `DT`.
+      - key: bSAME_SIZE_TOP_BOT
+        description: >-
+          Same Main Bar Size at Top and Bottom
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+        provenanceNote: >-
+          Undocumented. One of three convenience flags the server declares and
+          the chapter does not mention; what each does to the other fields has
+          not been measured, and with the write path down it cannot be.
+      - key: bSAME_SIZE_IMJ
+        description: >-
+          Same Main Bar Size at I,M,J
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: bSAME_SIZE_LAYER
+        description: >-
+          Same Main Bar Size at Each Layer
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+
+manualDefects:
+  - describes: field_name
+    manualSays: >-
+      The sector object holds `MAIN_BAR_TOP` and `MAIN_BAR_BOT` objects, each
+      with `LAYER1` and an optional `LAYER2`, and a `SKIN_BAR` object with
+      `NAME` and `NUM`. Two `ITEMS` rows are keyed `DT` and `DB`, and the entry
+      table opens with `CREATE_SUB_SECTION`, backed by its own conditional
+      table declaring `ID` and `ELEMS`.
+    actual: >-
+      The server declares `vMAIN_BAR_TOP` and `vMAIN_BAR_BOT` arrays of
+      `{NAME, NUM}` - the position in the list is the layer, which is what its
+      "size = 1 or 2" description means - flat `SKIN_BAR_NAME` and
+      `SKIN_BAR_NUM`, and `MAIN_BAR_DC_TOP` / `MAIN_BAR_DC_BOT`.
+      `CREATE_SUB_SECTION` and `ELEMS` are absent entirely, and three
+      undocumented booleans are present: `bSAME_SIZE_TOP_BOT`,
+      `bSAME_SIZE_IMJ`, `bSAME_SIZE_LAYER`.
+    evidence: >-
+      GET /info/db/REBB, pulled 2026-08-27 and captured in
+      schema/info-schemas.json, agreeing with the section's own Request /
+      Response example. docs/live_verification_notes.md, "the sibling manual
+      repo reverted its own REBB/REBC/REBW re-verification, and got 2 of 3
+      wrong".
+    reportedToVendor: B-5
+  - describes: behaviour
+    manualSays: >-
+      The vendored chapter flags the disagreement itself: two parameter rows
+      carry the example's spelling in the same cell, and a 참고 note under the
+      tables says the example form is the safe one to send.
+    actual: >-
+      Recorded because it is the honest half of this endpoint's story. The
+      contradiction is in MIDASIT's own article, whose embedded JSON Schema
+      block - `LAYER1`/`LAYER2`, `DT`/`DB`, `additionalProperties: false` -
+      disagrees with its own Request / Response example in the same document.
+      The vendored chapter transcribes both and tells the reader which to
+      follow, and the one it picks is the one the server's schema agrees with.
+      So this is not a transcription defect: the manual repo has already done
+      what it can, and the correction is MIDASIT's to make.
+    evidence: >-
+      The article's raw HTML fetched directly on 2026-08-27, recorded in
+      docs/live_verification_notes.md.
+    reportedToVendor: B-5
+
+sdkRules:
+  - id: db-rebb-write-path-unconfirmed
+    kind: warn
+    appliesTo: [POST, PUT]
+    reason: >-
+      No write to this endpoint has ever been seen to succeed. On 2026-08-27,
+      against a purpose-built target - a C24 material, an SB section, a beam
+      element using it and a design code - every payload tried answered
+      `Wrong Field`: this shape, the official article's own embedded schema,
+      and a literally empty item. The empty item is the deciding one, because
+      it fails the same way a full one does, so the cause is not the request
+      body. A caller who gets `Wrong Field` here should not spend a session
+      permuting field names, which is exactly what happened before the empty
+      item was tried.
+    riskRef: db-rebb-write-path-refuses-every-payload
+    alternative: >-
+      Read the current rebar with GET, which works. For writing, the ch26
+      sibling /DESIGN/RC/KDS-41-20-2022/REBB is a separate endpoint that was
+      not part of this failure.
+  - id: db-rebb-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-rebb-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog. Beam rebar is design input a caller cannot
+      reconstruct from the model geometry - and with the write path refusing
+      everything, it could not be put back through this endpoint either.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+  - ref: db-rebb-write-path-refuses-every-payload
+
+extraction:
+  source: 24_DB_Design.md line 1
+  table: none
+  note: >-
+    No table. The fields come from GET /info/db/REBB and the section's own
+    Request / Response example, which agree; the section's parameter table
+    disagrees with both and says so itself. The extractor's draft transcribed
+    the table, so it was discarded rather than reviewed.

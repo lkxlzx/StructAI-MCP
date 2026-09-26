@@ -1,0 +1,90 @@
+# /ope/SECTPROP
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: ope-sectprop
+endpoint: /ope/SECTPROP
+name: Section Properties Calculation Results
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 15_OPE.md
+    section: "3. `/ope/SECTPROP` — Section Properties Calculation Results"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-07-30
+    - product: gen
+      ref: db-read-sweep-2026-07-30
+
+operations:
+  - method: GET
+    surface:
+      exportName: getSectionProperties
+      modulePath: [ope]
+      documentation: |-
+        docs/manual/15_OPE.md #3 — /ope/SECTPROP — Section Properties Calculation Results.
+
+        GET-only, no request body; response is keyed by section ID.
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: HEAD
+    description: >-
+      결과 테이블 헤더 (Property, Value, Unit)
+    type: array
+    items:
+      type: string
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: manual
+  - key: DATA
+    description: >-
+      단면 특성값 목록 (Area, Asy, Asz, Ixx, Iyy, Izz, Cyp/Cym/Czp/Czm, Qyb, Qzb,
+      Peri:O/I, Center:y/z, 꼭짓점 좌표 y1~y4/z1~z4 등)
+    type: array
+    items:
+      type: array
+      items:
+        type: string
+      description: >-
+        One positional row, its cells in the order HEAD names them:
+        Property, Value, Unit.
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: manual
+    # RESOLVED: the Parameters table stops at Array [Array], but the inner
+    # element type is stated elsewhere in the same section - the Response JSON
+    # prints all 24 rows, and every cell of every row is quoted, including the
+    # numeric one: ["Area", "0.011980", "m2"]. The value arrives as a string,
+    # not a number, which is the part a caller would otherwise get wrong.
+
+extraction:
+  source: 15_OPE.md line 435
+  table: Parameters
+  missingColumns:
+    - heading: Parameters
+      line: 435
+      columns: [Default]

@@ -1,0 +1,28 @@
+# Source: 19_POST_AnalysisResult_1.md section 11. No SDK source was used.
+contractVersion: 1
+id: post-beam-stress-equivalent
+endpoint: /post/TABLE
+name: Beam Stress Equivalent
+summary: Detailed equivalent stress at beam section positions.
+products: [gen, civil]
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 19_POST_AnalysisResult_1.md
+    section: "11. Beam Stress (Equivalent)"
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getBeamStressDetailTable
+  modulePath: [result1]
+  tableType: BEAMSTRESSDETAIL
+  factory: fixed
+  optionNames: [components, constructionStage, loadCaseNames, nodeElements, stageSteps, styles, tableName, unit]
+  documentation: |-
+    docs/manual/19_POST_AnalysisResult_1.md #11 — Beam Stress (Equivalent).
+tableTypes:
+  - value: BEAMSTRESSDETAIL
+    description: Detailed equivalent beam stress
+    head: [Index, Elem, Load, Part, SectionPosition, Normal, Tau_xy, Tau_xz, Von-Mises, Max-Shear, Princ.(max), Princ.(min)]
+    provenance: manual

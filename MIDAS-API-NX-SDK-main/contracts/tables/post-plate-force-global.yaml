@@ -1,0 +1,24 @@
+# Source: 20_POST_AnalysisResult_2.md section 2. No SDK source was used.
+contractVersion: 1
+id: post-plate-force-global
+endpoint: /post/TABLE
+name: Plate Force Global
+summary: Global-coordinate plate force components at each node.
+products: [gen, civil]
+source:
+  manual: {status: documented, repo: Dennis5882/MIDAS-API, chapterFile: 20_POST_AnalysisResult_2.md, section: "2. Plate Force (Global)"}
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getPlateForceGlobalTable
+  modulePath: [result1]
+  tableType: PLATEFORCEG
+  factory: fixed
+  optionNames: [components, constructionStage, loadCaseNames, nodeElements, stageSteps, styles, tableName, unit]
+  documentation: |-
+    docs/manual/20_POST_AnalysisResult_2.md #2 — Plate Force (Global).
+tableTypes:
+  - value: PLATEFORCEG
+    description: Global plate force
+    head: [Index, Elem, Load, Node, FX, FY, FZ, MX, MY, MZ]
+    provenance: manual

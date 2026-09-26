@@ -1,0 +1,39 @@
+# Source: 18_POST_PreProcess.md section 3. Manual transcription only.
+contractVersion: 1
+id: post-mass-summary
+endpoint: /post/TABLE
+name: Mass Summary Table
+summary: Nodal, load, and structural mass totals in a selected direction.
+products: [gen, civil]
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 18_POST_PreProcess.md
+    section: "3. Mass Summary Table"
+verification:
+  status: manual_only
+risk: read_only
+surface:
+  exportName: getMassSummaryTable
+  modulePath: [preProcess]
+  tableType: MASS_SUMMARY_
+  factory: directional
+  optionNames: [tableName]
+  documentation: |-
+    docs/manual/18_POST_PreProcess.md #3 — Mass Summary Table.
+
+    direction: "X"/"Y"/"Z".
+tableTypes:
+  - value: MASS_SUMMARY_X
+    description: X direction
+    head: [Index, Node, NodalMass, LoadToMass, StructureMass, Sum]
+    provenance: manual
+  - value: MASS_SUMMARY_Y
+    description: Y direction
+    head: [Index, Node, NodalMass, LoadToMass, StructureMass, Sum]
+    provenance: manual
+  - value: MASS_SUMMARY_Z
+    description: Z direction
+    head: [Index, Node, NodalMass, LoadToMass, StructureMass, Sum]
+    provenance: manual

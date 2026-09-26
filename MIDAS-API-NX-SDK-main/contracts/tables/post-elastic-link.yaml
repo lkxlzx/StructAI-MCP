@@ -1,0 +1,30 @@
+# Source: 20_POST_AnalysisResult_2.md section 26. No SDK source was used.
+contractVersion: 1
+id: post-elastic-link
+endpoint: /post/TABLE
+name: Elastic Link
+summary: Elastic-link forces, including the maximum-value form.
+products: [gen, civil]
+source: {manual: {status: documented, repo: Dennis5882/MIDAS-API, chapterFile: 20_POST_AnalysisResult_2.md, section: "26. Elastic Link"}}
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getElasticLinkTable
+  modulePath: [result1]
+  tableType: ELASTICLINK
+  factory: variable
+  optionNames: [components, constructionStage, loadCaseNames, nodeElements, stageSteps, styles, tableName, unit]
+  documentation: |-
+    docs/manual/20_POST_AnalysisResult_2.md #26 — Elastic Link.
+
+    table_type: TABLE_TYPE_ELASTIC_LINK (default) or TABLE_TYPE_ELASTIC_LINK_BY_MAX
+    (max-value basis).
+tableTypes:
+  - value: ELASTICLINK
+    description: Elastic-link force
+    head: [Index, No., Load, Node, Axial, Shear-y, Shear-z, Torsion, Moment-y, Moment-z]
+    provenance: manual
+  - value: ELASTICLINKVBM
+    description: Elastic-link force by maximum value
+    head: [Index, No., Load, Node, Component, Axial, Shear-y, Shear-z, Torsion, Moment-y, Moment-z]
+    provenance: manual

@@ -1,0 +1,296 @@
+# /db/EPST
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-epst
+endpoint: /db/EPST
+name: Static Earth Pressure
+surface:
+  className: StaticEarthPressure
+  exportName: staticEarthPressure
+  modulePath: [db, staticLoads]
+  payloadTypeName: StaticEarthPressurePayload
+  nestedTypes:
+    - {path: PRES_PROFILE_ITEMS, name: StaticEarthPressureProfileItem, namespace: DbStaticLoadsTypes}
+
+products: [gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 06_DB_Static_Loads.md
+    section: 17. /db/EPST — Static Earth Pressure
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_gen
+  records:
+    - product: gen
+      ref: db-read-sweep-2026-08-16
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/EPST/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: LOADCASE
+    description: >-
+      Load Case Name
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: DIR
+    description: >-
+      Load Direction ("XY" / "NORMAL")
+    type: string
+    requirement: optional
+    documentedDefault: XY
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: ANGLE
+    description: >-
+      Static Earth Pressure Angle
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: IN_PT
+    description: >-
+      Inner Point
+    type: array
+    items:
+      type: number
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: SF
+    description: >-
+      Scale Factor
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: EP_TYPE
+    description: >-
+      EP Type ("AT_REST" / "ACTIVE")
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: SURCHARGE_LOAD
+    description: >-
+      Surcharge Load
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: WATER_LEVEL
+    description: >-
+      Water Level
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: SOIL_PROP
+    description: >-
+      Soil Properties Name
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: SEL_TYPE
+    description: >-
+      Selection Type ("GRUP" / "ELEMENT")
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: ELEM_TYPE
+    description: >-
+      Element Type ("FRAME" / "PLANAR")
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: NODE_LIST
+    description: >-
+      Node List
+    type: array
+    items:
+      type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: ELEM_LIST
+    description: >-
+      Element List
+    type: array
+    items:
+      type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: LOADING_AREA_GROUP
+    description: >-
+      Loading Area Group Name
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: PRES_PROFILE_ITEMS
+    description: >-
+      Pressure Profile items
+    type: array
+    items:
+      type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: LEVEL
+        description: >-
+          Level of pressure profile point
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'PRES_PROFILE_ITEMS' by numbering it
+        # '(1)', not by naming a path
+      - key: SOIL_PRES
+        description: >-
+          Soil pressure at level
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'PRES_PROFILE_ITEMS' by numbering it
+        # '(2)', not by naming a path
+      - key: ADD_PRES
+        description: >-
+          Additional pressure at level
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'PRES_PROFILE_ITEMS' by numbering it
+        # '(3)', not by naming a path
+
+sdkRules:
+  - id: db-epst-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-epst-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 06_DB_Static_Loads.md line 1494
+  table: 파라미터

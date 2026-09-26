@@ -1,0 +1,193 @@
+# /db/STYP-M1
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-styp-m1
+endpoint: /db/STYP-M1
+name: Structure Type (Hyper-S)
+surface:
+  className: StructureTypeHyperS
+  exportName: structureTypeHyperS
+  modulePath: [db, project]
+  payloadTypeName: StructureTypeHyperSPayload
+  nestedTypes:
+    - {path: MASS_CONTROL, name: MassControlHyperS, namespace: DbProjectTypes}
+
+products: [civil]
+
+source:
+  manual:
+    status: contradicted
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 02_DB_Project_Structure.md
+    section: "4. `/db/STYP-M1` — Structure Type (Hyper-S)"
+    justification: >-
+      The manual lists DELETE, but a Civil NX live check exercised every
+      documented DELETE shape and the server refused each one without changing
+      the singleton structure-type record. The contract therefore records only
+      the served GET and PUT methods; the manual claim remains under
+      manualDefects.
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_civil
+  records:
+    - product: civil
+      ref: db-write-sweep-2026-08-16
+
+operations:
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: STYPE
+    description: >-
+      Structure Type · 3-D: 3D / X-Z Plane: XZ / Y-Z Plane: YZ / X-Y Plane: XY /
+      Constraint RZ: RZ
+    type: string
+    requirement: optional
+    documentedDefault: 3D
+    documentedOptional: true
+    enum: [3D, XZ, YZ, XY, RZ]
+    safeToOmit: unverified
+    provenance: manual
+  - key: MASS_CONTROL
+    description: >-
+      Mass Control Parameter
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: MASS_TYPE
+        description: >-
+          Mass Type · Lumped Mass: LUMPED / Consistent Mass: CONSISTENT
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        enum: [LUMPED, CONSISTENT]
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'MASS_CONTROL' by numbering it
+        # '2-(1)', not by naming a path
+      - key: MASS_POS
+        description: >-
+          Mass Position (MASS_TYPE="LUMPED"일 때) · Centroid: CENTROID / Offset:
+          OFFSET
+        type: string
+        requirement: conditional
+        condition: "MASS_TYPE=\"LUMPED\""
+        appliesWhen:
+          - path: MASS_CONTROL.MASS_TYPE
+            equals: LUMPED
+        documentedDefault: null
+        documentedOptional: false
+        enum: [CENTROID, OFFSET]
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'MASS_CONTROL' by numbering it
+        # '2-(2)', not by naming a path
+      - key: SELFWEIGHT
+        description: >-
+          Convert Self-weight into Masses
+        type: boolean
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'MASS_CONTROL' by numbering it
+        # '2-(3)', not by naming a path
+      - key: MASS_AXIS
+        description: >-
+          Mass Axis (SELFWEIGHT=true일 때) · X,Y,Z: XYZ / X,Y: XY / Z: Z
+          (MASS_TYPE="CONSISTENT"면 XYZ만 허용)
+        type: string
+        requirement: conditional
+        condition: SELFWEIGHT=true
+        appliesWhen:
+          - path: MASS_CONTROL.SELFWEIGHT
+            equals: true
+        documentedDefault: null
+        documentedOptional: false
+        enum: [XYZ, XY, Z]
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'MASS_CONTROL' by numbering it
+        # '2-(4)', not by naming a path
+  - key: GRAV
+    description: >-
+      Gravity Acceleration
+    type: number
+    requirement: optional
+    documentedDefault: null
+    documentedDefaultNote: System
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: TEMP
+    description: >-
+      Initial Temperature
+    type: number
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: ALIGNBEAM
+    description: >-
+      Align Top of Beam Section with Center Line (X-Y Plane) for Display
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: ALIGNSLAB
+    description: >-
+      Align Top of Slab(Plate) Section with Center Line (X-Y Plane) for Display
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+
+manualDefects:
+  - describes: method
+    manualSays: >-
+      The official article and the manual chapter list GET, PUT, DELETE for
+      /db/STYP-M1.
+    actual: >-
+      Civil NX refuses per-id, Assign-body, and bodyless DELETE requests with
+      {"message": "error status"} and leaves the singleton record unchanged.
+      Only GET and PUT are served.
+    evidence: >-
+      docs/live_verification_notes.md, "`/db/STYP-M1` does not serve DELETE,
+      though the article says it does" (Civil NX 2026 v2.2, 2026-08-30).
+
+extraction:
+  source: 02_DB_Project_Structure.md line 525
+  table: Specifications

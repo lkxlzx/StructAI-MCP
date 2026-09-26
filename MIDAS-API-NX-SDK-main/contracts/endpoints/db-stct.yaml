@@ -1,0 +1,828 @@
+# /db/STCT
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-stct
+endpoint: /db/STCT
+name: Construction Stage Analysis Control Data
+surface:
+  className: ConstructionStageAnalysisControlData
+  exportName: constructionStageAnalysisControlData
+  modulePath: [db, analysisControl]
+  payloadTypeName: ConstructionStageAnalysisControlDataPayload
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 12_DB_Analysis_Control.md
+    section: 17. /db/STCT — Construction Stage Analysis Control Data
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-08-17
+    - product: gen
+      ref: db-read-sweep-2026-08-17
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/STCT/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: bLAST_FINAL
+    description: >-
+      Final Stage Option (Last: true / Other: false)
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: FINAL_STAGE
+    description: >-
+      Construction Stage Name (when bLAST_FINAL false)
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: iINC_NLA
+    description: >-
+      Analysis Type (Linear: 0 / Nonlinear : 1 / Material Nonlinear : 2)
+    type: integer
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: iNLA_TYPE
+    description: >-
+      Stage Option (Independent: 0 / Accumulative: 1)
+    type: integer
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: vEREC
+    description: >-
+      Erection Load for Construction Stage
+    type: array
+    items:
+      type: object
+    requirement: optional
+    documentedDefault: null
+    documentedDefaultNote: Empty
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: LTYPECC
+        description: >-
+          Erection Load Case Name
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'vEREC' by numbering it '(1)', not
+        # by naming a path
+      - key: EREC
+        description: >-
+          Load Type for C.S
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'vEREC' by numbering it '(2)', not
+        # by naming a path
+      - key: vLCNAME
+        description: >-
+          Load Case Name List
+        type: array
+        items:
+          type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'vEREC' by numbering it '(3)', not
+        # by naming a path
+  - key: bSDLE
+    description: >-
+      Secondary Dead Load Effect for Grid Model (MIDAS Civil NX JP 버전 전용)
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: vSDLE
+    description: >-
+      Load Case Name List (Grid Analysis Load, JP 버전 전용)
+    type: array
+    items:
+      type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: live_corrected
+    # Row 9 marks this Required with no condition, directly under row 8's
+    # bSDLE. Both products accept a record without either: Gen NX a POST and
+    # Civil NX a PUT on the stage-created record (2026-08-17, re-tested
+    # 2026-09-01). Both rows are for the Civil NX JP edition, which no session
+    # here has run, so what bSDLE=true needs is not measured; the same
+    # chapter's /db/STCT-M1 section marks the pair Optional.
+  - key: CPFC
+    description: >-
+      Cable-Pretension Force Type (Internal: "INTERNAL" / External: "EXTERNAL")
+    type: string
+    requirement: optional
+    documentedDefault: INTERNAL
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bEXT_REPL
+    description: >-
+      External Force Type (대체 여부)
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bCONV
+    description: >-
+      Convert Final Stage Member Forces to Initial Forces for Post C.S
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bTRUSS
+    description: >-
+      Truss (when bCONV true)
+    type: boolean
+    requirement: optional
+    condition: when bCONV true
+    appliesWhen:
+      - path: bCONV
+        equals: true
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bBEAM
+    description: >-
+      Beam (when bCONV true)
+    type: boolean
+    requirement: optional
+    condition: when bCONV true
+    appliesWhen:
+      - path: bCONV
+        equals: true
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bCHANGE_CABLE
+    description: >-
+      Change Cable Element to Equivalent Truss for Post C.S.
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bAPPLY_IMF
+    description: >-
+      Apply Initial Member Force to C.S
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bITD
+    description: >-
+      Initial Tangent Displacement 사용
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: ITD
+    description: >-
+      Initial Tangent Displacement Type (All: "ALL" / Structure Group: "GROUP")
+    type: string
+    requirement: optional
+    documentedDefault: ALL
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: GROUP
+    description: >-
+      Structure Group Name (ITD="GROUP"일 때)
+    type: string
+    requirement: conditional
+    condition: ITD="GROUP"일 때
+    appliesWhen:
+      - path: ITD
+        equals: GROUP
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: bLFFC
+    description: >-
+      Lack-of-Fit Force Control 사용
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: LFFGR
+    description: >-
+      Lack-of-Fit Group Name (bLFFC=true일 때)
+    type: string
+    requirement: conditional
+    condition: bLFFC=true일 때
+    appliesWhen:
+      - path: bLFFC
+        equals: true
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: bCAMBER
+    description: >-
+      Apply Camber Displacement to C.S.
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bCALC_CFF
+    description: >-
+      Calculate Concurrent Forces of Frame
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bCALC_CSP
+    description: >-
+      Calculate Output of Each Part of Composite Section
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bSELFCONS
+    description: >-
+      Self-constrained Forces & Stresses
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bSAVE_OCS
+    description: >-
+      Save Output of Construction Stage
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bSD
+    description: >-
+      Stress Decrease 사용 / 옵션 / 상수
+    type: boolean
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: iSDOPT
+    description: >-
+      Stress Decrease 사용 / 옵션 / 상수
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: SDCONST
+    description: >-
+      Stress Decrease 사용 / 옵션 / 상수
+    type: number
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: iBSC
+    description: >-
+      Beam Section Property Option (Constant: 0 / Change with Tendon: 1)
+    type: integer
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bINC_PDL
+    description: >-
+      Include P-Delta Effect
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: iITER
+    description: >-
+      Number of Iterations
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: TOL
+    description: >-
+      Convergence Tolerance
+    type: number
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: iLSTEP
+    description: Number of Load Steps
+    type: integer
+    requirement: optional
+    condition: Parameters — Nonlinear Analysis (`iINC_NLA` = 1 또는 2)
+    appliesWhen: [{path: iINC_NLA, in: [1, 2]}]
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: iMAXITER
+    description: Maximum Number of Iterations
+    type: integer
+    requirement: optional
+    condition: Parameters — Nonlinear Analysis (`iINC_NLA` = 1 또는 2)
+    appliesWhen: [{path: iINC_NLA, in: [1, 2]}]
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: CF
+    description: Convergence Failure 사용
+    type: boolean
+    requirement: optional
+    condition: Parameters — Nonlinear Analysis (`iINC_NLA` = 1 또는 2)
+    appliesWhen: [{path: iINC_NLA, in: [1, 2]}]
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: BSSTEP
+    description: Max Bi-Section Level for a Load Step
+    type: integer
+    requirement: optional
+    condition: Parameters — Nonlinear Analysis (`iINC_NLA` = 1 또는 2)
+    appliesWhen: [{path: iINC_NLA, in: [1, 2]}]
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: ADSTEP
+    description: Max Allowable Diverged Steps
+    type: integer
+    requirement: optional
+    condition: Parameters — Nonlinear Analysis (`iINC_NLA` = 1 또는 2)
+    appliesWhen: [{path: iINC_NLA, in: [1, 2]}]
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bENEG
+    description: Energy Norm 사용 / 값
+    type: boolean
+    requirement: optional
+    condition: Parameters — Nonlinear Analysis (`iINC_NLA` = 1 또는 2)
+    appliesWhen: [{path: iINC_NLA, in: [1, 2]}]
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: EV
+    description: Energy Norm 사용 / 값
+    type: number
+    requirement: optional
+    condition: Parameters — Nonlinear Analysis (`iINC_NLA` = 1 또는 2)
+    appliesWhen: [{path: iINC_NLA, in: [1, 2]}]
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bDISP
+    description: Displacement Norm 사용 / 값
+    type: boolean
+    requirement: optional
+    condition: Parameters — Nonlinear Analysis (`iINC_NLA` = 1 또는 2)
+    appliesWhen: [{path: iINC_NLA, in: [1, 2]}]
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: DV
+    description: Displacement Norm 사용 / 값
+    type: number
+    requirement: optional
+    condition: Parameters — Nonlinear Analysis (`iINC_NLA` = 1 또는 2)
+    appliesWhen: [{path: iINC_NLA, in: [1, 2]}]
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bFORC
+    description: Force Norm 사용 / 값
+    type: boolean
+    requirement: optional
+    condition: Parameters — Nonlinear Analysis (`iINC_NLA` = 1 또는 2)
+    appliesWhen: [{path: iINC_NLA, in: [1, 2]}]
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: FV
+    description: Force Norm 사용 / 값
+    type: number
+    requirement: optional
+    condition: Parameters — Nonlinear Analysis (`iINC_NLA` = 1 또는 2)
+    appliesWhen: [{path: iINC_NLA, in: [1, 2]}]
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bIEMF
+    description: Include Equilibrium Element Nodal Forces
+    type: boolean
+    requirement: optional
+    condition: Parameters — Nonlinear Analysis (`iINC_NLA` = 1 또는 2)
+    appliesWhen: [{path: iINC_NLA, in: [1, 2]}]
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bINC_TDE
+    description: Include Time Dependent Effect
+    type: boolean
+    requirement: optional
+    condition: Parameters — Time Dependent Effect (누가 단계, `iNLA_TYPE` = 1)
+    appliesWhen: [{path: iNLA_TYPE, equals: 1}]
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bCNS
+    description: Creep & Shrinkage 사용
+    type: boolean
+    requirement: optional
+    condition: Parameters — Time Dependent Effect (누가 단계, `iNLA_TYPE` = 1)
+    appliesWhen: [{path: iNLA_TYPE, equals: 1}]
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: TYPE
+    description: Creep & Shrinkage Type ("CREEP"/"SHRINK"/"BOTH")
+    type: string
+    requirement: optional
+    condition: Parameters — Time Dependent Effect (누가 단계, `iNLA_TYPE` = 1)
+    appliesWhen: [{path: iNLA_TYPE, equals: 1}]
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: iITER_CR
+    description: Number of Creep Iterations
+    type: integer
+    requirement: optional
+    condition: Parameters — Time Dependent Effect (누가 단계, `iNLA_TYPE` = 1)
+    appliesWhen: [{path: iNLA_TYPE, equals: 1}]
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: TOL_CR
+    description: Creep Tolerance
+    type: number
+    requirement: optional
+    condition: Parameters — Time Dependent Effect (누가 단계, `iNLA_TYPE` = 1)
+    appliesWhen: [{path: iNLA_TYPE, equals: 1}]
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bOUCC
+    description: Only User's Creep Coefficient
+    type: boolean
+    requirement: optional
+    condition: Parameters — Time Dependent Effect (누가 단계, `iNLA_TYPE` = 1)
+    appliesWhen: [{path: iNLA_TYPE, equals: 1}]
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bITS
+    description: Internal Time Step for Creep 사용
+    type: boolean
+    requirement: optional
+    condition: Parameters — Time Dependent Effect (누가 단계, `iNLA_TYPE` = 1)
+    appliesWhen: [{path: iNLA_TYPE, equals: 1}]
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: iITS
+    description: Internal Time Step for Creep 값
+    type: integer
+    requirement: required
+    condition: Parameters — Time Dependent Effect (누가 단계, `iNLA_TYPE` = 1)
+    appliesWhen: [{path: iNLA_TYPE, equals: 1}]
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: bATS
+    description: Auto Time Step Generation for Large Time Gap
+    type: boolean
+    requirement: optional
+    condition: Parameters — Time Dependent Effect (누가 단계, `iNLA_TYPE` = 1)
+    appliesWhen: [{path: iNLA_TYPE, equals: 1}]
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: iT10
+    description: Time Gap Steps (T>10 / >100 / >1000 / >5000 / >10000)
+    type: integer
+    requirement: optional
+    condition: Parameters — Time Dependent Effect (누가 단계, `iNLA_TYPE` = 1)
+    appliesWhen: [{path: iNLA_TYPE, equals: 1}]
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: iT100
+    description: Time Gap Steps (T>10 / >100 / >1000 / >5000 / >10000)
+    type: integer
+    requirement: optional
+    condition: Parameters — Time Dependent Effect (누가 단계, `iNLA_TYPE` = 1)
+    appliesWhen: [{path: iNLA_TYPE, equals: 1}]
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: iT1K
+    description: Time Gap Steps (T>10 / >100 / >1000 / >5000 / >10000)
+    type: integer
+    requirement: optional
+    condition: Parameters — Time Dependent Effect (누가 단계, `iNLA_TYPE` = 1)
+    appliesWhen: [{path: iNLA_TYPE, equals: 1}]
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: iT5K
+    description: Time Gap Steps (T>10 / >100 / >1000 / >5000 / >10000)
+    type: integer
+    requirement: optional
+    condition: Parameters — Time Dependent Effect (누가 단계, `iNLA_TYPE` = 1)
+    appliesWhen: [{path: iNLA_TYPE, equals: 1}]
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: iT10K
+    description: Time Gap Steps (T>10 / >100 / >1000 / >5000 / >10000)
+    type: integer
+    requirement: optional
+    condition: Parameters — Time Dependent Effect (누가 단계, `iNLA_TYPE` = 1)
+    appliesWhen: [{path: iNLA_TYPE, equals: 1}]
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bTTLE_CS
+    description: Tendon Tension Loss Effect (Creep&Shrinkage)
+    type: boolean
+    requirement: optional
+    condition: Parameters — Time Dependent Effect (누가 단계, `iNLA_TYPE` = 1)
+    appliesWhen: [{path: iNLA_TYPE, equals: 1}]
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bRCE
+    description: Consider Re-bar Confinement Effect
+    type: boolean
+    requirement: optional
+    condition: Parameters — Time Dependent Effect (누가 단계, `iNLA_TYPE` = 1)
+    appliesWhen: [{path: iNLA_TYPE, equals: 1}]
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bVAR
+    description: Variation of Comp. Strength
+    type: boolean
+    requirement: optional
+    condition: Parameters — Time Dependent Effect (누가 단계, `iNLA_TYPE` = 1)
+    appliesWhen: [{path: iNLA_TYPE, equals: 1}]
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bTTLE_ES
+    description: Tendon Tension Loss Effect (Elastic Shortening) 사용 / 타입
+    type: boolean
+    requirement: optional
+    condition: Parameters — Time Dependent Effect (누가 단계, `iNLA_TYPE` = 1)
+    appliesWhen: [{path: iNLA_TYPE, equals: 1}]
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: iTTLE_ES
+    description: Tendon Tension Loss Effect (Elastic Shortening) 사용 / 타입
+    type: integer
+    requirement: optional
+    condition: Parameters — Time Dependent Effect (누가 단계, `iNLA_TYPE` = 1)
+    appliesWhen: [{path: iNLA_TYPE, equals: 1}]
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bAPPLY_ELA
+    description: Apply Time Dependent Elastic Modulus to Post C.S
+    type: boolean
+    requirement: optional
+    condition: Parameters — Time Dependent Effect (누가 단계, `iNLA_TYPE` = 1)
+    appliesWhen: [{path: iNLA_TYPE, equals: 1}]
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+
+manualDefects:
+  - describes: requiredness
+    manualSays: >-
+      The Erection Load table marks vSDLE (row 9, Load Case Name List for Grid
+      Analysis Load, JP edition only) Required, with no condition, directly
+      under row 8's bSDLE (default false).
+    actual: >-
+      A record without bSDLE and vSDLE is accepted on both products - a POST
+      on Gen NX, a PUT on the stage-created record on Civil NX - so vSDLE is
+      not required while bSDLE is at its default. What bSDLE=true needs on the
+      JP edition is unmeasured.
+    evidence: >-
+      docs/live_verification_notes.md, 2026-08-17 batch 11a and its
+      2026-09-01 re-test: scripts/live_crud_check.py's
+      ConstructionStageAnalysisControlData case, whose payload omits both.
+
+sdkRules:
+  - id: db-stct-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-stct-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 12_DB_Analysis_Control.md line 2035
+  table: Parameters — 공통 / 핵심
+  structuralTables:
+    - heading: "Parameters — Erection Load (C.S. 출력용 사하중 구분)"
+      line: 2046
+      paths: [<root>]
+      note: >-
+        vEREC's numbered rows are its item members, and bSDLE/vSDLE sit
+        beside it. GET /info/db/STCT declares all three at record root on
+        both products; "JP 버전 전용" names a product edition, not a payload
+        branch.
+    - heading: "Parameters — Cable-Pretension / Initial Force Control"
+      line: 2066
+      paths: [<root>]
+      note: >-
+        The heading groups coexisting controls rather than a discriminated
+        payload. The manual's rows and GET /info/db/STCT agree that all seven
+        members live at record root.
+    - heading: "Parameters — Initial Displacement / Camber / 기타"
+      line: 2078
+      paths: [<root>]
+      note: >-
+        The heading groups coexisting controls rather than a discriminated
+        payload. The manual's rows and GET /info/db/STCT agree that all fourteen
+        members live at record root; the two field-level conditions remain on
+        GROUP and LFFGR.
+    - heading: "Parameters — Linear & Independent Stage"
+      line: 2101
+      paths: [<root>]
+      note: >-
+        The heading does not state a complete wire discriminator, so no branch
+        is invented. The manual's three rows and GET /info/db/STCT agree that
+        the members live at record root.

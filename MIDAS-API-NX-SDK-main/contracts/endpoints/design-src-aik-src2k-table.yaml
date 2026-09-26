@@ -1,0 +1,234 @@
+# /DESIGN/SRC/AIK-SRC2K/TABLE
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: design-src-aik-src2k-table
+endpoint: /DESIGN/SRC/AIK-SRC2K/TABLE
+name: SRC Beam Design Forces / SRC Column Design Forces
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 27_Design_SRC_AIKSRC2K.md
+    section: "22. `DESIGN/SRC/AIK-SRC2K/TABLE` — SRC Beam Design Forces (SRC 보 설계력) / 23. `DESIGN/SRC/AIK-SRC2K/TABLE` — SRC Column Design Forces (SRC 기둥 설계력)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-08-11
+    - product: gen
+      ref: db-read-sweep-2026-08-11
+
+operations:
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: TABLE_NAME
+    description: >-
+      결과표 제목
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: TABLE_TYPE
+    description: >-
+      결과표 타입 — 가능값: SRCBEAMDESIGNFORCES / 결과표 타입 — 가능값: SRCCOLUMNDESIGNFORCES
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: EXPORT_PATH
+    description: >-
+      결과표 저장 경로
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: UNIT
+    description: >-
+      결과 단위 설정
+    type: object
+    requirement: optional
+    documentedDefault: System
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: FORCE
+        description: >-
+          힘 단위
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'UNIT' with a tree marker rather
+        # than a path
+      - key: DIST
+        description: >-
+          길이/거리 단위
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'UNIT' with a tree marker rather
+        # than a path
+      - key: HEAT
+        description: >-
+          열 단위
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'UNIT' with a tree marker rather
+        # than a path
+      - key: TEMP
+        description: >-
+          온도 단위
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'UNIT' with a tree marker rather
+        # than a path
+  - key: STYLES
+    description: >-
+      결과 숫자 형식
+    type: object
+    requirement: optional
+    documentedDefault: System
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: FORMAT
+        description: >-
+          숫자 형식 — 가능값: Default, Fixed, Scientific, General
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'STYLES' with a tree marker rather
+        # than a path
+      - key: PLACE
+        description: >-
+          소수 자릿수
+        type: integer
+        minimum: 0
+        maximum: 15
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'STYLES' with a tree marker rather
+        # than a path
+  - key: COMPONENTS
+    description: >-
+      결과표 구성 항목
+    type: array
+    items:
+      type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: NODE_ELEMS
+    description: >-
+      절점/요소 번호 입력
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: KEYS
+        description: >-
+          개별 ID 지정
+        type: array
+        items:
+          type: integer
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'NODE_ELEMS' with a tree marker
+        # rather than a path
+      - key: TO
+        description: >-
+          ID 범위 지정 (예: '1to160')
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'NODE_ELEMS' with a tree marker
+        # rather than a path
+      - key: STRUCTURE_GROUP_NAME
+        description: >-
+          구조 그룹 이름 지정
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'NODE_ELEMS' with a tree marker
+        # rather than a path
+  - key: PARTS
+    description: >-
+      요소 파트 번호
+    type: array
+    items:
+      type: string
+    requirement: optional
+    documentedDefault: ["All"]
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+
+extraction:
+  source: 27_Design_SRC_AIKSRC2K.md line 4594
+  table: 파라미터
+  mergedSections:
+    - heading: "22. `DESIGN/SRC/AIK-SRC2K/TABLE` — SRC Beam Design Forces (SRC 보 설계력)"
+      line: 4594
+    - heading: "23. `DESIGN/SRC/AIK-SRC2K/TABLE` — SRC Column Design Forces (SRC 기둥 설계력)"
+      line: 4931

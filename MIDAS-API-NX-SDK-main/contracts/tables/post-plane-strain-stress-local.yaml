@@ -1,0 +1,32 @@
+contractVersion: 1
+id: post-plane-strain-stress-local
+endpoint: /post/TABLE
+name: Plane Strain Stress Local
+summary: Local plane-strain stress values.
+products: [gen, civil]
+source: {manual: {status: documented, repo: Dennis5882/MIDAS-API, chapterFile: 20_POST_AnalysisResult_2.md, section: "14. Plane Strain Stress (Local)"}}
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getPlaneStrainStressLocalTable
+  modulePath: [result1]
+  tableType: PLANESTRAINSL
+  factory: fixed
+  optionNames: [components, constructionStage, loadCaseNames, nodeElements, stageSteps, styles, tableName, unit]
+  documentation: |-
+    docs/manual/20_POST_AnalysisResult_2.md #14 — Plane Strain Stress (Local).
+  nestedTypes:
+    - {path: NODE_FLAG, name: NodeFlag, namespace: PostBaseTypes}
+tableTypes: [{value: PLANESTRAINSL, description: Local plane-strain stress, head: [Index, Elem, Load, Node, Sig-xx, Sig-yy, Sig-zz, Sig-xy, Sig-P1, Sig-P2, Sig-P3, Max-Shear, Sig-EFF, Sig-OCT], provenance: manual}]
+requestFields:
+  # 20_POST_AnalysisResult_2.md, common section: NODE_FLAG applies to sections
+  # 3, 4, 5, 6, 7, 10, 11, 14, 15, 18, 19, 22, 23, 24 and 25, this one among them.
+  additional:
+    - key: NODE_FLAG
+      description: 요소 중심(Cent)/절점(Node)별 출력 여부
+      type: object
+      requirement: optional
+      provenance: manual
+      properties:
+        - {key: CENTER, description: 요소 중심(Cent) 출력 여부, type: boolean, requirement: optional, documentedDefault: false, provenance: manual}
+        - {key: NODES, description: 절점(Node)별 출력 여부, type: boolean, requirement: optional, documentedDefault: false, provenance: manual}

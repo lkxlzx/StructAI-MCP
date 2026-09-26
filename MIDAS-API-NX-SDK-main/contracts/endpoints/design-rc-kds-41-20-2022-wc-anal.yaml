@@ -1,0 +1,134 @@
+# /DESIGN/RC/KDS-41-20-2022/WC-ANAL
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: design-rc-kds-41-20-2022-wc-anal
+endpoint: /DESIGN/RC/KDS-41-20-2022/WC-ANAL
+name: RC Wall Check Perform
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 26_Design_RC_KDS41202022.md
+    section: "63. `DESIGN/RC/KDS-41-20-2022/WC-ANAL` — RC Wall Check Perform (RC 벽체 검토 수행)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-08-10
+    - product: gen
+      ref: db-read-sweep-2026-08-10
+
+operations:
+  - method: POST
+    surface:
+      exportName: performWallCheck
+      modulePath: [design, rcKds, checks]
+      argumentTypeName: PerformRcWallCheckArgument
+      documentation: |-
+        docs/manual/26_Design_RC_KDS41202022.md #63 — WC-ANAL — RC Wall Check
+        Perform. Response: ``{"message": "success"}``.
+
+        ⚠️ Live-tested and CONFIRMED to NOT reproduce the sibling
+        ``perform_column_check`` (CC-ANAL) stall: on a real, wall-heavy
+        production model (KDS 41 20:2022 native, real pre-existing wall-check
+        data), both a single-wall/story call and a full all-walls call
+        (``SELECTIONS`` omitted) returned ``{"message": "success"}`` cleanly
+        in under 6 seconds — no stuck "Converting Design Results" dialog. This
+        is useful negative evidence that CC-ANAL's stall isn't a blanket
+        property of every "perform check" function in this file. Independently
+        corroborated 2026-07-25: a production tool (the QuickRebar NX web app)
+        ships this call alongside CC-ANAL for live wall verdicts, and neither
+        hung. Note the stall was never about the targeting scheme —
+        ``perform_wall_design`` (WD-ANAL, design_forces.py) is also
+        WID+STORY-targeted and *did* hang on the same build. See
+        docs/live_verification_notes.md for the full writeup.
+      nestedTypes:
+        - {path: SELECTIONS, name: RcWallDesignSelection, namespace: DesignRcKdsDesignForcesTypes}
+        - {path: SELECTIONS.WALL_IDS, name: RcWallIdsSelector, namespace: DesignRcKdsDesignForcesTypes}
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: Argument
+    description: >-
+      Argument 래퍼
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: SELECTIONS
+    description: >-
+      벽/층 선택 목록 (생략 시 전체)
+    type: array
+    items:
+      type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: WALL_IDS
+        description: >-
+          벽 ID 지정
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: KEYS
+            description: >-
+              개별 벽 ID
+            type: array
+            items:
+              type: integer
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: TO
+            description: >-
+              벽 ID 범위 (예 "1to20")
+            type: string
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+      - key: STORY
+        description: >-
+          층 이름 목록
+        type: array
+        items:
+          type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+
+extraction:
+  source: 26_Design_RC_KDS41202022.md line 11708
+  table: 파라미터

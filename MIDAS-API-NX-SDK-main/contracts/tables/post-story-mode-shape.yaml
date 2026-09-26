@@ -1,0 +1,27 @@
+contractVersion: 1
+id: post-story-mode-shape
+endpoint: /post/TABLE
+name: Story Mode Shape
+products: [gen, civil]
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 21_POST_StoryTables.md
+    section: "5. Story Mode Shape"
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getStoryModeShapeTable
+  modulePath: [story]
+  tableType: STORY_MODE_SHAPE
+  factory: fixed
+  optionNames: [components, constructionStage, loadCaseNames, modes, nodeElements, stageSteps, styles, tableName, unit]
+  documentation: |-
+    docs/manual/21_POST_StoryTables.md #5 — Story Mode Shape.
+
+    Requires mode/response-spectrum analysis results.
+    modes: filter to specific modes, e.g. ["Mode1", "Mode2"]; omitting it
+    returns all modes.
+tableTypes:
+  - {value: STORY_MODE_SHAPE, provenance: manual}

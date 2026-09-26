@@ -1,0 +1,24 @@
+contractVersion: 1
+id: post-composite-section-construction-stage
+endpoint: /post/TABLE
+name: Composite Section Construction Stage
+summary: Composite-section force or stress by construction stage.
+products: [gen, civil]
+source: {manual: {status: documented, repo: Dennis5882/MIDAS-API, chapterFile: 20_POST_AnalysisResult_2.md, section: "37. Composite Section for C.S. (Force and Stress)"}}
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getCompositeSectionBeamTable
+  modulePath: [result1]
+  tableType: COMPSECTBEAMFORCE
+  factory: variable
+  optionNames: [components, constructionStage, loadCaseNames, nodeElements, stageSteps, styles, tableName, unit]
+  documentation: |-
+    docs/manual/20_POST_AnalysisResult_2.md #37 — Composite Section for C.S.
+    (Force and Stress).
+
+    table_type: TABLE_TYPE_COMPOSITE_SECTION_BEAM_FORCE (default) or
+    TABLE_TYPE_COMPOSITE_SECTION_BEAM_STRESS.
+tableTypes:
+  - {value: COMPSECTBEAMFORCE, description: Composite-section beam force, head: [Index, Elem, Load, SectionPart, Part, Axial, Moment-y, Moment-z], provenance: manual}
+  - {value: COMPSECTBEAMSTRESS, description: Composite-section beam stress, head: [Index, Elem, Load, SectionPart, Part, Axial, Moment-y, Moment-z], provenance: manual}

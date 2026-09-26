@@ -1,0 +1,18 @@
+contractVersion: 1
+id: post-criteria-regularity-plan
+endpoint: /post/TABLE
+name: Criteria for Regularity in Plan
+products: [gen, civil]
+source:
+  manual: {status: documented, repo: Dennis5882/MIDAS-API, chapterFile: 21_POST_StoryTables.md, section: "15. Criteria for Regularity in Plan"}
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getCriteriaForRegularityInPlanTable
+  modulePath: [story]
+  tableType: CRITERIA_FOR_REGULARITY_IN_PLAN
+  factory: fixed
+  optionNames: [components, constructionStage, loadCaseNames, nodeElements, stageSteps, styles, tableName, unit]
+  documentation: |-
+    docs/manual/21_POST_StoryTables.md #15 — Criteria for Regularity in Plan.
+tableTypes: [{value: CRITERIA_FOR_REGULARITY_IN_PLAN, provenance: manual}]

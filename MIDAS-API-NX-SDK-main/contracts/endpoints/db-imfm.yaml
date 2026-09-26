@@ -1,0 +1,161 @@
+# /db/IMFM
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-imfm
+endpoint: /db/IMFM
+name: Inelastic Material Properties for Fiber Model
+surface:
+  className: InelasticFiberMaterialLink
+  exportName: inelasticFiberMaterialLink
+  modulePath: [db, properties, material]
+  payloadTypeName: InelasticFiberMaterialLinkPayload
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 04_DB_Properties.md
+    section: "3. `/db/IMFM`"
+    url: https://support.midasuser.com/hc/en-us/articles/35807475893401
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-07-26
+    - product: gen
+      ref: db-read-sweep-2026-07-26
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/IMFM/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: CONC_NAME
+    description: >-
+      Inelastic Material of Concrete
+    type: string
+    requirement: optional
+    documentedDefault: ""
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: CONFINED_CONC_NAME
+    description: >-
+      Confined Concrete for Columns
+    type: string
+    requirement: optional
+    documentedDefault: ""
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: REBAR_NAME
+    description: >-
+      Inelastic Material of Rebar
+    type: string
+    requirement: optional
+    documentedDefault: ""
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: STEEL_NAME
+    description: >-
+      Inelastic Material of Steel
+    type: string
+    requirement: optional
+    documentedDefault: ""
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+
+sdkRules:
+  - id: db-imfm-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-imfm-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 04_DB_Properties.md line 276
+  table: Concrete Material
+  structuralTables:
+    - heading: Steel Material
+      line: 284
+      paths:
+        - "<root>"

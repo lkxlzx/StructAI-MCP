@@ -1,0 +1,56 @@
+contractVersion: 1
+id: post-story-shear-force-ratio
+endpoint: /post/TABLE
+name: Story Shear Force Ratio
+products: [gen, civil]
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 21_POST_StoryTables.md
+    section: "6. Story Shear Force Ratio"
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getStoryShearForceRatioTable
+  modulePath: [story]
+  tableType: STORY_SHEAR_FORCE_RATIO
+  factory: fixed
+  optionNames: [additional, components, constructionStage, loadCaseNames, nodeElements, stageSteps, storyNames, styles, tableName, unit]
+  documentation: |-
+    docs/manual/21_POST_StoryTables.md #6 — Story Shear Force Ratio.
+
+    Per-story shear force and share ratio by vertical-member type
+    (Frame/Wall), for two angles (Angle1/Angle2). The response also includes
+    a top-level "SUB_TABLES" array (linear/numerical shear-force-by-type
+    sums) not modeled here — access it directly off the raw response dict.
+    story_names: restrict to specific stories (default: all).
+    additional: SET_ANGLE — Required; sets Angle1 (Angle2 = Angle1 + 90°).
+  nestedTypes:
+    - {path: ADDITIONAL, name: StoryShearForceRatioAdditional, namespace: PostStoryTypes}
+tableTypes:
+  - {value: STORY_SHEAR_FORCE_RATIO, provenance: manual}
+requestFields:
+  # 21_POST_StoryTables.md #6, "`ADDITIONAL` - 각도 및 대상 층 설정", rows 1 to 2-1-1.
+  # The note above the table: SET_ANGLE.ANGLE is required for this table.
+  additional:
+    - key: STORY_NAMES
+      description: 대상 층 이름 목록
+      type: array
+      items: {type: string}
+      requirement: optional
+      documentedDefaultNote: All
+      provenance: manual
+    - key: ADDITIONAL
+      description: 세부 설정 객체
+      type: object
+      requirement: optional
+      provenance: manual
+      properties:
+        - key: SET_ANGLE
+          description: 각도 설정
+          type: object
+          requirement: required
+          provenance: manual
+          properties:
+            - {key: ANGLE, description: "Angle1 입력값 (Angle2 = Angle1 + 90°)", type: number, requirement: required, provenance: manual}

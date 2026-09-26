@@ -1,0 +1,1091 @@
+# /db/RCHK
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-rchk
+endpoint: /db/RCHK
+name: Rebar Input for Checking - Beam/Column
+surface:
+  className: RebarCheckInput
+  exportName: rebarCheckInput
+  modulePath: [db, design]
+  payloadTypeName: RebarCheckInputPayload
+  nestedTypes:
+    - {path: BEAM, name: BeamCheckRebar, namespace: DbDesignTypes}
+    - {path: BEAM.vMAIN, name: BeamMainRebarSectorItem, namespace: DbDesignTypes}
+    - {path: BEAM.vMAIN.POS_BOT_LAYERS, name: BeamMainRebarLayerEntry, namespace: DbDesignTypes}
+    - {path: BEAM.vMAIN.POS_TOP_LAYERS, name: BeamMainRebarLayerEntry, namespace: DbDesignTypes}
+    - {path: BEAM.vSUB_BAR, name: BeamSubRebarSectorItem, namespace: DbDesignTypes}
+    - {path: COLM, name: ColumnCheckRebar, namespace: DbDesignTypes}
+    - {path: COLM.SUB_BAR, name: ColumnSubBarSpec, namespace: DbDesignTypes}
+    - {path: COLM.vLAYER, name: ColumnRebarLayerEntry, namespace: DbDesignTypes}
+    - {path: COLM.vLAYER.vPOSITION, name: ColumnRebarPositionEntry, namespace: DbDesignTypes}
+
+products: [civil]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 24_DB_Design.md
+    section: "3. `/db/RCHK` — Rebar Input for Checking - Beam/Column (검토용 철근 입력)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_civil
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-07-26
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/RCHK/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: MEMBTYPE
+    description: >-
+      부재 타입 · 보: "BEAM" / 기둥: "COLUMN"
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: ENVTYPE
+    description: >-
+      균열 검토(노출 환경) · Class 1: 0 / Class 2: 1
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: BEAM
+    type: object
+    requirement: conditional
+    condition: "MEMBTYPE=\"BEAM\""
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: vMAIN
+        description: >-
+          종방향 철근 (구간 [I, J, M] 별 객체 배열)
+        type: array
+        items:
+          type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: SECTOR
+            description: >-
+              구간 · I단: "I" / J단: "J" / 중앙: "M"
+            type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'vMAIN' by numbering it 'i', not
+            # by naming a path
+          - key: POS_TOP_LAYERS
+            description: >-
+              상단 레이어 정보
+            type: array
+            items:
+              type: object
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'vMAIN' by numbering it 'ii', not
+            # by naming a path
+            properties:
+              - key: LAYER
+                description: >-
+                  레이어 번호
+                type: integer
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              - key: dD
+                description: >-
+                  표면~철근중심 피복 거리
+                type: number
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              - key: BAR_NUM
+                description: >-
+                  철근 개수
+                type: integer
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              - key: BAR_NAME1
+                description: >-
+                  철근 규격 1
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              - key: BAR_NAME2
+                description: >-
+                  철근 규격 2
+                type: string
+                requirement: optional
+                documentedDefault: ""
+                documentedOptional: true
+                safeToOmit: unverified
+                provenance: manual
+          - key: POS_BOT_LAYERS
+            description: >-
+              하단 레이어 정보
+            type: array
+            items:
+              type: object
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'vMAIN' by numbering it 'iii', not
+            # by naming a path
+            properties:
+              - key: LAYER
+                description: >-
+                  레이어 번호
+                type: integer
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              - key: dD
+                description: >-
+                  표면~철근중심 피복 거리
+                type: number
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              - key: BAR_NUM
+                description: >-
+                  철근 개수
+                type: integer
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              - key: BAR_NAME1
+                description: >-
+                  철근 규격 1
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              - key: BAR_NAME2
+                description: >-
+                  철근 규격 2
+                type: string
+                requirement: optional
+                documentedDefault: ""
+                documentedOptional: true
+                safeToOmit: unverified
+                provenance: manual
+      - key: vSUB_BAR
+        description: >-
+          횡방향(전단/비틀림) 철근 (구간 [I, J, M] 별)
+        type: array
+        items:
+          type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: SECTOR
+            description: >-
+              구간 · I단: "I" / J단: "J" / 중앙: "M"
+            type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'vMAIN' by numbering it 'i', not
+            # by naming a path
+          - key: dSUB_BARNUM
+            description: >-
+              철근 개수
+            type: integer
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'vSUB_BAR' by numbering it 'ii',
+            # not by naming a path
+            # RESOLVED: the 파라미터 table types this Integer while the same section's
+            # JSON Schema types it number, and nothing in the section breaks the tie -
+            # its Request Example sends a whole number, which both readings accept.
+            # Integer is kept: it is the narrower of the two documented types, so a
+            # caller following this contract cannot send a value the schema's reading
+            # would refuse, and the field is a rebar count. Neither published surface
+            # is affected - TypeScript has one number type and this is not a Python
+            # TypedDict. See MD-27.
+          - key: SUB_BARNAME
+            description: >-
+              철근 규격
+            type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'vSUB_BAR' by numbering it 'iii',
+            # not by naming a path
+          - key: dSUB_BARDIST
+            description: >-
+              철근 간격
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'vSUB_BAR' by numbering it 'iv',
+            # not by naming a path
+          - key: dSUB_BARANGLE
+            description: >-
+              부재와의 각도
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'vSUB_BAR' by numbering it 'v',
+            # not by naming a path
+          - key: bTORSIONAL_BAR
+            description: >-
+              비틀림 철근 사용 여부
+            type: boolean
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'vSUB_BAR' by numbering it 'vi',
+            # not by naming a path
+          - key: sTRTORBARNA
+            description: >-
+              비틀림 철근 규격
+            type: string
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'vSUB_BAR' by numbering it 'vii',
+            # not by naming a path
+          - key: dTORBAR_SPACING
+            description: >-
+              비틀림 철근 간격
+            type: number
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'vSUB_BAR' by numbering it 'viii',
+            # not by naming a path
+          - key: bBUNDLEDBAR
+            description: >-
+              다발철근(Bundled) 사용 여부
+            type: boolean
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'vSUB_BAR' by numbering it 'ix',
+            # not by naming a path
+          - key: dBUNDLEDBARNUM
+            description: >-
+              다발철근 개수
+            type: number
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'vSUB_BAR' by numbering it 'x',
+            # not by naming a path
+          - key: LONGIBARNA
+            description: >-
+              종방향 철근 규격
+            type: string
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'vSUB_BAR' by numbering it 'xi',
+            # not by naming a path
+          - key: dLONGIBARNUM
+            description: >-
+              종방향 철근 개수
+            type: number
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'vSUB_BAR' by numbering it 'xii',
+            # not by naming a path
+      - key: OPTION_IMJSAME
+        description: >-
+          IMJ Same Option (it needs only I)
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+        # RESOLVED: declared by /info and absent from the manual - the whole
+        # manual was searched for the name, not just this section.
+        # Civil NX only, like the endpoint. The server's own description says the
+        # flag is read from the I entry alone; no contract rule is written from
+        # that, because a description is not a branch.
+  - key: COLM
+    type: object
+    requirement: conditional
+    condition: "MEMBTYPE=\"COLUMN\""
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: vLAYER
+        description: >-
+          종방향 철근 레이어 배열
+        type: array
+        items:
+          type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: INDEX
+            description: >-
+              레이어 인덱스 (1~5)
+            type: integer
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'vLAYER' by numbering it 'i', not
+            # by naming a path
+          - key: dDc
+            description: >-
+              표면~철근중심 피복 거리
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'vLAYER' by numbering it 'ii', not
+            # by naming a path
+          - key: vPOSITION
+            description: >-
+              철근 레이어(위치별)
+            type: array
+            items:
+              type: object
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'vLAYER' by numbering it 'iii',
+            # not by naming a path
+            properties:
+              - key: POSITION
+                description: >-
+                  표면 위치 · 원형: "P1" / 사각형: "P1", "P2"
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              - key: BAR_NUM
+                description: >-
+                  철근 개수
+                type: integer
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+                # RESOLVED: the 기둥 철근 레이어 table types this Number, and integer is
+                # stated elsewhere in the same section three times over: the JSON Schema's
+                # vPOSITION item, the JSON Schema's POS_TOP_LAYERS/POS_BOT_LAYERS items,
+                # and the 보 철근 레이어 table's own row for the same BAR_NUM with the same
+                # description (철근 개수). The odd cell is the one corrected. See MD-27.
+              - key: BAR_NAME1
+                description: >-
+                  철근 규격 1
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              - key: BAR_NAME2
+                description: >-
+                  철근 규격 2
+                type: string
+                requirement: optional
+                documentedDefault: ""
+                documentedOptional: true
+                safeToOmit: unverified
+                provenance: manual
+      - key: SUB_BAR
+        description: >-
+          횡방향 철근
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: SUBBAR_NAME
+            description: >-
+              철근 규격
+            type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'SUB_BAR' by numbering it 'i', not
+            # by naming a path
+          - key: SUBBAR_DIST
+            description: >-
+              철근 간격
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'SUB_BAR' by numbering it 'ii',
+            # not by naming a path
+          - key: SUBBAR_NUM
+            description: >-
+              철근 개수
+            type: integer
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'SUB_BAR' by numbering it 'iii',
+            # not by naming a path
+            # RESOLVED: the 파라미터 table types this Integer while the same section's
+            # JSON Schema types it number, and nothing in the section breaks the tie -
+            # its Request Example sends a whole number, which both readings accept.
+            # Integer is kept: it is the narrower of the two documented types, so a
+            # caller following this contract cannot send a value the schema's reading
+            # would refuse, and the field is a rebar count. Neither published surface
+            # is affected - TypeScript has one number type and this is not a Python
+            # TypedDict. See MD-27.
+          - key: SUBBAR_NAME_Y
+            description: >-
+              Y방향 철근 규격
+            type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'SUB_BAR' by numbering it 'iv',
+            # not by naming a path
+          - key: SUBBAR_NAME_Z
+            description: >-
+              Z방향 철근 규격
+            type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'SUB_BAR' by numbering it 'v', not
+            # by naming a path
+          - key: SUBBAR_NUM_Y
+            description: >-
+              Y방향 철근 개수
+            type: integer
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'SUB_BAR' by numbering it 'vi',
+            # not by naming a path
+            # RESOLVED: the 파라미터 table types this Integer while the same section's
+            # JSON Schema types it number, and nothing in the section breaks the tie -
+            # its Request Example sends a whole number, which both readings accept.
+            # Integer is kept: it is the narrower of the two documented types, so a
+            # caller following this contract cannot send a value the schema's reading
+            # would refuse, and the field is a rebar count. Neither published surface
+            # is affected - TypeScript has one number type and this is not a Python
+            # TypedDict. See MD-27.
+          - key: SUBBAR_NUM_Z
+            description: >-
+              Z방향 철근 개수
+            type: integer
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'SUB_BAR' by numbering it 'vii',
+            # not by naming a path
+            # RESOLVED: the 파라미터 table types this Integer while the same section's
+            # JSON Schema types it number, and nothing in the section breaks the tie -
+            # its Request Example sends a whole number, which both readings accept.
+            # Integer is kept: it is the narrower of the two documented types, so a
+            # caller following this contract cannot send a value the schema's reading
+            # would refuse, and the field is a rebar count. Neither published surface
+            # is affected - TypeScript has one number type and this is not a Python
+            # TypedDict. See MD-27.
+
+variants:
+  - when:
+      - path: MEMBTYPE
+        equals: BEAM
+    source:
+      table: "MEMBTYPE == \"BEAM\" 일 때 — \"BEAM\" 객체"
+      line: 394
+    fields:
+      - key: vMAIN
+        description: >-
+          종방향 철근 (구간 [I, J, M] 별 객체 배열)
+        type: array
+        items:
+          type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: SECTOR
+            description: >-
+              구간 · I단: "I" / J단: "J" / 중앙: "M"
+            type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'vMAIN' by numbering it 'i', not
+            # by naming a path
+          - key: POS_TOP_LAYERS
+            description: >-
+              상단 레이어 정보
+            type: array
+            items:
+              type: object
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'vMAIN' by numbering it 'ii', not
+            # by naming a path
+          - key: POS_BOT_LAYERS
+            description: >-
+              하단 레이어 정보
+            type: array
+            items:
+              type: object
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'vMAIN' by numbering it 'iii', not
+            # by naming a path
+      - key: vSUB_BAR
+        description: >-
+          횡방향(전단/비틀림) 철근 (구간 [I, J, M] 별)
+        type: array
+        items:
+          type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: dSUB_BARNUM
+            description: >-
+              철근 개수
+            type: integer
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'vSUB_BAR' by numbering it 'ii',
+            # not by naming a path
+            # RESOLVED: the 파라미터 table types this Integer while the same section's
+            # JSON Schema types it number, and nothing in the section breaks the tie -
+            # its Request Example sends a whole number, which both readings accept.
+            # Integer is kept: it is the narrower of the two documented types, so a
+            # caller following this contract cannot send a value the schema's reading
+            # would refuse, and the field is a rebar count. Neither published surface
+            # is affected - TypeScript has one number type and this is not a Python
+            # TypedDict. See MD-27.
+          - key: SUB_BARNAME
+            description: >-
+              철근 규격
+            type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'vSUB_BAR' by numbering it 'iii',
+            # not by naming a path
+          - key: dSUB_BARDIST
+            description: >-
+              철근 간격
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'vSUB_BAR' by numbering it 'iv',
+            # not by naming a path
+          - key: dSUB_BARANGLE
+            description: >-
+              부재와의 각도
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'vSUB_BAR' by numbering it 'v',
+            # not by naming a path
+          - key: bTORSIONAL_BAR
+            description: >-
+              비틀림 철근 사용 여부
+            type: boolean
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'vSUB_BAR' by numbering it 'vi',
+            # not by naming a path
+          - key: sTRTORBARNA
+            description: >-
+              비틀림 철근 규격
+            type: string
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'vSUB_BAR' by numbering it 'vii',
+            # not by naming a path
+          - key: dTORBAR_SPACING
+            description: >-
+              비틀림 철근 간격
+            type: number
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'vSUB_BAR' by numbering it 'viii',
+            # not by naming a path
+          - key: bBUNDLEDBAR
+            description: >-
+              다발철근(Bundled) 사용 여부
+            type: boolean
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'vSUB_BAR' by numbering it 'ix',
+            # not by naming a path
+          - key: dBUNDLEDBARNUM
+            description: >-
+              다발철근 개수
+            type: number
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'vSUB_BAR' by numbering it 'x',
+            # not by naming a path
+          - key: LONGIBARNA
+            description: >-
+              종방향 철근 규격
+            type: string
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'vSUB_BAR' by numbering it 'xi',
+            # not by naming a path
+          - key: dLONGIBARNUM
+            description: >-
+              종방향 철근 개수
+            type: number
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'vSUB_BAR' by numbering it 'xii',
+            # not by naming a path
+  - when:
+      - path: MEMBTYPE
+        equals: COLUMN
+    source:
+      table: "MEMBTYPE == \"COLUMN\" 일 때 — \"COLM\" 객체"
+      line: 421
+    fields:
+      - key: vLAYER
+        description: >-
+          종방향 철근 레이어 배열
+        type: array
+        items:
+          type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: INDEX
+            description: >-
+              레이어 인덱스 (1~5)
+            type: integer
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'vLAYER' by numbering it 'i', not
+            # by naming a path
+          - key: dDc
+            description: >-
+              표면~철근중심 피복 거리
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'vLAYER' by numbering it 'ii', not
+            # by naming a path
+          - key: vPOSITION
+            description: >-
+              철근 레이어(위치별)
+            type: array
+            items:
+              type: object
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'vLAYER' by numbering it 'iii',
+            # not by naming a path
+      - key: SUB_BAR
+        description: >-
+          횡방향 철근
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: SUBBAR_NAME
+            description: >-
+              철근 규격
+            type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'SUB_BAR' by numbering it 'i', not
+            # by naming a path
+          - key: SUBBAR_DIST
+            description: >-
+              철근 간격
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'SUB_BAR' by numbering it 'ii',
+            # not by naming a path
+          - key: SUBBAR_NUM
+            description: >-
+              철근 개수
+            type: integer
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'SUB_BAR' by numbering it 'iii',
+            # not by naming a path
+            # RESOLVED: the 파라미터 table types this Integer while the same section's
+            # JSON Schema types it number, and nothing in the section breaks the tie -
+            # its Request Example sends a whole number, which both readings accept.
+            # Integer is kept: it is the narrower of the two documented types, so a
+            # caller following this contract cannot send a value the schema's reading
+            # would refuse, and the field is a rebar count. Neither published surface
+            # is affected - TypeScript has one number type and this is not a Python
+            # TypedDict. See MD-27.
+          - key: SUBBAR_NAME_Y
+            description: >-
+              Y방향 철근 규격
+            type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'SUB_BAR' by numbering it 'iv',
+            # not by naming a path
+          - key: SUBBAR_NAME_Z
+            description: >-
+              Z방향 철근 규격
+            type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'SUB_BAR' by numbering it 'v', not
+            # by naming a path
+          - key: SUBBAR_NUM_Y
+            description: >-
+              Y방향 철근 개수
+            type: integer
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'SUB_BAR' by numbering it 'vi',
+            # not by naming a path
+            # RESOLVED: the 파라미터 table types this Integer while the same section's
+            # JSON Schema types it number, and nothing in the section breaks the tie -
+            # its Request Example sends a whole number, which both readings accept.
+            # Integer is kept: it is the narrower of the two documented types, so a
+            # caller following this contract cannot send a value the schema's reading
+            # would refuse, and the field is a rebar count. Neither published surface
+            # is affected - TypeScript has one number type and this is not a Python
+            # TypedDict. See MD-27.
+          - key: SUBBAR_NUM_Z
+            description: >-
+              Z방향 철근 개수
+            type: integer
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'SUB_BAR' by numbering it 'vii',
+            # not by naming a path
+            # RESOLVED: the 파라미터 table types this Integer while the same section's
+            # JSON Schema types it number, and nothing in the section breaks the tie -
+            # its Request Example sends a whole number, which both readings accept.
+            # Integer is kept: it is the narrower of the two documented types, so a
+            # caller following this contract cannot send a value the schema's reading
+            # would refuse, and the field is a rebar count. Neither published surface
+            # is affected - TypeScript has one number type and this is not a Python
+            # TypedDict. See MD-27.
+
+manualDefects:
+  - describes: field_value
+    manualSays: >-
+      Five count fields are typed one way by a 파라미터 table and the other way
+      by the section's own JSON Schema, printed directly above it.
+      `dSUB_BARNUM`, `SUBBAR_NUM`, `SUBBAR_NUM_Y` and `SUBBAR_NUM_Z` are
+      Integer in the tables and `number` in the schema; `BAR_NUM` under
+      `vPOSITION` is Number in the table and `integer` in the schema.
+    actual: >-
+      The schema is internally consistent and the tables are not. `BAR_NUM`
+      is the same field name with the same description (철근 개수) in two
+      tables, typed Integer in one and Number in the other, while the schema
+      types both occurrences `integer` - so the Number cell is the outlier and
+      is recorded as `integer`. The other four have no third statement: the
+      section's Request Example sends whole numbers, which satisfy both
+      readings. Those keep the tables' Integer as the narrower of the two
+      documented types, so following this contract cannot produce a value the
+      schema's reading would refuse. No live call has measured any of the
+      five, and neither published surface distinguishes them - TypeScript has
+      a single number type, and none of these five is a Python TypedDict
+      member.
+    evidence: >-
+      docs/manual/24_DB_Design.md section 3's four 파라미터 tables against the
+      JSON Schema printed above them in the same section, and against the
+      section's own POST/PUT Request Body. Registered as MD-27.
+
+  - describes: field_name
+    manualSays: >-
+      The `BEAM` object holds `vMAIN` and `vSUB_BAR` and nothing else.
+    actual: >-
+      `GET /info/db/RCHK` declares a third member, `OPTION_IMJSAME`, a
+      boolean described " IMJ Same Option (it needs only I)". No rule is
+      written from that description: it reads like a statement about which
+      sector entry the server consults, and a description is not a branch.
+    evidence: >-
+      Found by scripts/info_baseline.py --against-contracts on 2026-09-04,
+      sweeping the 2026-09-03 /info capture against every contract. The
+      manual was then searched in full for the name, not just this
+      section. Civil NX only, as the endpoint is. Registered as MD-41.
+
+sdkRules:
+  - id: db-rchk-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-rchk-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 24_DB_Design.md line 387
+  table: 파라미터
+  structuralTables:
+    - heading: "MEMBTYPE == \"BEAM\" 일 때 — \"BEAM\" 객체"
+      line: 394
+      paths:
+        - BEAM
+    - heading: "MEMBTYPE == \"COLUMN\" 일 때 — \"COLM\" 객체"
+      line: 421
+      paths:
+        - COLM
+    - heading: 보 철근 레이어 (POS_TOP_LAYERS / POS_BOT_LAYERS 항목 구조)
+      line: 438
+      paths:
+        - BEAM
+    - heading: 기둥 철근 레이어 (vPOSITION 항목 구조)
+      line: 448
+      paths:
+        - COLM

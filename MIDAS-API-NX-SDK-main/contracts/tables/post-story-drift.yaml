@@ -1,0 +1,179 @@
+contractVersion: 1
+id: post-story-drift
+endpoint: /post/TABLE
+name: Story Drift
+products: [gen, civil]
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 21_POST_StoryTables.md
+    section: "1. Story Drift"
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getStoryDriftTable
+  modulePath: [story]
+  tableType: STORY_DRIFT_COMB
+  factory: variable
+  optionNames: [additional, components, constructionStage, loadCaseNames, nodeElements, stageSteps, styles, tableName, unit]
+  documentation: |-
+    docs/manual/21_POST_StoryTables.md #1 — Story Drift.
+
+    table_type: TABLE_TYPE_STORY_DRIFT_X/_Y (single-direction) or
+    TABLE_TYPE_STORY_DRIFT_COMB (combined, adds shear-weighted/selected-node
+    detail columns).
+    additional: drift-ratio judgment method/parameters, plus (COMB only) which
+    drift-basis columns to include — see StoryDriftAdditional.
+  nestedTypes:
+    - {path: ADDITIONAL, name: StoryDriftAdditional, namespace: PostStoryTypes}
+    - {path: ADDITIONAL.SET_STORY_DRIFT_PARAMS, name: StoryDriftParams, namespace: PostStoryTypes}
+    - {path: ADDITIONAL.SET_STORY_DRIFT_PARAMS.LCOMS, name: StoryDriftLcomEntry, namespace: PostStoryTypes}
+    - {path: ADDITIONAL.SET_STORY_DRIFT_PARAMS.BETA, name: StoryDriftBeta, namespace: PostStoryTypes}
+    - {path: ADDITIONAL.SET_STORY_DRIFT_CALCULATION_METHOD, name: StoryDriftCalculationMethod, namespace: PostStoryTypes}
+tableTypes:
+  - {value: STORY_DRIFT_X, provenance: manual}
+  - {value: STORY_DRIFT_Y, provenance: manual}
+  - {value: STORY_DRIFT_COMB, provenance: manual}
+requestFields:
+  # 21_POST_StoryTables.md #1, "`ADDITIONAL` - 층간변위 세부 설정", rows 1 to 1-2-5.
+  additional:
+    - key: ADDITIONAL
+      description: 세부 설정 객체
+      type: object
+      requirement: optional
+      provenance: manual
+      properties:
+        - key: SET_STORY_DRIFT_PARAMS
+          description: 층간변위비 판정 파라미터
+          type: object
+          requirement: optional
+          provenance: manual
+          properties:
+            - key: RESPONSE_MOD_FACTOR_CHECK
+              description: "판정 방식: true=Method 1(응답수정계수), false=Method 2(변위증폭계수)"
+              type: boolean
+              requirement: optional
+              documentedDefault: false
+              provenance: manual
+            - key: RESPONSE_MOD_FACTOR_VALUE
+              description: (Method 1) 응답수정계수 값
+              type: number
+              requirement: optional
+              condition: "RESPONSE_MOD_FACTOR_CHECK: true일 때만"
+              appliesWhen:
+                - {path: ADDITIONAL.SET_STORY_DRIFT_PARAMS.RESPONSE_MOD_FACTOR_CHECK, equals: true}
+              documentedDefault: 1
+              provenance: manual
+            - key: DEFLECTION_AMPL_FACTOR_VALUE
+              description: (Method 2) 변위증폭계수(Cd)
+              type: number
+              requirement: optional
+              condition: "RESPONSE_MOD_FACTOR_CHECK: false일 때만"
+              appliesWhen:
+                - {path: ADDITIONAL.SET_STORY_DRIFT_PARAMS.RESPONSE_MOD_FACTOR_CHECK, equals: false}
+              documentedDefault: 1
+              provenance: manual
+            - key: IMPORTANCE_FACTOR_VALUE
+              description: (Method 2) 중요도계수
+              type: number
+              requirement: optional
+              documentedDefault: 1.5
+              provenance: manual
+            - key: SCALE_FACTOR_VALUE
+              description: 스케일 계수
+              type: number
+              requirement: optional
+              documentedDefault: 1
+              provenance: manual
+            - key: ALLOWABLE_RATIO
+              description: 허용 층간변위비
+              type: number
+              requirement: optional
+              documentedDefault: 0.015
+              provenance: manual
+            - key: LCOMS
+              description: P-Delta 검토용 수직하중 조합 목록
+              type: array
+              items: {type: object}
+              requirement: optional
+              provenance: manual
+              # Row 1-1-7-1 names two keys in one row, `LCOMS[].NAME` / `LCOMS[].FACTOR`,
+              # typed "String / Number".
+              properties:
+                - {key: NAME, description: 하중케이스명, type: string, requirement: optional, provenance: manual}
+                - {key: FACTOR, description: 계수, type: number, requirement: optional, provenance: manual}
+            - key: BETA
+              description: Beta 값 설정
+              type: object
+              requirement: optional
+              provenance: manual
+              properties:
+                - key: FIX_USER_CHECK
+                  description: '방식: "FIXED"(1.0 고정) / "USER"(층별 직접 입력)'
+                  type: string
+                  enum: [FIXED, USER]
+                  requirement: optional
+                  documentedDefault: FIXED
+                  provenance: manual
+                # Row 1-1-8-2 names NAME_FROM / NAME_TO in one row.
+                - key: NAME_FROM
+                  description: 적용 시작 층
+                  type: string
+                  requirement: optional
+                  condition: 'FIX_USER_CHECK: "USER"일 때만'
+                  appliesWhen:
+                    - {path: ADDITIONAL.SET_STORY_DRIFT_PARAMS.BETA.FIX_USER_CHECK, equals: USER}
+                  provenance: manual
+                - key: NAME_TO
+                  description: 적용 종료 층
+                  type: string
+                  requirement: optional
+                  condition: 'FIX_USER_CHECK: "USER"일 때만'
+                  appliesWhen:
+                    - {path: ADDITIONAL.SET_STORY_DRIFT_PARAMS.BETA.FIX_USER_CHECK, equals: USER}
+                  provenance: manual
+                - key: VALUE
+                  description: 사용자 지정 Beta 값
+                  type: number
+                  requirement: optional
+                  condition: 'FIX_USER_CHECK: "USER"일 때만'
+                  appliesWhen:
+                    - {path: ADDITIONAL.SET_STORY_DRIFT_PARAMS.BETA.FIX_USER_CHECK, equals: USER}
+                  documentedDefault: 0
+                  provenance: manual
+        - key: SET_STORY_DRIFT_CALCULATION_METHOD
+          description: (STORY_DRIFT_COMB 전용) 추가 산출 방식 선택
+          type: object
+          requirement: optional
+          condition: STORY_DRIFT_COMB 전용
+          documentedDefaultNote: DRIFT_AT_THE_CENTER_OF_MASS
+          provenance: manual
+          properties:
+            - {key: DRIFT_AT_THE_CENTER_OF_MASS, description: 질량중심 변위, type: boolean, requirement: optional, documentedDefault: true, provenance: manual}
+            - {key: AVERAGE_DRIFT_OF_VERTICAL_ELEMENTS, description: 수직요소 평균변위, type: boolean, requirement: optional, documentedDefault: false, provenance: manual}
+            - key: DRIFT_OF_A_VERTICAL_LINE_ON_SELECTED_NODE
+              description: 선택 절점 기준 수직선 변위
+              type: object
+              requirement: optional
+              provenance: manual
+              # The row names its members only in prose - "(X_DIR/Y_DIR/COMBINED
+              # **Required**)" - and the request example sends one of them,
+              # `{"X_DIR": 109}`. Which of the three is required is not stated
+              # per key, so none is typed required.
+              properties:
+                - {key: X_DIR, description: 선택 절점 번호, type: integer, requirement: conditional, condition: "X_DIR/Y_DIR/COMBINED Required", provenance: manual}
+                - {key: Y_DIR, description: 선택 절점 번호, type: integer, requirement: conditional, condition: "X_DIR/Y_DIR/COMBINED Required", provenance: manual}
+                - {key: COMBINED, description: 선택 절점 번호, type: integer, requirement: conditional, condition: "X_DIR/Y_DIR/COMBINED Required", provenance: manual}
+            - key: AVERAGE_DRIFT_OF_VERTICAL_LINES_ON_SELECTED_NODES
+              description: 선택 절점(복수) 기준 수직선 평균변위
+              type: object
+              requirement: optional
+              provenance: manual
+              # "(X_DIR/Y_DIR/COMBINED 배열, **Required**)"; example `{"X_DIR": [262, 260]}`.
+              # The 2026-07-29 official correction made the parent an Object.
+              properties:
+                - {key: X_DIR, description: 선택 절점 번호 배열, type: array, items: {type: integer}, requirement: conditional, condition: "X_DIR/Y_DIR/COMBINED 배열, Required", provenance: manual}
+                - {key: Y_DIR, description: 선택 절점 번호 배열, type: array, items: {type: integer}, requirement: conditional, condition: "X_DIR/Y_DIR/COMBINED 배열, Required", provenance: manual}
+                - {key: COMBINED, description: 선택 절점 번호 배열, type: array, items: {type: integer}, requirement: conditional, condition: "X_DIR/Y_DIR/COMBINED 배열, Required", provenance: manual}
+            - {key: SHEAR_WEIGHTED_AVERAGE_DRIFT_OF_VERTICAL_ELEMENTS, description: 전단력 가중 평균변위, type: boolean, requirement: optional, documentedDefault: false, provenance: manual}

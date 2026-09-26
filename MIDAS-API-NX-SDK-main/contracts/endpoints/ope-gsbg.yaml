@@ -1,0 +1,319 @@
+# /ope/GSBG
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: ope-gsbg
+endpoint: /ope/GSBG
+name: Bridge Girder Diagram Image Generation
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 17_DB_Bridge.md
+    section: "5. `/ope/GSBG` — Bridge Girder Diagram Image Generation"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_civil
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-08-13
+
+operations:
+  - method: POST
+    surface:
+      exportName: generateBridgeGirderDiagram
+      modulePath: [ope]
+      documentation: |-
+        docs/manual/15_OPE.md #19 — /ope/GSBG — Bridge Girder Diagram Image Generation.
+
+        See BridgeGirderDiagramArgument's docstring re: the 2026-07-14 schema
+        update (LC_TYPE removed, BATCH_LIST is now a plain string array).
+
+        As of the manual's 2026-08-10 sync, this same endpoint is also
+        documented a second time at docs/manual/17_DB_Bridge.md #5 (cross-
+        referenced from db/bridge.py's GSBG module docstring) — field-for-field
+        identical to the schema below, not a separate/updated version. This
+        function is unaffected; no code change was needed.
+
+        ⚠️ Live-tested 2026-07-31 on Civil NX, on a real FCM (Free Cantilever
+        Method) bridge model, 17 construction stages. Partial progress, not
+        fully unblocked:
+
+        - `BRDG_GROUP` genuinely is just a `/db/GRUP` (StructureGroup) name —
+          creating one via `StructureGroup.create({id: {"NAME": ..., "E_LIST":
+          [...]}})` with the girder's beam element IDs and passing that NAME
+          here works: the "group not found"-shaped error goes away once the
+          group exists. This contradicts an earlier assumption that Bridge
+          Groups can only be created via the GUI wizard — a plain element
+          group is sufficient.
+        - Before that, every call failed with `"post mode is required"`
+          (matching `DREULT`'s `"Post Mode is not available"` on a different
+          model) — calling `set_result_graphic()` first did NOT clear this;
+          only the user manually switching to the "Post" tab in the Civil NX
+          GUI did. No API-only way to enter this mode was found.
+        - After that, every call instead fails with `"Final/PostCS stage is
+          not supported"` — reproduced with `STAGE_LIST` set to `CS1`, `CS2`,
+          `CS3`, `CS16`, and `CS17` (the model's actual final stage) and
+          `LC_NAME` set to `"Self"`, `"Self(CS)"`, and `"Summation(CS)"`,
+          identically every time. Since varying the documented parameters
+          didn't change the error, this looked like leftover state from an
+          earlier `set_result_graphic()` call made with `LOAD_CASE_COMB:
+          {"TYPE": "CS", "NAME": "Summation"}` (Summation is itself a
+          "Final/PostCS" aggregate) — not root-caused before the session
+          ended.
+
+        ⚠️ Re-tested 2026-08-13 on Civil NX (v2.2, build 08/12/2026), a
+        different real construction-stage bridge model (4 stages, CS1-CS4).
+        User manually confirmed Post mode active first: **"post mode is
+        required" did not recur** — confirms the manual GUI toggle is a
+        reproducible fix for that specific gate, not a one-off. But **"Final/
+        PostCS stage is not supported" recurred identically**, across
+        `STAGE_LIST=["CS1"]` (the model's *first* stage, not "final" by any
+        reading) with three different `LC_NAME` values — on a session that
+        never called `set_result_graphic()` at all. **This rules out the
+        "leftover state from an earlier set_result_graphic() call" theory**
+        above — the error reproduces from a clean session with no prior
+        `RESULTGRAPHIC` call. A follow-up attempt to explicitly select stage
+        CS1 as the active result via `set_result_graphic(CURRENT_MODE=
+        "beamdiagrams", LOAD_CASE_COMB={"TYPE": "CS", "NAME": "CS1"})` failed
+        differently — `"Can not find load case"` — so `CS1` alone isn't a
+        valid `LOAD_CASE_COMB.NAME`; the correct stage-result naming for this
+        call is still unknown. Session stayed healthy throughout, no crash.
+        Treat GSBG as still blocked; the Bridge Group and Post Mode pieces
+        are solved, "Final/PostCS stage is not supported" looks more
+        structural than session-state-dependent now, and remains
+        unexplained.
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: LC_NAME
+    description: >-
+      하중케이스/조합 이름
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: DGRM_TYPE
+    description: >-
+      다이어그램 타입 · 응력: 0 / 부재력: 1
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    enum: [0, 1]
+    safeToOmit: unverified
+    provenance: manual
+  - key: BATCH
+    description: >-
+      일괄 처리 여부 (생략 시 true)
+    type: boolean
+    requirement: optional
+    documentedDefault: true
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: X_AXIS_TYPE
+    description: >-
+      X축 타입 · 거리: 0 / 절점: 1
+    type: integer
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    enum: [0, 1]
+    safeToOmit: unverified
+    provenance: manual
+  - key: BATCH_LIST
+    description: >-
+      Export할 출력 그룹 이름 목록(문자열 배열)
+    type: array
+    items:
+      type: string
+    requirement: required
+    condition: BATCH = true(생략 포함)
+    appliesWhen:
+      - path: BATCH
+        equals: true
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: BRDG_GROUP
+    description: >-
+      교량 거더 요소 그룹
+    type: string
+    requirement: required
+    condition: BATCH = false
+    appliesWhen:
+      - path: BATCH
+        equals: false
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: COMPONENTS
+    description: >-
+      성분 · 응력(DGRM_TYPE=0): Sax 0 / +Sby 1 / −Sby 2 / +Sbz 3 / −Sbz 4 / Combined
+      5 / 7th DOF 6 · 부재력(DGRM_TYPE=1): Fx 0 / Fy 1 / Fz 2 / Mx 3 / My 4 / Mz 5
+      / Mb 6 / Mt 7 / Mw 8
+    type: integer
+    requirement: optional
+    condition: BATCH = false
+    appliesWhen:
+      - path: BATCH
+        equals: false
+    documentedDefault: 0
+    documentedOptional: true
+    enum: [0, 1, 2, 3, 4, 5, 6, 7, 8]
+    safeToOmit: unverified
+    provenance: manual
+  - key: COMBINED_COMP
+    description: >-
+      (응력·Combined일 때) 응력 표시 위치 · Maximum 0 / 1(−y,+z) 1 / 2(+y,+z) 2 / 3(+y,−z)
+      3 / 4(−y,−z) 4
+    type: integer
+    requirement: optional
+    condition: BATCH = false
+    appliesWhen:
+      - path: BATCH
+        equals: false
+    documentedDefault: 0
+    documentedOptional: true
+    enum: [0, 1, 2, 3, 4]
+    safeToOmit: unverified
+    provenance: manual
+  - key: 7TH_DOF_TYPE
+    description: >-
+      (응력·7th DOF일 때) 7th DOF 타입 · Sax(Warping) 0 / Ssy(Mt) 1 / Ssy(Mw) 2 /
+      Ssz(Mt) 3 / Ssz(Mw) 4 / Combined(Ssy) 5 / Combined(Ssz) 6
+    type: integer
+    requirement: optional
+    condition: BATCH = false
+    appliesWhen:
+      - path: BATCH
+        equals: false
+    documentedDefault: 0
+    documentedOptional: true
+    enum: [0, 1, 2, 3, 4, 5, 6]
+    safeToOmit: unverified
+    provenance: manual
+  - key: STRESS_LINE
+    description: >-
+      허용응력선 표시
+    type: object
+    requirement: optional
+    condition: DGRM_TYPE = 0(응력)에서만
+    appliesWhen:
+      - path: DGRM_TYPE
+        equals: 0
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: OPT_USE
+        description: >-
+          허용응력선 표시 여부
+        type: boolean
+        requirement: optional
+        documentedDefault: false
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: COMP
+        description: >-
+          압축 허용응력(OPT_USE=true 시)
+        type: integer
+        requirement: conditional
+        condition: OPT_USE=true
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: TENS
+        description: >-
+          인장 허용응력(OPT_USE=true 시)
+        type: integer
+        requirement: conditional
+        condition: OPT_USE=true
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+  - key: STAGE_LIST
+    description: >-
+      다이어그램 생성 대상 시공단계 목록
+    type: array
+    items:
+      type: string
+    requirement: required
+    condition: DGRM_TYPE = 0(응력)에서만
+    appliesWhen:
+      - path: DGRM_TYPE
+        equals: 0
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: EXPORT_PATH
+    description: >-
+      생성 이미지 저장 경로
+    type: string
+    requirement: required
+    condition: DGRM_TYPE = 0(응력)에서만
+    appliesWhen:
+      - path: DGRM_TYPE
+        equals: 0
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: EXTENSION
+    description: >-
+      저장 이미지 확장자 · "bmp" / "jpg" / "emf"
+    type: string
+    requirement: required
+    condition: DGRM_TYPE = 0(응력)에서만
+    appliesWhen:
+      - path: DGRM_TYPE
+        equals: 0
+    documentedDefault: null
+    documentedOptional: false
+    enum: [bmp, jpg, emf]
+    safeToOmit: unverified
+    provenance: manual
+
+sdkRules:
+  - id: ope-gsbg-reject-mutually-exclusive-batch-fields
+    kind: reject_request
+    appliesTo: [POST]
+    fields: [BATCH_LIST, BRDG_GROUP, COMPONENTS, COMBINED_COMP, 7TH_DOF_TYPE]
+    rejects: forbidden_combination
+    reason: >-
+      The manual explicitly forbids BRDG_GROUP, COMPONENTS, COMBINED_COMP, and
+      7TH_DOF_TYPE when BATCH=true (including omission), and forbids BATCH_LIST
+      when BATCH=false. This is a request prohibition, not an applicability hint.
+    alternative: >-
+      Send BATCH_LIST for batch export, or set BATCH=false and send the
+      single-group fields instead.
+
+extraction:
+  source: 17_DB_Bridge.md line 603
+  table: Parameters

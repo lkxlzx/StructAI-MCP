@@ -1,0 +1,179 @@
+# /db/CONS -- Constraint Support
+#
+# Sources: docs/manual/05_DB_Boundary.md #1 and the matching live CRUD and
+# length findings in docs/live_verification_notes.md. Neither SDK was used to
+# establish the contract facts below.
+contractVersion: 1
+id: db-cons
+endpoint: /db/CONS
+name: Constraint Support
+surface:
+  className: Constraint
+  exportName: constraint
+  modulePath: [db, boundary]
+  payloadTypeName: ConstraintPayload
+  nestedTypes:
+    - {path: ITEMS, name: ConstraintItem, namespace: DbBoundaryTypes}
+summary: >-
+  Assigns seven-degree-of-freedom support constraints to nodes. Each
+  CONSTRAINT string represents DX, DY, DZ, RX, RY, RZ and RW in that order.
+
+products: [gen, civil]
+productsEvidence: >-
+  Live CRUD rounds succeeded on both Civil NX and Gen NX; the live notes name
+  /db/CONS among the endpoints checked in each product.
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 05_DB_Boundary.md
+    section: "1. `/db/CONS` — Constraint Support"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: gen
+      ref: db-write-sweep-2026-07-29
+    - product: civil
+      ref: db-write-sweep-2026-07-29
+
+operations:
+  - method: GET
+    risk: read_only
+    summary: Return the currently assigned constraint supports.
+    request:
+      wrapper: none
+    response:
+      wrapper: unknown
+
+  - method: POST
+    risk: write
+    summary: Create constraint supports using an ID-keyed Assign map.
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: unknown
+      errorShapes:
+        - httpStatus: [201]
+          shape: '{"error": {...}}'
+          meaning: A 201 response can still report a rejected constraint payload.
+
+  - method: PUT
+    risk: write
+    summary: Update constraint supports using an ID-keyed Assign map.
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: unknown
+
+  - method: DELETE
+    variant: per_id
+    path: /db/CONS/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the constraint support named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: unknown
+    notes: >-
+      This path is not documented by the manual. Live CRUD verification confirms
+      it is the selective-delete form for this endpoint.
+
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire constraint-support table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: The manual's documented DELETE body form.
+    response:
+      wrapper: unknown
+    notes: >-
+      The documented bare-endpoint DELETE ignores the ids in its Assign body
+      and empties the table, as observed in the live DELETE finding.
+
+fields:
+  - key: ITEMS
+    description: Constraint supports, supplied as an array.
+    type: array
+    items:
+      type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: ID
+        description: Serial number.
+        type: integer
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: GROUP_NAME
+        description: Boundary group name.
+        type: string
+        requirement: optional
+        documentedDefault: ""
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: CONSTRAINT
+        description: Constraint state for DX, DY, DZ, RX, RY, RZ and RW.
+        type: string
+        minLength: 7
+        maxLength: 7
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: live_verified
+        provenanceNote: >-
+          The manual states String(7). Live verification confirms that six
+          characters are rejected, while eight are silently truncated to seven.
+
+sdkRules:
+  - id: cons-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's bare-endpoint DELETE body ignores named ids and empties the
+      whole table. The per-id path is the live-verified selective-delete form.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the whole_table operation only when deleting every support is intended.
+  - id: cons-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying all constraint supports is destructive and the documented body
+      does so even when it names only one id.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation for a selected support.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+manualDefects:
+  - describes: behaviour
+    manualSays: >-
+      DELETE /db/CONS with an ID-keyed Assign body deletes the named support.
+    actual: >-
+      The bare-endpoint DELETE body ignores its ids and empties the table; the
+      undocumented /db/CONS/{id} path deletes a selected support.
+    evidence: docs/live_verification_notes.md.
+
+extraction:
+  source: 05_DB_Boundary.md line 70
+  table: 요청 파라미터

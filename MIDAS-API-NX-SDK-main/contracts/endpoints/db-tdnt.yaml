@@ -1,0 +1,388 @@
+# /db/TDNT
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-tdnt
+endpoint: /db/TDNT
+name: Tendon Property
+surface:
+  className: TendonProperty
+  exportName: tendonProperty
+  modulePath: [db, temperaturePrestress]
+  payloadTypeName: TendonPropertyPayload
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 07_DB_Temperature_Prestress.md
+    section: 6. /db/TDNT — Tendon Property
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-07-26
+    - product: gen
+      ref: db-read-sweep-2026-07-26
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/TDNT/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: NAME
+    description: >-
+      Tendon Name
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: TYPE
+    description: >-
+      Tendon Type · Internal: "INTERNAL" · External: "EXTERNAL"
+    type: string
+    requirement: optional
+    documentedDefault: EXTERNAL
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: LT
+    description: >-
+      Tensioning Type · Post-Tension: "POST" · Pre-Tension: "PRE" · External:
+      미사용
+    type: string
+    requirement: optional
+    documentedDefault: PRE
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: MATL
+    description: >-
+      Tendon Material No.
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: AREA
+    description: >-
+      Total Tendon Area
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: D_AREA
+    description: >-
+      Diameter · Post: Duct 직경 · Pre: Strand 직경 · External: 미사용
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: ASB
+    description: >-
+      Anchorage Slip - Begin (Post/External 전용)
+    type: number
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: ASE
+    description: >-
+      Anchorage Slip - End (Post/External 전용)
+    type: number
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bBONDED
+    description: >-
+      Bond Type (Post 전용)
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: ALPHA
+    description: >-
+      External Cable Moment Magnifier (External 전용)
+    type: number
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: RM
+    description: >-
+      Relaxation Coefficient – Code
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: RV
+    description: >-
+      Relaxation Coefficient – Factor
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: US
+    description: >-
+      Ultimate Strength
+    type: number
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: YS
+    description: >-
+      Yield Strength
+    type: number
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: FF
+    description: >-
+      Curvature Friction Factor (Post/External 전용)
+    type: number
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: WF
+    description: >-
+      Wobble Friction Factor (Post 전용, Magura/IRC/KSCE/IRC112 코드)
+    type: number
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: W_TYPE
+    description: >-
+      Wobble Type (CEB-FIP/European 코드) · Fraction Factor: 0 · Unintentional
+      Angular: 1
+    type: integer
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: W_ANGLE
+    description: >-
+      Unintentional Angular Disp. (W_TYPE=1)
+    type: number
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: TDMFK
+    description: >-
+      Relaxation Coefficient Class (CEB-FIP 2010 전용)
+    type: integer
+    requirement: optional
+    documentedDefault: 1
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: FT
+    description: >-
+      Relaxation Factor ξ (TB05/TB10092/Q-CR/AS/JTJ/JTG 코드)
+    type: number
+    requirement: required
+    appliesWhen:
+      - path: RM
+        in: [2, 3, 10, 11, 12, 13]
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: LR
+    description: >-
+      Low Relaxation (TB05/TB10092/Q-CR 코드)
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bOSRF
+    description: >-
+      Overstress Reduction Factor 적용 (TB05/TB10092/Q-CR/JTG 코드)
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: FPK
+    description: >-
+      Characteristic Strength fpk (TB05/TB10092/Q-CR/JTJ/JTG 코드)
+    type: number
+    requirement: required
+    appliesWhen:
+      - path: RM
+        in: [2, 3, 10, 12, 13]
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: TDMFNAME
+    description: >-
+      Relaxation Function Name (User Defined)
+    type: string
+    requirement: required
+    appliesWhen:
+      - path: RM
+        equals: 100
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: bRELAX
+    description: >-
+      Relaxation coefficient - Check Box
+    type: boolean
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: live_verified
+    # RESOLVED: measured against a live product. Present in a real PSC bridge
+    # model's tendon data on Civil NX on 2026-07-30 and in /info/db/TDNT,
+    # absent from the manual's Specifications table. Carried by
+    # src/midas_nx/db/temperature_prestress.py ever since and missing from
+    # this contract until 2026-09-04.
+    # The section documents the whole relaxation group - RM, RV, FT, LR,
+    # TDMFK, TDMFNAME - with no field that turns it on, and the server
+    # declares one. No gate is written into this contract from that: an /info
+    # schema states no branch anywhere, so which fields this flag governs
+    # would have to come from the manual or a live observation, and neither
+    # says.
+
+manualDefects:
+  - describes: field_name
+    manualSays: >-
+      /db/TDNT's parameter table documents the whole relaxation group -
+      `RM`, `RV`, `FT`, `LR`, `TDMFK`, `TDMFNAME` - and no field that
+      turns it on.
+    actual: >-
+      `GET /info/db/TDNT` declares `bRELAX`, a boolean described "
+      Relaxation coefficient - Check Box". It was found in a real PSC
+      bridge model's tendon data on Civil NX on 2026-07-30 and has been in
+      src/midas_nx/db/temperature_prestress.py ever since; it never
+      reached this contract. No gate is written into the contract from it:
+      an /info schema states no branch, so which of the relaxation fields
+      this flag governs would have to come from the manual or a live
+      observation, and neither says.
+    evidence: >-
+      Found by scripts/info_baseline.py --against-contracts on 2026-09-04,
+      sweeping the 2026-09-03 /info capture against every contract. The
+      manual was then searched in full for the name, not just this
+      section. Also docs/live_verification_notes.md, 2026-07-30.
+      Registered as MD-41.
+
+sdkRules:
+  - id: db-tdnt-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-tdnt-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 07_DB_Temperature_Prestress.md line 654
+  table: 파라미터

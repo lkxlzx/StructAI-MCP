@@ -1,0 +1,498 @@
+# /db/ELEM
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-elem
+endpoint: /db/ELEM
+name: Element
+surface:
+  className: Element
+  exportName: element
+  modulePath: [db, nodeElement]
+  payloadTypeName: ElementPayload
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 03_DB_Node_Element.md
+    section: "2. `/db/ELEM`"
+    url: https://support.midasuser.com/hc/en-us/articles/35806934300825
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-write-sweep-2026-07-22
+    - product: gen
+      ref: db-write-sweep-2026-07-22
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/ELEM/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: TYPE
+    description: >-
+      Element Type
+    type: string
+    requirement: optional
+    documentedDefault: BEAM
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: MATL
+    description: >-
+      Material No.
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: SECT
+    description: >-
+      Section / Thickness No.
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: NODE
+    description: >-
+      Node No.
+    type: array
+    items:
+      type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: ANGLE
+    description: >-
+      Beta Angle
+    type: number
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: C_RAT
+    description: >-
+      Cable length ratio.
+    type: number
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: manual
+    provenanceNote: >-
+      Declared by the section's JSON Schema, which types it and describes it,
+      and named by no Specifications table in the section - not the common keys
+      and not any of the nine per-subtype tables. The manual therefore states no
+      requiredness, no default and no subtype this belongs to, so none is
+      claimed here. See MD-10.
+  - key: LCAXIS
+    description: >-
+      Local axis.
+    type: integer
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: manual
+    provenanceNote: >-
+      Declared by the section's JSON Schema, which types it and describes it,
+      and named by no Specifications table in the section - not the common keys
+      and not any of the nine per-subtype tables. The manual therefore states no
+      requiredness, no default and no subtype this belongs to, so none is
+      claimed here. See MD-10.
+
+variants:
+  - when:
+      - path: TYPE
+        equals: "TENSTR"
+      - path: STYPE
+        equals: 1
+    source:
+      table: "Tension only — Truss (STYPE: 1)"
+      line: 208
+    fields:
+      - key: TENS
+        description: >-
+          Allowable Compression (Negative Value Only)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: T_LIMIT
+        description: >-
+          Tension Limit Value (Positive Value Only)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: T_bLMT
+        description: >-
+          Tension Limit
+        type: boolean
+        requirement: optional
+        documentedDefault: false
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+  - when:
+      - path: TYPE
+        equals: "TENSTR"
+      - path: STYPE
+        equals: 2
+    source:
+      table: "Tension only — Hook (STYPE: 2)"
+      line: 218
+    fields:
+      - key: NON_LEN
+        description: >-
+          Hook Length
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+  - when:
+      - path: TYPE
+        equals: "TENSTR"
+      - path: STYPE
+        equals: 3
+    source:
+      table: "Tension only — Cable (STYPE: 3)"
+      line: 226
+    fields:
+      - key: CABLE
+        description: >-
+          Cable Type • Pretension: 1 • Horizontal: 2 • Lu: 3
+        type: integer
+        enum: [1, 2, 3]
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: live_corrected
+        # Marked Required. Omitted, the record is accepted on both products and
+        # reads back CABLE: 3 (Lu) with NON_LEN 3.2 supplied and TENS dropped
+        # (2026-09-22).
+      - key: TENS
+        description: >-
+          Pretension / Horizontal
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: NON_LEN
+        description: >-
+          Lu (Range: 0.5~1.5)
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: live_corrected
+        # Marked Required. The section's own Cable Request Body omits it with
+        # CABLE: 1, and that record is accepted on both products (2026-09-22).
+  - when:
+      - path: TYPE
+        equals: "COMPTR"
+      - path: STYPE
+        equals: 1
+    source:
+      table: "Compression only — Truss (STYPE: 1)"
+      line: 236
+    fields:
+      - key: TENS
+        description: >-
+          Allowable Tension (Positive Value Only)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: T_bLMT
+        description: >-
+          Compression Limit
+        type: boolean
+        requirement: optional
+        documentedDefault: false
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: T_LIMIT
+        description: >-
+          Compression Limit Value (Negative Value Only)
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+  - when:
+      - path: TYPE
+        equals: "COMPTR"
+      - path: STYPE
+        equals: 2
+    source:
+      table: "Compression only — Gap (STYPE: 2)"
+      line: 246
+    fields:
+      - key: NON_LEN
+        description: >-
+          Gap
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+  - when:
+      - path: TYPE
+        equals: "WALL"
+    source:
+      table: "Wall"
+      line: 254
+    fields:
+      - key: STYPE
+        description: >-
+          Element Subtype • Membrane: 1 • Plate: 2
+        products: [gen]
+        type: integer
+        enum: [1, 2]
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: live_verified
+      - key: WALL
+        description: >-
+          Wall ID
+        products: [gen]
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: live_verified
+      - key: W_CON
+        description: >-
+          Orientation • Beta Angle: 0 • Ref Point: 1 • Ref Vector: 2
+        products: [gen]
+        type: integer
+        enum: [0, 1, 2]
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: live_corrected
+        # Marked Required. Gen NX accepts the section's Wall Request Body without
+        # it, and never returns it - not even when it is sent - and GET /info
+        # declares it on neither product (2026-09-22). Kept because the manual
+        # documents it; absence from /info is not evidence it is refused.
+      - key: W_TYPE
+        description: >-
+          Wall Type • Plate base: 0 • CRB-Pin: 1 • CRB-Fixed: 2
+        products: [gen]
+        type: integer
+        enum: [0, 1, 2]
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+  - when:
+      - path: TYPE
+        equals: "PLATE"
+    source:
+      table: "Plate"
+      line: 264
+    fields:
+      - key: STYPE
+        description: >-
+          Element Subtype • Thick: 1 • Thin: 2 • Thick+Drilling DOF: 3 • Thin+Drilling DOF: 4
+        type: integer
+        enum: [1, 2, 3, 4]
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: live_corrected
+        # Marked Required. Omitted, both products accept the record and read
+        # back STYPE: 1 (2026-09-22); the harness seed has always posted its
+        # PLATE that way.
+  - when:
+      - path: TYPE
+        equals: "PLSTRS"
+    source:
+      table: "Plane Stress"
+      line: 271
+    fields:
+      - key: STYPE
+        description: >-
+          Element Subtype • Drilling DOF Inactive: 1 • Drilling DOF Active: 2
+        type: integer
+        enum: [1, 2]
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: live_corrected
+        # Marked Required. Omitted, both products accept the record and read
+        # back STYPE: 1 (2026-09-22).
+# Each table's heading names a subtype and the element type code table
+# ("요소 유형 코드표", line 281) names the TYPE each heading's element is:
+# Tension only / Hook / Cable is TENSTR, Compression only / Gap is COMPTR,
+# and Wall, Plate and Plane stress are WALL, PLATE and PLSTRS. So each table
+# is selected by (TYPE, STYPE), and STYPE's values repeat only across
+# different TYPEs. Every table repeats row 5, ANGLE, which the base declares;
+# and STYPE, which for TENSTR and COMPTR is part of the selector and is
+# refused when omitted (2026-09-22). Beam, Truss, Plane Strain, Axisymmetric
+# and Solid add nothing beyond the base.
+
+manualDefects:
+  - describes: requiredness
+    manualSays: >-
+      The per-type tables mark STYPE Required for Plate and Plane Stress, CABLE
+      and NON_LEN Required for Cable, and W_CON Required for Wall.
+    actual: >-
+      None of them is required. Omitted, each record is accepted on both
+      products - Wall on Gen NX - with STYPE read back as 1, CABLE as 3 and
+      NON_LEN as 3.2; the section's own Cable Request Body already omits
+      NON_LEN. W_CON is never read back, even when sent. STYPE is required for
+      TENSTR, COMPTR and WALL, and WALL for WALL: each is refused without it.
+    evidence: >-
+      scripts/live_manual_feedback.py --case c2, 2026-09-22; docs/live_verification_notes.md; MD-59.
+  - describes: products
+    manualSays: >-
+      The section lists WALL among ten element types with no product
+      qualifier.
+    actual: >-
+      Civil NX refuses every WALL record - "The element type no. 5 for the
+      element no. 10 is not supported" - including the section's own Wall
+      Request Body. Gen NX accepts it on a vertical quad.
+    evidence: >-
+      scripts/live_manual_feedback.py --case c2, 2026-09-22; docs/live_verification_notes.md; MD-59.
+  - describes: field_name
+    manualSays: >-
+      No Specifications table in the section names C_RAT or LCAXIS - neither the
+      common keys nor any of the nine per-subtype tables, including the Cable
+      table (STYPE: 3) that C_RAT's own description belongs with.
+    actual: >-
+      The section's JSON Schema declares `"C_RAT": {"description": "CABLE LENGTH
+      RATIO", "type": "number"}` and `"LCAXIS": {"description": "LOCAL AXIS",
+      "type": "integer"}` among the request properties.
+    evidence: >-
+      docs/manual_defects_register.md MD-10, measured by comparing every
+      section's Specifications table against its own JSON Schema block. Both are
+      declared here with requirement `unstated`: the schema gives a type and a
+      description, and nothing in the section gives requiredness, a default, or
+      the element subtype either one applies to.
+
+sdkRules:
+  - id: db-elem-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-elem-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 03_DB_Node_Element.md line 193
+  table: 공통 키 (Common Keys) + Solid
+  structuralTables:
+    - heading: Beam, Truss, Plane Strain, Axisymmetric
+      line: 202
+      paths: [<root>]
+      note: >-
+        The manual repeats ANGLE across later subtype tables and GET
+        /info/db/ELEM declares it at record root. This records that placement
+        without inventing the incomplete TYPE/STYPE discriminator pair.

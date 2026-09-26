@@ -1,0 +1,978 @@
+# /DESIGN/SRC/AIK-SRC2K/MRBD
+#
+# Held out of the source of truth until 2026-09-03 for carrying 14 of the 54
+# paths the section's own JSON Schema declares. The manual was not the problem:
+# its parameter table documents all 54, nesting them with `└` depth markers
+# instead of a No. column. The extractor's duplicate suppression keys on the
+# No. column's parent, so a table with no numbers collapsed to the bare key and
+# dropped every repeat - and a rebar table is nothing but repeats, with NAME and
+# NUM recurring under LAYER1 and LAYER2, under TOP and BOT, and under three bar
+# sectors. Fixed in the extractor; this contract is the whole table.
+contractVersion: 1
+id: design-src-aik-src2k-mrbd
+endpoint: /DESIGN/SRC/AIK-SRC2K/MRBD
+name: Modify SRC Beam Section Data
+surface:
+  className: SrcBeamSectionData
+  exportName: srcBeamSectionData
+  modulePath: [design, srcAiksrc2k]
+  payloadTypeName: SrcBeamSectionDataPayload
+  nestedTypes:
+    - {path: BAR_SECTOR_I, name: SrcBeamBarSector, namespace: DesignSrcAiksrc2kTypes}
+    - {path: BAR_SECTOR_I.BOT, name: SrcBeamRebarFace, namespace: DesignSrcAiksrc2kTypes}
+    - {path: BAR_SECTOR_I.BOT.LAYER1, name: SrcBeamRebarLayer, namespace: DesignSrcAiksrc2kTypes}
+    - {path: BAR_SECTOR_I.BOT.LAYER2, name: SrcBeamRebarLayer, namespace: DesignSrcAiksrc2kTypes}
+    - {path: BAR_SECTOR_I.TOP, name: SrcBeamRebarFace, namespace: DesignSrcAiksrc2kTypes}
+    - {path: BAR_SECTOR_I.TOP.LAYER1, name: SrcBeamRebarLayer, namespace: DesignSrcAiksrc2kTypes}
+    - {path: BAR_SECTOR_I.TOP.LAYER2, name: SrcBeamRebarLayer, namespace: DesignSrcAiksrc2kTypes}
+    - {path: BAR_SECTOR_J, name: SrcBeamBarSector, namespace: DesignSrcAiksrc2kTypes}
+    - {path: BAR_SECTOR_J.BOT, name: SrcBeamRebarFace, namespace: DesignSrcAiksrc2kTypes}
+    - {path: BAR_SECTOR_J.BOT.LAYER1, name: SrcBeamRebarLayer, namespace: DesignSrcAiksrc2kTypes}
+    - {path: BAR_SECTOR_J.BOT.LAYER2, name: SrcBeamRebarLayer, namespace: DesignSrcAiksrc2kTypes}
+    - {path: BAR_SECTOR_J.TOP, name: SrcBeamRebarFace, namespace: DesignSrcAiksrc2kTypes}
+    - {path: BAR_SECTOR_J.TOP.LAYER1, name: SrcBeamRebarLayer, namespace: DesignSrcAiksrc2kTypes}
+    - {path: BAR_SECTOR_J.TOP.LAYER2, name: SrcBeamRebarLayer, namespace: DesignSrcAiksrc2kTypes}
+    - {path: BAR_SECTOR_M, name: SrcBeamBarSector, namespace: DesignSrcAiksrc2kTypes}
+    - {path: BAR_SECTOR_M.BOT, name: SrcBeamRebarFace, namespace: DesignSrcAiksrc2kTypes}
+    - {path: BAR_SECTOR_M.BOT.LAYER1, name: SrcBeamRebarLayer, namespace: DesignSrcAiksrc2kTypes}
+    - {path: BAR_SECTOR_M.BOT.LAYER2, name: SrcBeamRebarLayer, namespace: DesignSrcAiksrc2kTypes}
+    - {path: BAR_SECTOR_M.TOP, name: SrcBeamRebarFace, namespace: DesignSrcAiksrc2kTypes}
+    - {path: BAR_SECTOR_M.TOP.LAYER1, name: SrcBeamRebarLayer, namespace: DesignSrcAiksrc2kTypes}
+    - {path: BAR_SECTOR_M.TOP.LAYER2, name: SrcBeamRebarLayer, namespace: DesignSrcAiksrc2kTypes}
+
+products: [civil, gen]
+
+recordKey:
+  kind: record_id
+  description: >-
+    The section id. The section's own JSON Schema says so directly - "Each
+    property name is a Section ID" - which is rarer than it sounds; most
+    chapters leave the Assign key's meaning unstated.
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 27_Design_SRC_AIKSRC2K.md
+    section: "27. `DESIGN/SRC/AIK-SRC2K/MRBD` — Modify SRC Beam Section Data (SRC 보 단면 데이터 수정)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-07-26
+    - product: gen
+      ref: db-read-sweep-2026-07-26
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /DESIGN/SRC/AIK-SRC2K/MRBD/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Read-verified only. A GET sweep confirmed the route on both products on
+      2026-07-26; nobody has written to it, and /info serves no schema for any
+      /DESIGN/* endpoint that could corroborate the shape independently.
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: BAR_SECTOR_I
+    description: >-
+      I단면 철근 배치.
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    # TODO(review): nobody has omitted this against a live product.
+    # Leave it unverified, or find out - do not read the manual's
+    # 'Optional' as an answer; that is what documentedOptional records.
+    provenance: manual
+    properties:
+      - key: TOP
+        description: >-
+          상부 철근 배치.
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        # TODO(review): nobody has omitted this against a live product.
+        # Leave it unverified, or find out - do not read the manual's
+        # 'Optional' as an answer; that is what documentedOptional records.
+        provenance: manual
+        # RESOLVED: the manual nests this under 'BAR_SECTOR_I' with a tree marker
+        # rather than a path
+        properties:
+          - key: LAYER1
+            description: >-
+              상부 철근 1단.
+            type: object
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            # TODO(review): nobody has omitted this against a live product.
+            # Leave it unverified, or find out - do not read the manual's
+            # 'Optional' as an answer; that is what documentedOptional records.
+            provenance: manual
+            # RESOLVED: the manual nests this under 'TOP' with a tree marker rather
+            # than a path
+            properties:
+              - key: NAME
+                description: >-
+                  상부 철근 1단의 철근 규격. — D4=D4; D5=D5; D6=D6; D7=D7; D8=D8; D10=D10; D13=D13;
+                  D16=D16; D19=D19; D22=D22; D25=D25; D29=D29 …(전체 19개)
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                # TODO(review): nobody has omitted this against a live product.
+                # Leave it unverified, or find out - do not read the manual's
+                # 'Optional' as an answer; that is what documentedOptional records.
+                provenance: manual
+                # RESOLVED: the manual nests this under 'LAYER1' with a tree marker rather
+                # than a path
+              - key: NUM
+                description: >-
+                  상부 철근 1단의 철근 개수.
+                type: integer
+                minimum: 1
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                # TODO(review): nobody has omitted this against a live product.
+                # Leave it unverified, or find out - do not read the manual's
+                # 'Optional' as an answer; that is what documentedOptional records.
+                provenance: manual
+                # RESOLVED: the manual nests this under 'LAYER1' with a tree marker rather
+                # than a path
+          - key: LAYER2
+            description: >-
+              상부 철근 2단.
+            type: object
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            # TODO(review): nobody has omitted this against a live product.
+            # Leave it unverified, or find out - do not read the manual's
+            # 'Optional' as an answer; that is what documentedOptional records.
+            provenance: manual
+            # RESOLVED: the manual nests this under 'TOP' with a tree marker rather
+            # than a path
+            properties:
+              - key: NAME
+                description: >-
+                  상부 철근 2단의 철근 규격. — D4=D4; D5=D5; D6=D6; D7=D7; D8=D8; D10=D10; D13=D13;
+                  D16=D16; D19=D19; D22=D22; D25=D25; D29=D29 …(전체 19개)
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                # TODO(review): nobody has omitted this against a live product.
+                # Leave it unverified, or find out - do not read the manual's
+                # 'Optional' as an answer; that is what documentedOptional records.
+                provenance: manual
+                # RESOLVED: the manual nests this under 'LAYER2' with a tree marker rather
+                # than a path
+              - key: NUM
+                description: >-
+                  상부 철근 2단의 철근 개수.
+                type: integer
+                minimum: 1
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                # TODO(review): nobody has omitted this against a live product.
+                # Leave it unverified, or find out - do not read the manual's
+                # 'Optional' as an answer; that is what documentedOptional records.
+                provenance: manual
+                # RESOLVED: the manual nests this under 'LAYER2' with a tree marker rather
+                # than a path
+      - key: BOT
+        description: >-
+          하부 철근 배치.
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        # TODO(review): nobody has omitted this against a live product.
+        # Leave it unverified, or find out - do not read the manual's
+        # 'Optional' as an answer; that is what documentedOptional records.
+        provenance: manual
+        # RESOLVED: the manual nests this under 'BAR_SECTOR_I' with a tree marker
+        # rather than a path
+        properties:
+          - key: LAYER1
+            description: >-
+              하부 철근 1단.
+            type: object
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            # TODO(review): nobody has omitted this against a live product.
+            # Leave it unverified, or find out - do not read the manual's
+            # 'Optional' as an answer; that is what documentedOptional records.
+            provenance: manual
+            # RESOLVED: the manual nests this under 'BOT' with a tree marker rather
+            # than a path
+            properties:
+              - key: NAME
+                description: >-
+                  하부 철근 1단의 철근 규격. — D4=D4; D5=D5; D6=D6; D7=D7; D8=D8; D10=D10; D13=D13;
+                  D16=D16; D19=D19; D22=D22; D25=D25; D29=D29 …(전체 19개)
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                # TODO(review): nobody has omitted this against a live product.
+                # Leave it unverified, or find out - do not read the manual's
+                # 'Optional' as an answer; that is what documentedOptional records.
+                provenance: manual
+                # RESOLVED: the manual nests this under 'LAYER1' with a tree marker rather
+                # than a path
+              - key: NUM
+                description: >-
+                  하부 철근 1단의 철근 개수.
+                type: integer
+                minimum: 1
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                # TODO(review): nobody has omitted this against a live product.
+                # Leave it unverified, or find out - do not read the manual's
+                # 'Optional' as an answer; that is what documentedOptional records.
+                provenance: manual
+                # RESOLVED: the manual nests this under 'LAYER1' with a tree marker rather
+                # than a path
+          - key: LAYER2
+            description: >-
+              하부 철근 2단.
+            type: object
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            # TODO(review): nobody has omitted this against a live product.
+            # Leave it unverified, or find out - do not read the manual's
+            # 'Optional' as an answer; that is what documentedOptional records.
+            provenance: manual
+            # RESOLVED: the manual nests this under 'BOT' with a tree marker rather
+            # than a path
+            properties:
+              - key: NAME
+                description: >-
+                  하부 철근 2단의 철근 규격. — D4=D4; D5=D5; D6=D6; D7=D7; D8=D8; D10=D10; D13=D13;
+                  D16=D16; D19=D19; D22=D22; D25=D25; D29=D29 …(전체 19개)
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                # TODO(review): nobody has omitted this against a live product.
+                # Leave it unverified, or find out - do not read the manual's
+                # 'Optional' as an answer; that is what documentedOptional records.
+                provenance: manual
+                # RESOLVED: the manual nests this under 'LAYER2' with a tree marker rather
+                # than a path
+              - key: NUM
+                description: >-
+                  하부 철근 2단의 철근 개수.
+                type: integer
+                minimum: 1
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                # TODO(review): nobody has omitted this against a live product.
+                # Leave it unverified, or find out - do not read the manual's
+                # 'Optional' as an answer; that is what documentedOptional records.
+                provenance: manual
+                # RESOLVED: the manual nests this under 'LAYER2' with a tree marker rather
+                # than a path
+      - key: STIRRUP_SPACE
+        description: >-
+          I단면 스터럽 간격.
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        # TODO(review): nobody has omitted this against a live product.
+        # Leave it unverified, or find out - do not read the manual's
+        # 'Optional' as an answer; that is what documentedOptional records.
+        provenance: manual
+        # RESOLVED: the manual nests this under 'BAR_SECTOR_I' with a tree marker
+        # rather than a path
+      - key: STIRRUP_NUM
+        description: >-
+          I단면 스터럽 세트 수.
+        type: integer
+        minimum: 2
+        maximum: 20
+        requirement: optional
+        documentedDefault: 2
+        documentedOptional: true
+        safeToOmit: unverified
+        # TODO(review): nobody has omitted this against a live product.
+        # Leave it unverified, or find out - do not read the manual's
+        # 'Optional' as an answer; that is what documentedOptional records.
+        provenance: manual
+        # RESOLVED: the manual nests this under 'BAR_SECTOR_I' with a tree marker
+        # rather than a path
+  - key: BAR_SECTOR_M
+    description: >-
+      M단면 철근 배치.
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    # TODO(review): nobody has omitted this against a live product.
+    # Leave it unverified, or find out - do not read the manual's
+    # 'Optional' as an answer; that is what documentedOptional records.
+    provenance: manual
+    properties:
+      - key: TOP
+        description: >-
+          상부 철근 배치.
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        # TODO(review): nobody has omitted this against a live product.
+        # Leave it unverified, or find out - do not read the manual's
+        # 'Optional' as an answer; that is what documentedOptional records.
+        provenance: manual
+        # RESOLVED: the manual nests this under 'BAR_SECTOR_M' with a tree marker
+        # rather than a path
+        properties:
+          - key: LAYER1
+            description: >-
+              상부 철근 1단.
+            type: object
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            # TODO(review): nobody has omitted this against a live product.
+            # Leave it unverified, or find out - do not read the manual's
+            # 'Optional' as an answer; that is what documentedOptional records.
+            provenance: manual
+            # RESOLVED: the manual nests this under 'TOP' with a tree marker rather
+            # than a path
+            properties:
+              - key: NAME
+                description: >-
+                  상부 철근 1단의 철근 규격. — D4=D4; D5=D5; D6=D6; D7=D7; D8=D8; D10=D10; D13=D13;
+                  D16=D16; D19=D19; D22=D22; D25=D25; D29=D29 …(전체 19개)
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                # TODO(review): nobody has omitted this against a live product.
+                # Leave it unverified, or find out - do not read the manual's
+                # 'Optional' as an answer; that is what documentedOptional records.
+                provenance: manual
+                # RESOLVED: the manual nests this under 'LAYER1' with a tree marker rather
+                # than a path
+              - key: NUM
+                description: >-
+                  상부 철근 1단의 철근 개수.
+                type: integer
+                minimum: 1
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                # TODO(review): nobody has omitted this against a live product.
+                # Leave it unverified, or find out - do not read the manual's
+                # 'Optional' as an answer; that is what documentedOptional records.
+                provenance: manual
+                # RESOLVED: the manual nests this under 'LAYER1' with a tree marker rather
+                # than a path
+          - key: LAYER2
+            description: >-
+              상부 철근 2단.
+            type: object
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            # TODO(review): nobody has omitted this against a live product.
+            # Leave it unverified, or find out - do not read the manual's
+            # 'Optional' as an answer; that is what documentedOptional records.
+            provenance: manual
+            # RESOLVED: the manual nests this under 'TOP' with a tree marker rather
+            # than a path
+            properties:
+              - key: NAME
+                description: >-
+                  상부 철근 2단의 철근 규격. — D4=D4; D5=D5; D6=D6; D7=D7; D8=D8; D10=D10; D13=D13;
+                  D16=D16; D19=D19; D22=D22; D25=D25; D29=D29 …(전체 19개)
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                # TODO(review): nobody has omitted this against a live product.
+                # Leave it unverified, or find out - do not read the manual's
+                # 'Optional' as an answer; that is what documentedOptional records.
+                provenance: manual
+                # RESOLVED: the manual nests this under 'LAYER2' with a tree marker rather
+                # than a path
+              - key: NUM
+                description: >-
+                  상부 철근 2단의 철근 개수.
+                type: integer
+                minimum: 1
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                # TODO(review): nobody has omitted this against a live product.
+                # Leave it unverified, or find out - do not read the manual's
+                # 'Optional' as an answer; that is what documentedOptional records.
+                provenance: manual
+                # RESOLVED: the manual nests this under 'LAYER2' with a tree marker rather
+                # than a path
+      - key: BOT
+        description: >-
+          하부 철근 배치.
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        # TODO(review): nobody has omitted this against a live product.
+        # Leave it unverified, or find out - do not read the manual's
+        # 'Optional' as an answer; that is what documentedOptional records.
+        provenance: manual
+        # RESOLVED: the manual nests this under 'BAR_SECTOR_M' with a tree marker
+        # rather than a path
+        properties:
+          - key: LAYER1
+            description: >-
+              하부 철근 1단.
+            type: object
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            # TODO(review): nobody has omitted this against a live product.
+            # Leave it unverified, or find out - do not read the manual's
+            # 'Optional' as an answer; that is what documentedOptional records.
+            provenance: manual
+            # RESOLVED: the manual nests this under 'BOT' with a tree marker rather
+            # than a path
+            properties:
+              - key: NAME
+                description: >-
+                  하부 철근 1단의 철근 규격. — D4=D4; D5=D5; D6=D6; D7=D7; D8=D8; D10=D10; D13=D13;
+                  D16=D16; D19=D19; D22=D22; D25=D25; D29=D29 …(전체 19개)
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                # TODO(review): nobody has omitted this against a live product.
+                # Leave it unverified, or find out - do not read the manual's
+                # 'Optional' as an answer; that is what documentedOptional records.
+                provenance: manual
+                # RESOLVED: the manual nests this under 'LAYER1' with a tree marker rather
+                # than a path
+              - key: NUM
+                description: >-
+                  하부 철근 1단의 철근 개수.
+                type: integer
+                minimum: 1
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                # TODO(review): nobody has omitted this against a live product.
+                # Leave it unverified, or find out - do not read the manual's
+                # 'Optional' as an answer; that is what documentedOptional records.
+                provenance: manual
+                # RESOLVED: the manual nests this under 'LAYER1' with a tree marker rather
+                # than a path
+          - key: LAYER2
+            description: >-
+              하부 철근 2단.
+            type: object
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            # TODO(review): nobody has omitted this against a live product.
+            # Leave it unverified, or find out - do not read the manual's
+            # 'Optional' as an answer; that is what documentedOptional records.
+            provenance: manual
+            # RESOLVED: the manual nests this under 'BOT' with a tree marker rather
+            # than a path
+            properties:
+              - key: NAME
+                description: >-
+                  하부 철근 2단의 철근 규격. — D4=D4; D5=D5; D6=D6; D7=D7; D8=D8; D10=D10; D13=D13;
+                  D16=D16; D19=D19; D22=D22; D25=D25; D29=D29 …(전체 19개)
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                # TODO(review): nobody has omitted this against a live product.
+                # Leave it unverified, or find out - do not read the manual's
+                # 'Optional' as an answer; that is what documentedOptional records.
+                provenance: manual
+                # RESOLVED: the manual nests this under 'LAYER2' with a tree marker rather
+                # than a path
+              - key: NUM
+                description: >-
+                  하부 철근 2단의 철근 개수.
+                type: integer
+                minimum: 1
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                # TODO(review): nobody has omitted this against a live product.
+                # Leave it unverified, or find out - do not read the manual's
+                # 'Optional' as an answer; that is what documentedOptional records.
+                provenance: manual
+                # RESOLVED: the manual nests this under 'LAYER2' with a tree marker rather
+                # than a path
+      - key: STIRRUP_SPACE
+        description: >-
+          M단면 스터럽 간격.
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        # TODO(review): nobody has omitted this against a live product.
+        # Leave it unverified, or find out - do not read the manual's
+        # 'Optional' as an answer; that is what documentedOptional records.
+        provenance: manual
+        # RESOLVED: the manual nests this under 'BAR_SECTOR_M' with a tree marker
+        # rather than a path
+      - key: STIRRUP_NUM
+        description: >-
+          M단면 스터럽 세트 수.
+        type: integer
+        minimum: 2
+        maximum: 20
+        requirement: optional
+        documentedDefault: 2
+        documentedOptional: true
+        safeToOmit: unverified
+        # TODO(review): nobody has omitted this against a live product.
+        # Leave it unverified, or find out - do not read the manual's
+        # 'Optional' as an answer; that is what documentedOptional records.
+        provenance: manual
+        # RESOLVED: the manual nests this under 'BAR_SECTOR_M' with a tree marker
+        # rather than a path
+  - key: BAR_SECTOR_J
+    description: >-
+      J단면 철근 배치.
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    # TODO(review): nobody has omitted this against a live product.
+    # Leave it unverified, or find out - do not read the manual's
+    # 'Optional' as an answer; that is what documentedOptional records.
+    provenance: manual
+    properties:
+      - key: TOP
+        description: >-
+          상부 철근 배치.
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        # TODO(review): nobody has omitted this against a live product.
+        # Leave it unverified, or find out - do not read the manual's
+        # 'Optional' as an answer; that is what documentedOptional records.
+        provenance: manual
+        # RESOLVED: the manual nests this under 'BAR_SECTOR_J' with a tree marker
+        # rather than a path
+        properties:
+          - key: LAYER1
+            description: >-
+              상부 철근 1단.
+            type: object
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            # TODO(review): nobody has omitted this against a live product.
+            # Leave it unverified, or find out - do not read the manual's
+            # 'Optional' as an answer; that is what documentedOptional records.
+            provenance: manual
+            # RESOLVED: the manual nests this under 'TOP' with a tree marker rather
+            # than a path
+            properties:
+              - key: NAME
+                description: >-
+                  상부 철근 1단의 철근 규격. — D4=D4; D5=D5; D6=D6; D7=D7; D8=D8; D10=D10; D13=D13;
+                  D16=D16; D19=D19; D22=D22; D25=D25; D29=D29 …(전체 19개)
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                # TODO(review): nobody has omitted this against a live product.
+                # Leave it unverified, or find out - do not read the manual's
+                # 'Optional' as an answer; that is what documentedOptional records.
+                provenance: manual
+                # RESOLVED: the manual nests this under 'LAYER1' with a tree marker rather
+                # than a path
+              - key: NUM
+                description: >-
+                  상부 철근 1단의 철근 개수.
+                type: integer
+                minimum: 1
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                # TODO(review): nobody has omitted this against a live product.
+                # Leave it unverified, or find out - do not read the manual's
+                # 'Optional' as an answer; that is what documentedOptional records.
+                provenance: manual
+                # RESOLVED: the manual nests this under 'LAYER1' with a tree marker rather
+                # than a path
+          - key: LAYER2
+            description: >-
+              상부 철근 2단.
+            type: object
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            # TODO(review): nobody has omitted this against a live product.
+            # Leave it unverified, or find out - do not read the manual's
+            # 'Optional' as an answer; that is what documentedOptional records.
+            provenance: manual
+            # RESOLVED: the manual nests this under 'TOP' with a tree marker rather
+            # than a path
+            properties:
+              - key: NAME
+                description: >-
+                  상부 철근 2단의 철근 규격. — D4=D4; D5=D5; D6=D6; D7=D7; D8=D8; D10=D10; D13=D13;
+                  D16=D16; D19=D19; D22=D22; D25=D25; D29=D29 …(전체 19개)
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                # TODO(review): nobody has omitted this against a live product.
+                # Leave it unverified, or find out - do not read the manual's
+                # 'Optional' as an answer; that is what documentedOptional records.
+                provenance: manual
+                # RESOLVED: the manual nests this under 'LAYER2' with a tree marker rather
+                # than a path
+              - key: NUM
+                description: >-
+                  상부 철근 2단의 철근 개수.
+                type: integer
+                minimum: 1
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                # TODO(review): nobody has omitted this against a live product.
+                # Leave it unverified, or find out - do not read the manual's
+                # 'Optional' as an answer; that is what documentedOptional records.
+                provenance: manual
+                # RESOLVED: the manual nests this under 'LAYER2' with a tree marker rather
+                # than a path
+      - key: BOT
+        description: >-
+          하부 철근 배치.
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        # TODO(review): nobody has omitted this against a live product.
+        # Leave it unverified, or find out - do not read the manual's
+        # 'Optional' as an answer; that is what documentedOptional records.
+        provenance: manual
+        # RESOLVED: the manual nests this under 'BAR_SECTOR_J' with a tree marker
+        # rather than a path
+        properties:
+          - key: LAYER1
+            description: >-
+              하부 철근 1단.
+            type: object
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            # TODO(review): nobody has omitted this against a live product.
+            # Leave it unverified, or find out - do not read the manual's
+            # 'Optional' as an answer; that is what documentedOptional records.
+            provenance: manual
+            # RESOLVED: the manual nests this under 'BOT' with a tree marker rather
+            # than a path
+            properties:
+              - key: NAME
+                description: >-
+                  하부 철근 1단의 철근 규격. — D4=D4; D5=D5; D6=D6; D7=D7; D8=D8; D10=D10; D13=D13;
+                  D16=D16; D19=D19; D22=D22; D25=D25; D29=D29 …(전체 19개)
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                # TODO(review): nobody has omitted this against a live product.
+                # Leave it unverified, or find out - do not read the manual's
+                # 'Optional' as an answer; that is what documentedOptional records.
+                provenance: manual
+                # RESOLVED: the manual nests this under 'LAYER1' with a tree marker rather
+                # than a path
+              - key: NUM
+                description: >-
+                  하부 철근 1단의 철근 개수.
+                type: integer
+                minimum: 1
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                # TODO(review): nobody has omitted this against a live product.
+                # Leave it unverified, or find out - do not read the manual's
+                # 'Optional' as an answer; that is what documentedOptional records.
+                provenance: manual
+                # RESOLVED: the manual nests this under 'LAYER1' with a tree marker rather
+                # than a path
+          - key: LAYER2
+            description: >-
+              하부 철근 2단.
+            type: object
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            # TODO(review): nobody has omitted this against a live product.
+            # Leave it unverified, or find out - do not read the manual's
+            # 'Optional' as an answer; that is what documentedOptional records.
+            provenance: manual
+            # RESOLVED: the manual nests this under 'BOT' with a tree marker rather
+            # than a path
+            properties:
+              - key: NAME
+                description: >-
+                  하부 철근 2단의 철근 규격. — D4=D4; D5=D5; D6=D6; D7=D7; D8=D8; D10=D10; D13=D13;
+                  D16=D16; D19=D19; D22=D22; D25=D25; D29=D29 …(전체 19개)
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                # TODO(review): nobody has omitted this against a live product.
+                # Leave it unverified, or find out - do not read the manual's
+                # 'Optional' as an answer; that is what documentedOptional records.
+                provenance: manual
+                # RESOLVED: the manual nests this under 'LAYER2' with a tree marker rather
+                # than a path
+              - key: NUM
+                description: >-
+                  하부 철근 2단의 철근 개수.
+                type: integer
+                minimum: 1
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                # TODO(review): nobody has omitted this against a live product.
+                # Leave it unverified, or find out - do not read the manual's
+                # 'Optional' as an answer; that is what documentedOptional records.
+                provenance: manual
+                # RESOLVED: the manual nests this under 'LAYER2' with a tree marker rather
+                # than a path
+      - key: STIRRUP_SPACE
+        description: >-
+          J단면 스터럽 간격.
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        # TODO(review): nobody has omitted this against a live product.
+        # Leave it unverified, or find out - do not read the manual's
+        # 'Optional' as an answer; that is what documentedOptional records.
+        provenance: manual
+        # RESOLVED: the manual nests this under 'BAR_SECTOR_J' with a tree marker
+        # rather than a path
+      - key: STIRRUP_NUM
+        description: >-
+          J단면 스터럽 세트 수.
+        type: integer
+        minimum: 2
+        maximum: 20
+        requirement: optional
+        documentedDefault: 2
+        documentedOptional: true
+        safeToOmit: unverified
+        # TODO(review): nobody has omitted this against a live product.
+        # Leave it unverified, or find out - do not read the manual's
+        # 'Optional' as an answer; that is what documentedOptional records.
+        provenance: manual
+        # RESOLVED: the manual nests this under 'BAR_SECTOR_J' with a tree marker
+        # rather than a path
+  - key: DT
+    description: >-
+      상부 철근 피복 두께.
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    # TODO(review): nobody has omitted this against a live product.
+    # Leave it unverified, or find out - do not read the manual's
+    # 'Optional' as an answer; that is what documentedOptional records.
+    provenance: manual
+  - key: DB
+    description: >-
+      하부 철근 피복 두께.
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    # TODO(review): nobody has omitted this against a live product.
+    # Leave it unverified, or find out - do not read the manual's
+    # 'Optional' as an answer; that is what documentedOptional records.
+    provenance: manual
+  - key: SHEAR_BAR
+    description: >-
+      스터럽 철근 규격. — D4=D4; D5=D5; D6=D6; D7=D7; D8=D8; D10=D10; D13=D13; D16=D16;
+      D19=D19; D22=D22; D25=D25; D29=D29 …(전체 19개)
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    # TODO(review): nobody has omitted this against a live product.
+    # Leave it unverified, or find out - do not read the manual's
+    # 'Optional' as an answer; that is what documentedOptional records.
+    provenance: manual
+
+extraction:
+  source: 27_Design_SRC_AIKSRC2K.md line 6872
+  table: 파라미터
+
+manualDefects:
+  - describes: requiredness
+    manualSays: >-
+      The parameter table leaves the 필수 column blank for `BAR_SECTOR_I`,
+      `BAR_SECTOR_M` and `BAR_SECTOR_J`, which reads as all three being
+      optional.
+    actual: >-
+      The section's own JSON Schema puts them under an `anyOf` requiring at
+      least one of the three, alongside a flat `required` list holding `DT`,
+      `DB` and `SHEAR_BAR`. A record with no bar sector at all is not a valid
+      request, and the table cannot say so - a per-row Optional/Required column
+      has no way to express "at least one of these three". Recorded rather than
+      transcribed as a condition, because none of the three is individually
+      conditional on anything.
+    evidence: >-
+      The section's own JSON Schema block, 27_Design_SRC_AIKSRC2K.md, read
+      against its parameter table.
+
+sdkRules:
+  - id: design-src-aik-src2k-mrbd-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: design-src-aik-src2k-mrbd-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog. SRC beam rebar is design input a caller cannot
+      reconstruct from the model geometry.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 27_Design_SRC_AIKSRC2K.md line 6122
+  table: 파라미터
+  note: >-
+    All 54 paths, matching the section's own JSON Schema exactly. The table
+    nests with `└` markers rather than a No. column, which is what the
+    extractor's duplicate suppression could not scope until 2026-09-03 - see
+    this file's header.

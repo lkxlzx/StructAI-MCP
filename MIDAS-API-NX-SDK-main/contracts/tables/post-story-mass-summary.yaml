@@ -1,0 +1,44 @@
+# Source: 18_POST_PreProcess.md section 8. No SDK source was used.
+contractVersion: 1
+id: post-story-mass-summary
+endpoint: /post/TABLE
+name: Story Mass Summary Table
+summary: Story mass totals, either combined or selected by direction.
+products: [gen, civil]
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 18_POST_PreProcess.md
+    section: "8. Story Mass Summary Table"
+verification:
+  status: manual_only
+risk: read_only
+surface:
+  exportName: getStoryMassSummaryTable
+  modulePath: [preProcess]
+  tableType: STORY_MASS
+  factory: variable
+  optionNames: [components, styles, tableName, unit]
+  documentation: |-
+    docs/manual/18_POST_PreProcess.md #8 — Story Mass Summary Table.
+
+    table_type: TABLE_TYPE_STORY_MASS (direction-summed) or
+    TABLE_TYPE_STORY_MASS_X/_Y/_Z (per-direction).
+tableTypes:
+  - value: STORY_MASS
+    description: Combined directional story mass
+    head: [Index, Story, Level, X-DIR, Y-DIR, Rotational Mass, X-Coord, Y-Coord]
+    provenance: manual
+  - value: STORY_MASS_X
+    description: X-direction story mass
+    head: [Index, Story, Level, NodalMass, LoadToMass, DiaphragmMass, StructureMass, Sum]
+    provenance: manual
+  - value: STORY_MASS_Y
+    description: Y-direction story mass
+    head: [Index, Story, Level, NodalMass, LoadToMass, DiaphragmMass, StructureMass, Sum]
+    provenance: manual
+  - value: STORY_MASS_Z
+    description: Z-direction story mass
+    head: [Index, Story, Level, NodalMass, LoadToMass, DiaphragmMass, StructureMass, Sum]
+    provenance: manual

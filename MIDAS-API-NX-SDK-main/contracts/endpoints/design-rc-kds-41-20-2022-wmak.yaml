@@ -1,0 +1,108 @@
+# /DESIGN/RC/KDS-41-20-2022/WMAK
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: design-rc-kds-41-20-2022-wmak
+endpoint: /DESIGN/RC/KDS-41-20-2022/WMAK
+name: Modify Wall Mark Data
+surface:
+  className: ModifyWallMarkData
+  exportName: modifyWallMarkData
+  modulePath: [design, rcKds, rebar]
+  payloadTypeName: ModifyWallMarkDataPayload
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 26_Design_RC_KDS41202022.md
+    section: "25. `DESIGN/RC/KDS-41-20-2022/WMAK` — Modify Wall Mark Data (벽체 마크 데이터 수정)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-07-26
+    - product: gen
+      ref: db-read-sweep-2026-07-26
+
+operations:
+  - method: DELETE
+    risk: destructive
+    mitigation: none
+    request:
+      wrapper: none
+    response:
+      wrapper: unknown
+    notes: >-
+      The manual shows a bodyless DELETE at this endpoint, but does not
+      state the deletion scope or response shape.
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: Assign
+    description: >-
+      Assign 래퍼 (ID 문자열 키)
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: MARKNAME
+    description: >-
+      벽체 마크 이름 (최소 1자)
+    type: string
+    minLength: 1
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: WID_LIST
+    description: >-
+      대상 벽체 ID 목록 (최소 1개)
+    type: array
+    items:
+      type: integer
+    minItems: 1
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+
+extraction:
+  source: 26_Design_RC_KDS41202022.md line 4606
+  table: 파라미터

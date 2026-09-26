@@ -1,0 +1,55 @@
+contractVersion: 1
+id: post-design-rc-beam-forces
+endpoint: /post/TABLE
+name: RC Beam Design Forces
+products: [gen, civil]
+source: {manual: {status: documented, repo: Dennis5882/MIDAS-API, chapterFile: 23_POST_Design.md, section: "3. Concrete Design – Beam Design Forces"}}
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getBeamDesignForcesTable
+  modulePath: [design]
+  tableType: BEAMDESIGNFORCES
+  factory: fixed
+  optionNames: [components, nodeElements, parts, styles, tableName, unit]
+  documentation: |-
+    docs/manual/23_POST_Design.md #3 — Concrete Design - Beam Design Forces.
+
+    Requires analysis and design to already be complete (see 24_DB_Design.md
+    for design-code/member setup). parts: member end selection, e.g.
+    ["PartI", "PartJ"].
+
+    ⚠️ Confirmed crashing Gen NX, reproduced twice (once pre-patch during a
+    broader ``post/*`` sweep, once 2026-08-07 post-patch on build
+    08/06/2026 against a blank ``/doc/NEW`` document): the call hangs, then
+    ``verify_connection()`` shows disconnected and every ``/db/*`` call
+    404s. Same failure signature as the Column Design Forces crash —
+    but that crash was reproduced against a *different* endpoint,
+    ``/DESIGN/RC/KDS-41-20-2022/TABLE`` in
+    :func:`midas_nx.design.rc_kds.checks.get_column_design_forces_table`,
+    which has its own separate ``_post`` call, not this module's
+    ``/post/TABLE``. The two only share the ``TABLE_TYPE`` string
+    convention, not a code path — treat them as independently-crashing
+    siblings, not one shared root cause. **Confirmed NOT reproducing on
+    Civil NX** — same-day retest against a real model answered a clean
+    ``"there was an error creating utbl (ex PostMode ...)"`` error every
+    time, session stayed healthy. Every other
+    ``get_*_design_forces_table()`` function in this module shares this
+    same ``/post/TABLE`` helper and is presumed equally at risk on Gen
+    until independently confirmed.
+
+    Re-tested 2026-08-11 on Gen NX (v2.1, build 08/11/2026), same blank
+    ``/doc/NEW`` document shape as the confirmed crash above: this time a
+    clean ``{"message": ""}`` response, no crash, session stayed healthy.
+    A single clean pass does **not** confirm a fix for a
+    historically-confirmed crash — could be intermittent/non-deterministic
+    rather than fixed; needs an independent second re-test before drawing
+    any conclusion.
+
+    That independent second blank-document re-test completed 2026-09-05 on
+    Gen NX v2.1 build 09/02/2026: ``{"message": ""}``, followed by a
+    successful ``GET /db/NODE``. Civil NX v2.2 on the same build returned its
+    established no-result error and also stayed responsive. The old blank-
+    document crash no longer reproduces on the current build; a populated,
+    analysed and designed-model path was not re-tested.
+tableTypes: [{value: BEAMDESIGNFORCES, head: [Index, Memb, Part, LComName, Type, Fz, Mx, "My(-)", "My(+)"], provenance: manual}]

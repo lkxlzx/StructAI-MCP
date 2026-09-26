@@ -1,0 +1,355 @@
+# /db/POLC-M1
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-polc-m1
+endpoint: /db/POLC-M1
+name: Pushover Load Case (Hyper-S)
+surface:
+  className: PushoverLoadCaseHyperS
+  exportName: pushoverLoadCaseHyperS
+  modulePath: [db, pushover]
+  payloadTypeName: PushoverLoadCaseHyperSPayload
+  nestedTypes:
+    - {path: CTRL_OPT, name: PushoverControlOptionHyperS, namespace: DbPushoverTypes}
+    - {path: LOADPATTERN, name: PushoverLoadPatternItemHyperS, namespace: DbPushoverTypes}
+
+products: [civil]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 14_DB_Pushover.md
+    section: "6. `/db/POLC-M1` — Pushover Load Case (Hyper-S)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_civil
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-07-26
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/POLC-M1/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    summary: >-
+      Creates a record. The chapter says this endpoint has no POST; a live
+      call proved otherwise - see manualDefects.
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: LCNAME
+    description: >-
+      이름 (길이 1~20, 중복 불가)
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: DESC
+    description: >-
+      설명 (길이 ≤80)
+    type: string
+    requirement: optional
+    documentedDefault: ""
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: INCRE_STEP
+    description: >-
+      증분 스텝 수(nstep), 값 > 0 (UI 기본 20)
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: NLTYPE
+    description: >-
+      기하비선형 유형 (None: NONE / P-Delta: PDELTA / Large Displacements: LARGE)
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    enum: [NONE, PDELTA, LARGE]
+    safeToOmit: unverified
+    provenance: manual
+  - key: bUSEINITIAL
+    description: >-
+      초기하중 사용 여부. true이면 bREACOUTPUT 필수, false이면 제공 불가
+    type: boolean
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: bREACOUTPUT
+    description: >-
+      초기하중에 의한 누적 반력/층전단력 (bUSEINITIAL=true일 때 필수)
+    type: boolean
+    requirement: conditional
+    condition: bUSEINITIAL=true
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: INCRE_METHOD
+    description: >-
+      증분 방법 (Load Control: LOAD / Displacement Control: DISP)
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    enum: [LOAD, DISP]
+    safeToOmit: unverified
+    provenance: manual
+  - key: CTRL_OPT
+    description: >-
+      제어 옵션 컨테이너
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: STEPCTRLOPTION
+        description: >-
+          자동 증분 제어 (Auto-Stepping: AUTO / Equal Step: EQUAL / Incremental Control
+          Function: INC_FUNC)
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        enum: [AUTO, EQUAL, INC_FUNC]
+        safeToOmit: unverified
+        provenance: manual
+      - key: INCFUNC_NAME
+        description: >-
+          증분 함수 이름 (STEPCTRLOPTION="INC_FUNC"일 때 필수, 그 외 제공 불가)
+        type: string
+        requirement: conditional
+        condition: "STEPCTRLOPTION=\"INC_FUNC\""
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: STIFF_RATIO
+        description: >-
+          현재 강성비(Cs), [0, 100] 범위
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: DISPCTRLOPTION
+        description: >-
+          변위 제어 옵션 (Global: GLOBAL / Master Node: NODE)
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        enum: [GLOBAL, NODE]
+        safeToOmit: unverified
+        provenance: manual
+      - key: GLOBAL_MAX_DISP
+        description: >-
+          최대 병진 변위(GLOBAL일 때 필수, 값 > 0)
+        type: number
+        requirement: conditional
+        condition: "GLOBAL일 때 필수, 값 > 0"
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: MASTERNODE
+        description: >-
+          절점 번호(NODE일 때 필수, ExistNode 통과 필요)
+        type: integer
+        requirement: conditional
+        condition: NODE일 때 필수, ExistNode 통과 필요
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: MASTERDIRECTION
+        description: >-
+          방향 (DX: DX / DY: DY / DZ: DZ) (NODE일 때 필수)
+        type: string
+        requirement: conditional
+        condition: NODE일 때 필수
+        documentedDefault: null
+        documentedOptional: false
+        enum: [DX, DY, DZ]
+        safeToOmit: unverified
+        provenance: manual
+      - key: MASTERMAXDISP
+        description: >-
+          최대 변위(NODE일 때 필수, 값 != 0.0)
+        type: number
+        requirement: conditional
+        condition: "NODE일 때 필수, 값 != 0.0"
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+  - key: LOADPATTERNTYPE
+    description: >-
+      하중 패턴 유형 (정적 하중케이스: LOAD / 균일 가속도: ACC / 모드형상: MODE / 정규화 모드형상: NOR_MODE)
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    enum: [LOAD, ACC, MODE, NOR_MODE]
+    safeToOmit: unverified
+    provenance: manual
+  - key: LOADPATTERN
+    description: >-
+      하중 패턴 배열 (크기 ≥ 1; ACC/MODE/NOR_MODE는 원소 1개로 제한)
+    type: array
+    items:
+      type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: LCNAME
+        description: >-
+          하중케이스 이름 (ExistStld 통과 필요, Static Load Case 이름)
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: SF
+        description: >-
+          배율(Scale Factor), 값 != 0.0 (UI 기본 1.0)
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: DIR
+        description: >-
+          방향 (DX: DX / DY: DY / DZ: DZ)
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        enum: [DX, DY, DZ]
+        safeToOmit: unverified
+        provenance: manual
+      - key: MODE
+        description: >-
+          모드 번호, 값 > 0
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+
+sdkRules:
+  - id: db-polc-m1-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-polc-m1-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+manualDefects:
+  - describes: method
+    manualSays: >-
+      GET, PUT, DELETE. The chapter normalizes away the official article's
+      POST row, calling it an untrimmed copy of another endpoint's template,
+      and cites the chapter preamble stating that Hyper-S (-M1) endpoints do
+      not support POST.
+    actual: >-
+      POST is served. It created a Pushover Load Case that read back on a
+      following GET, and returned the same table shape PUT does.
+    evidence: >-
+      Civil NX 2026 v2.2, 2026-08-30. Two earlier attempts failed on a missing
+      static load case, identically under POST and PUT; with /db/STLD seeded
+      the POST succeeded. Contrast /db/STYP-M1, where an unserved method
+      answers {"message": "error status"} and changes nothing.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 14_DB_Pushover.md line 2035
+  table: Parameters

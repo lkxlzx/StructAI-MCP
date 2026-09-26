@@ -1,0 +1,29 @@
+contractVersion: 1
+id: post-tendon-stress-limit-check
+endpoint: /post/TABLE
+name: Tendon Stress Limit Check
+summary: Tendon-stress values against the documented limit checks.
+products: [gen, civil]
+source: {manual: {status: documented, repo: Dennis5882/MIDAS-API, chapterFile: 20_POST_AnalysisResult_2.md, section: "35. Tendon Stress Limit Check"}}
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getTendonStressLimitCheckTable
+  modulePath: [result1]
+  tableType: TNDN_STRS_LIMIT_CHECK
+  factory: fixed
+  optionNames: [components, styles, tableName, unit]
+  documentation: |-
+    docs/manual/20_POST_AnalysisResult_2.md #35 — Tendon Stress Limit Check.
+
+    Not node/element-scoped (per-tendon), so NODE_ELEMS is not exposed here.
+    NOTE: the manual documents an additional optional
+    ``ADDITIONAL.REDUCTION_FACTOR`` object (keys "AT_ANCH", "AWAY_FROM_ANCH",
+    "AT_SERVICE", each a Number reduction factor applied to the corresponding
+    stress limit; defaults 0.7/0.74/0.8) that is NOT part of get_table()'s
+    common Argument shape and is therefore not exposed by this wrapper.
+tableTypes:
+  - value: TNDN_STRS_LIMIT_CHECK
+    description: Tendon stress limit check
+    head: [Index, Tendon, Tendon Stress/f_p1, Tendon Stress/f_p2, Tendon Stress/f_pe, Tendon Stress Limit/Immediately after anchor set/At anch., Tendon Stress Limit/Immediately after anchor set/Away from anch., Tendon Stress Limit/At service]
+    provenance: manual

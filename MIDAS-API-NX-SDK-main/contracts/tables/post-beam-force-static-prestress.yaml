@@ -1,0 +1,93 @@
+# Beam Force (Static Prestress) — a table on the shared /post/TABLE route.
+#
+# Kept as its own contract rather than folded into Beam Force: it is the table
+# that does *not* honour two of the endpoint's shared request fields, and the
+# manual's own JSON Schema disagrees with the rest of the manual about the string
+# that selects it.
+#
+# Sources: docs/manual/19_POST_AnalysisResult_1.md #9 in Dennis5882/MIDAS-API.
+# No SDK source was consulted.
+contractVersion: 1
+id: post-beam-force-static-prestress
+endpoint: /post/TABLE
+name: Beam Force Static Prestress
+summary: Beam member forces under static prestress loads.
+
+products: [gen, civil]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 19_POST_AnalysisResult_1.md
+    section: "9. Beam Force (Static Prestress)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: gen
+      ref: post-table-response-key-2026-07-26
+    - product: civil
+      ref: post-table-response-key-2026-07-26
+
+risk: read_only
+
+surface:
+  exportName: getBeamForceStaticPrestressTable
+  modulePath: [result1]
+  tableType: BEAMFORCESTP
+  factory: fixed
+  optionNames: [components, constructionStage, loadCaseNames, nodeElements, stageSteps, styles, tableName, unit]
+  documentation: |-
+    docs/manual/19_POST_AnalysisResult_1.md #9 — Beam Force (Static Prestress).
+tableTypes:
+  - value: BEAMFORCESTP
+    description: Beam member force under static prestress
+    head: ["Index", "Elem", "Load", "Part", "Type", "Axial", "Shear-z", "Moment-y"]
+    provenance: live_verified
+    provenanceNote: >-
+      The spelling used by the manual's request example and its Specifications
+      table, which agree, and confirmed live against both products. Its JSON
+      Schema enum says BEAMFORCESIP; see manualDefects.
+
+requestFields:
+  unsupported:
+    - OPT_CS
+    - STAGE_STEP
+  additional:
+    - key: PARTS
+      description: Member end selection, e.g. "PartI" / "PartJ".
+      type: array
+      requirement: optional
+      provenance: manual
+
+manualDefects:
+  - describes: table_type
+    manualSays: >-
+      The official JSON Schema enum gives "BEAMFORCESIP", with an I. The request
+      example and the Specifications table both give "BEAMFORCESTP", with a T.
+    actual: >-
+      BEAMFORCESTP is correct and the schema enum is the typo, as the majority
+      reading guessed. The guess is no longer the reason: both products refuse
+      BEAMFORCESIP and accept BEAMFORCESTP.
+    evidence: >-
+      Cross-checked 2026-08-26 against official article id 36011373070745. The
+      manual repo was corrected to BEAMFORCESTP at that point; the schema typo is
+      a vendor-report item. Settled live 2026-09-04 on Gen NX 2026 v2.1 and
+      Civil NX 2026 v2.2, both build 09/02/2026, by sending both spellings
+      against the same document: BEAMFORCESIP answers "there was an error
+      creating utbl" and BEAMFORCESTP answers "[empty] Cannot generate table data
+      as there is no analysis result". The same run overturned the identical
+      majority reading on /post/TABLE's surface-spring reaction type, so the two
+      results are worth reading together - counting sources settled one and
+      broke the other. See docs/live_verification_notes.md.
+    resolved: true
+
+  - describes: field_name
+    manualSays: >-
+      Nothing - earlier revisions omitted PARTS from this table entirely.
+    actual: PARTS applies here as it does to the other beam tables.
+    evidence: Added when the chapter was re-checked against the official article, 2026-08-26.
+    resolved: true

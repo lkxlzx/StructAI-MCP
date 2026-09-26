@@ -1,0 +1,570 @@
+# /DESIGN/RC/KDS-41-20-2022/CDESIGN
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: design-rc-kds-41-20-2022-cdesign
+endpoint: /DESIGN/RC/KDS-41-20-2022/CDESIGN
+name: RC Concrete Design Result
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 26_Design_RC_KDS41202022.md
+    section: "66. `DESIGN/RC/KDS-41-20-2022/CDESIGN` — RC Concrete Design Result (RC 콘크리트 종합 설계 결과)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-08-10
+    - product: gen
+      ref: db-read-sweep-2026-08-10
+
+operations:
+  - method: POST
+    surface:
+      exportName: exportComprehensiveDesignResultImage
+      modulePath: [design, rcKds, checks]
+      argumentTypeName: ComprehensiveDesignResultArgument
+      documentation: |-
+        docs/manual/26_Design_RC_KDS41202022.md #66 — CDESIGN — RC Concrete
+        Comprehensive Design Result. Response: ``{"message": "success"}``.
+      nestedTypes:
+        - {path: RESULT_GRAPHIC, name: RcDesignResultGraphic, namespace: DesignRcKdsChecksTypes}
+        - {path: BGCOLOR_TOP, name: RcDesignResultRgbColor, namespace: DesignRcKdsChecksTypes}
+        - {path: BGCOLOR_BOTTOM, name: RcDesignResultRgbColor, namespace: DesignRcKdsChecksTypes}
+        - {path: RESULT_GRAPHIC.LOAD_CASE_COMB, name: RcDesignResultLoadCaseComb, namespace: DesignRcKdsChecksTypes}
+        - {path: RESULT_GRAPHIC.TYPE_OF_DISPLAY, name: RcDesignResultTypeOfDisplay, namespace: DesignRcKdsChecksTypes}
+        - {path: RESULT_GRAPHIC.DISPLAY_MEMBERS, name: RcDesignResultDisplayMembers, namespace: DesignRcKdsChecksTypes}
+        - {path: RESULT_GRAPHIC.OUTPUT_COMPONENT, name: RcDesignResultOutputComponent, namespace: DesignRcKdsChecksTypes}
+        - {path: RESULT_GRAPHIC.COLUMN_SECTION_SIZE, name: RcDesignResultColumnSectionSize, namespace: DesignRcKdsChecksTypes}
+        - {path: RESULT_GRAPHIC.VALUE_OPTION, name: RcDesignResultValueOption, namespace: DesignRcKdsChecksTypes}
+        - {path: RESULT_GRAPHIC.OUTPUT_SECT_LOCATION, name: RcDesignResultOutputSectLocation, namespace: DesignRcKdsChecksTypes}
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: Argument
+    description: >-
+      Argument 래퍼
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: EXPORT_PATH
+    description: >-
+      이미지 저장 경로+파일명
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: FIGURE_NAME
+    description: >-
+      스마트 리포트 이미지 이름
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: WIDTH
+    description: >-
+      이미지 가로 픽셀 (100–10000)
+    type: integer
+    minimum: 100
+    maximum: 10000
+    requirement: optional
+    documentedDefault: 1000
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: HEIGHT
+    description: >-
+      이미지 세로 픽셀 (100–10000)
+    type: integer
+    minimum: 100
+    maximum: 10000
+    requirement: optional
+    documentedDefault: 1000
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: STAGE_NAME
+    description: >-
+      시공단계 이름
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: SET_HIDDEN
+    description: >-
+      Hidden 표시 옵션
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: ACTIVE
+    description: >-
+      화면 Active/Angle/Display 설정
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: ANGLE
+    description: >-
+      화면 Active/Angle/Display 설정
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: DISPLAY
+    description: >-
+      화면 Active/Angle/Display 설정
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: PERSPECTIVE
+    description: >-
+      투시(원근) 뷰
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: ZOOM_LEVEL
+    description: >-
+      줌 레벨 (25=축소, 100=fit, 200=최대)
+    type: number
+    minimum: 25
+    maximum: 200
+    requirement: optional
+    documentedDefault: 100
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: BGCOLOR_TOP
+    description: >-
+      배경색 상/하단 (RGB)
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: R
+        type: integer
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: G
+        type: integer
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: B
+        type: integer
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+    # Members from this section's JSON Schema (line 12548); the
+    # Parameters table names the object without child rows.
+  - key: BGCOLOR_BOTTOM
+    description: >-
+      배경색 상/하단 (RGB)
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: R
+        type: integer
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: G
+        type: integer
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: B
+        type: integer
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+    # Members from this section's JSON Schema (line 12562); the
+    # Parameters table names the object without child rows.
+  - key: RESULT_GRAPHIC
+    description: >-
+      설계결과 그래픽 설정
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: LOAD_CASE_COMB
+        description: >-
+          하중케이스/조합 (TYPE="CBC", NAME)
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'RESULT_GRAPHIC' by numbering it
+        # '12.1', not by naming a path
+        properties:
+          - key: TYPE
+            type: string
+            enum: ["CBC"]
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: NAME
+            type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+        # Members from this section's JSON Schema (line 12582); the
+        # Parameters table names the object without child rows.
+      - key: COMPONENTS
+        description: >-
+          강도비 성분 (Axial/Shear-y/Shear-z/Bend-y/Bend-z/Combined)
+        type: string
+        requirement: optional
+        documentedDefault: Combined
+        documentedOptional: true
+        enum: [Axial, Shear-y, Shear-z, Bend-y, Bend-z, Combined]
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'RESULT_GRAPHIC' by numbering it
+        # '12.2', not by naming a path
+      - key: TYPE_OF_DISPLAY
+        description: >-
+          표시 옵션 (CONTOUR/LEGEND/VALUES)
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'RESULT_GRAPHIC' by numbering it
+        # '12.3', not by naming a path
+        properties:
+          - key: CONTOUR
+            type: object
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: LEGEND
+            type: object
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: VALUES
+            type: object
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+        # Members from this section's JSON Schema (line 12627); the
+        # Parameters table names the object without child rows.
+      - key: REINFORCEMENT
+        description: >-
+          배근 표시 여부
+        type: boolean
+        requirement: optional
+        documentedDefault: true
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'RESULT_GRAPHIC' by numbering it
+        # '12.4', not by naming a path
+      - key: REINFORCEMENT_TYPE
+        description: >-
+          배근 표시 타입 (REBAR/AREA/RATIO)
+        type: string
+        requirement: optional
+        documentedDefault: REBAR
+        documentedOptional: true
+        enum: [REBAR, AREA, RATIO]
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'RESULT_GRAPHIC' by numbering it
+        # '12.5', not by naming a path
+      - key: DISPLAY_MEMBERS
+        description: >-
+          표시 부재 종류 (BEAM/COLUMN/BRACE/WALL)
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'RESULT_GRAPHIC' by numbering it
+        # '12.6', not by naming a path
+        properties:
+          - key: BEAM
+            type: boolean
+            requirement: optional
+            documentedDefault: true
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: COLUMN
+            type: boolean
+            requirement: optional
+            documentedDefault: true
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: BRACE
+            type: boolean
+            requirement: optional
+            documentedDefault: true
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: WALL
+            type: boolean
+            requirement: optional
+            documentedDefault: true
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+        # Members from this section's JSON Schema (line 12660); the
+        # Parameters table names the object without child rows.
+      - key: OUTPUT_COMPONENT
+        description: >-
+          출력 성분 (RATIO_AXIAL_STRESS/MAIN_REBAR/SHEAR_REINFORCEMENT)
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'RESULT_GRAPHIC' by numbering it
+        # '12.7', not by naming a path
+        properties:
+          - key: RATIO_AXIAL_STRESS
+            type: boolean
+            requirement: optional
+            documentedDefault: true
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: MAIN_REBAR
+            type: boolean
+            requirement: optional
+            documentedDefault: true
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: SHEAR_REINFORCEMENT
+            type: boolean
+            requirement: optional
+            documentedDefault: true
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+        # Members from this section's JSON Schema (line 12681); the
+        # Parameters table names the object without child rows.
+      - key: COLUMN_SECTION_SIZE
+        description: >-
+          기둥 단면 크기 표시 (SCALE_FACTOR 0.1–100)
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'RESULT_GRAPHIC' by numbering it
+        # '12.8', not by naming a path
+        properties:
+          - key: SCALE_FACTOR
+            type: number
+            requirement: optional
+            documentedDefault: 1
+            documentedOptional: true
+            safeToOmit: unverified
+            minimum: 0.1
+            maximum: 100
+            provenance: manual
+        # Members from this section's JSON Schema (line 12698); the
+        # Parameters table names the object without child rows.
+      - key: VALUE_OPTION
+        description: >-
+          값 표시 형식 (DECIMAL_PLACES/EXPONENTIAL)
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'RESULT_GRAPHIC' by numbering it
+        # '12.9', not by naming a path
+        properties:
+          - key: DECIMAL_PLACES
+            type: integer
+            requirement: optional
+            documentedDefault: 2
+            documentedOptional: true
+            safeToOmit: unverified
+            minimum: 0
+            maximum: 15
+            provenance: manual
+          - key: EXPONENTIAL
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+        # Members from this section's JSON Schema (line 12709); the
+        # Parameters table names the object without child rows.
+      - key: OUTPUT_SECT_LOCATION
+        description: >-
+          출력 단면 위치 (OPT_I/OPT_CENTER_MID/OPT_J/OPT_MAX/OPT_ALL)
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'RESULT_GRAPHIC' by numbering it
+        # '12.10', not by naming a path
+        properties:
+          - key: OPT_I
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: OPT_CENTER_MID
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: OPT_J
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: OPT_MAX
+            type: boolean
+            requirement: optional
+            documentedDefault: true
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: OPT_ALL
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+        # Members from this section's JSON Schema (line 12724); the
+        # Parameters table names the object without child rows.
+
+extraction:
+  prose:
+    - line: 12724
+      quote: >-
+        "OUTPUT_SECT_LOCATION": { ... (JSON Schema)
+      paths: [RESULT_GRAPHIC.OUTPUT_SECT_LOCATION.OPT_I, RESULT_GRAPHIC.OUTPUT_SECT_LOCATION.OPT_CENTER_MID, RESULT_GRAPHIC.OUTPUT_SECT_LOCATION.OPT_J, RESULT_GRAPHIC.OUTPUT_SECT_LOCATION.OPT_MAX, RESULT_GRAPHIC.OUTPUT_SECT_LOCATION.OPT_ALL]
+    - line: 12709
+      quote: >-
+        "VALUE_OPTION": { ... (JSON Schema)
+      paths: [RESULT_GRAPHIC.VALUE_OPTION.DECIMAL_PLACES, RESULT_GRAPHIC.VALUE_OPTION.EXPONENTIAL]
+    - line: 12698
+      quote: >-
+        "COLUMN_SECTION_SIZE": { ... (JSON Schema)
+      paths: [RESULT_GRAPHIC.COLUMN_SECTION_SIZE.SCALE_FACTOR]
+    - line: 12681
+      quote: >-
+        "OUTPUT_COMPONENT": { ... (JSON Schema)
+      paths: [RESULT_GRAPHIC.OUTPUT_COMPONENT.RATIO_AXIAL_STRESS, RESULT_GRAPHIC.OUTPUT_COMPONENT.MAIN_REBAR, RESULT_GRAPHIC.OUTPUT_COMPONENT.SHEAR_REINFORCEMENT]
+    - line: 12660
+      quote: >-
+        "DISPLAY_MEMBERS": { ... (JSON Schema)
+      paths: [RESULT_GRAPHIC.DISPLAY_MEMBERS.BEAM, RESULT_GRAPHIC.DISPLAY_MEMBERS.COLUMN, RESULT_GRAPHIC.DISPLAY_MEMBERS.BRACE, RESULT_GRAPHIC.DISPLAY_MEMBERS.WALL]
+    - line: 12627
+      quote: >-
+        "TYPE_OF_DISPLAY": { ... (JSON Schema)
+      paths: [RESULT_GRAPHIC.TYPE_OF_DISPLAY.CONTOUR, RESULT_GRAPHIC.TYPE_OF_DISPLAY.LEGEND, RESULT_GRAPHIC.TYPE_OF_DISPLAY.VALUES]
+    - line: 12582
+      quote: >-
+        "LOAD_CASE_COMB": { ... (JSON Schema)
+      paths: [RESULT_GRAPHIC.LOAD_CASE_COMB.TYPE, RESULT_GRAPHIC.LOAD_CASE_COMB.NAME]
+    - line: 12562
+      quote: >-
+        "BGCOLOR_BOTTOM": { ... (JSON Schema)
+      paths: [BGCOLOR_BOTTOM.R, BGCOLOR_BOTTOM.G, BGCOLOR_BOTTOM.B]
+    - line: 12548
+      quote: >-
+        "BGCOLOR_TOP": { ... (JSON Schema)
+      paths: [BGCOLOR_TOP.R, BGCOLOR_TOP.G, BGCOLOR_TOP.B]
+  source: 26_Design_RC_KDS41202022.md line 12758
+  table: 파라미터

@@ -1,0 +1,198 @@
+# /DESIGN/RC/KDS-41-20-2022/TABLE
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: design-rc-kds-41-20-2022-table
+endpoint: /DESIGN/RC/KDS-41-20-2022/TABLE
+name: Column Design Forces / Brace Design Forces / Beam Design Forces
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 26_Design_RC_KDS41202022.md
+    section: "67. `DESIGN/RC/KDS-41-20-2022/TABLE` — Column Design Forces (기둥 설계력) / 68. `DESIGN/RC/KDS-41-20-2022/TABLE` — Brace Design Forces (가새 설계력) / 69. `DESIGN/RC/KDS-41-20-2022/TABLE` — Beam Design Forces (보 설계력)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-08-25
+    - product: gen
+      ref: db-read-sweep-2026-08-25
+
+operations:
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: Argument
+    description: >-
+      Argument 래퍼
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: TABLE_NAME
+    description: >-
+      응답 테이블 제목
+    type: string
+    requirement: optional
+    documentedDefault: ""
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: TABLE_TYPE
+    description: >-
+      결과 테이블 타입 (고정값 "COLUMNDESIGNFORCES") / 결과 테이블 타입 (고정값 "BRACEDESIGNFORCES")
+      / 결과 테이블 타입 (고정값 "BEAMDESIGNFORCES")
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    enum: [COLUMNDESIGNFORCES, BRACEDESIGNFORCES, BEAMDESIGNFORCES]
+    safeToOmit: unverified
+    provenance: manual
+  - key: EXPORT_PATH
+    description: >-
+      결과 저장 경로
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: UNIT
+    description: >-
+      단위 설정 (FORCE,DIST,HEAT,TEMP)
+    type: object
+    requirement: optional
+    documentedDefault: System
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: STYLES
+    description: >-
+      숫자 형식 (FORMAT,PLACE)
+    type: object
+    requirement: optional
+    documentedDefault: System
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: COMPONENTS
+    description: >-
+      출력 컬럼 목록
+    type: array
+    items:
+      type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: NODE_ELEMS
+    description: >-
+      노드/요소 선택 (KEYS/TO/STRUCTURE_GROUP_NAME 중 하나)
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    # RESOLVED: the Value 타입 cell says only `Object (oneOf)`, which is why the
+    # parser found no shape, but the shape is stated elsewhere in the same
+    # section: the JSON Schema declares all three properties, and the section's
+    # Request Body and Python example both send `{"KEYS": [915]}`. The three are
+    # transcribed here, each optional - the schema's `oneOf` requires exactly one
+    # of them and names none as required on its own, and the contract has no way
+    # to write "exactly one", so the manual's own 중 하나 stays in the
+    # description. Same treatment as `/db/REBR`'s and `/DESIGN/.../REBC`'s ELEMS.
+    properties:
+      - key: KEYS
+        description: >-
+          요소/노드 ID 배열
+        type: array
+        items:
+          type: integer
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: TO
+        description: >-
+          ID 범위
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: STRUCTURE_GROUP_NAME
+        description: >-
+          구조 그룹 이름
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+  - key: PARTS
+    description: >-
+      요소 부위 ("PartI"/"Part2/4"/"PartJ")
+    type: array
+    items:
+      type: string
+    requirement: optional
+    documentedDefault: ["All"]
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+
+manualDefects:
+  - describes: field_name
+    manualSays: >-
+      Row 8 types `NODE_ELEMS` `Object (oneOf)` and lists none of its members.
+      The table therefore names three fields fewer than the request has.
+    actual: >-
+      The section's own JSON Schema declares all three - `KEYS` (array of
+      integer), `TO` (string) and `STRUCTURE_GROUP_NAME` (string) - under a
+      `oneOf` requiring exactly one of them, and the section's Request Body and
+      Python example both send `"NODE_ELEMS": {"KEYS": [915]}`. Transcribed here,
+      each `optional`: the `oneOf` names none of them required on its own, and
+      the contract has no way to write "exactly one", so the manual's own 중 하나
+      stays in the description. Same shape as MD-26 and MD-28: members the table
+      has no rows for, supplied by a second statement in the same section.
+    evidence: >-
+      docs/manual/26_Design_RC_KDS41202022.md sections 67-69's shared Parameters
+      row 8 against the JSON Schema printed above it and the Request Body printed
+      below it, in the same section. Registered as MD-31.
+
+extraction:
+  source: 26_Design_RC_KDS41202022.md line 13031
+  table: 파라미터
+  mergedSections:
+    - heading: "67. `DESIGN/RC/KDS-41-20-2022/TABLE` — Column Design Forces (기둥 설계력)"
+      line: 13031
+    - heading: "68. `DESIGN/RC/KDS-41-20-2022/TABLE` — Brace Design Forces (가새 설계력)"
+      line: 13352
+    - heading: "69. `DESIGN/RC/KDS-41-20-2022/TABLE` — Beam Design Forces (보 설계력)"
+      line: 13680

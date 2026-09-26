@@ -1,0 +1,22 @@
+contractVersion: 1
+id: post-tendon-elongation
+endpoint: /post/TABLE
+name: Tendon Elongation
+summary: Tendon and element elongation by construction stage and step.
+products: [gen, civil]
+source: {manual: {status: documented, repo: Dennis5882/MIDAS-API, chapterFile: 20_POST_AnalysisResult_2.md, section: "31. Tendon Elongation"}}
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getTendonElongationTable
+  modulePath: [result1]
+  tableType: TNDN_ELONGATION
+  factory: fixed
+  optionNames: [components, constructionStage, stageSteps, styles, tableName, unit]
+  documentation: |-
+    docs/manual/20_POST_AnalysisResult_2.md #31 — Tendon Elongation.
+
+    Keyed by tendon/Stage/Step, not by node/element or load case, so NODE_ELEMS
+    and LOAD_CASE_NAMES are not exposed here. Stage/Step results — pass
+    opt_cs=True and stage_step to select construction-stage steps.
+tableTypes: [{value: TNDN_ELONGATION, description: Tendon elongation, head: [Index, TendonName, Stage, Step, TendonElongation/Begin, TendonElongation/End, ElementElongation/Begin, ElementElongation/End, Summation/Begin, Summation/End], provenance: manual}]

@@ -1,0 +1,191 @@
+# /DESIGN/SRC/AIK-SRC2K/LLRF
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: design-src-aik-src2k-llrf
+endpoint: /DESIGN/SRC/AIK-SRC2K/LLRF
+name: Live Load Reduction Factor
+surface:
+  className: SrcLiveLoadReductionFactor
+  exportName: srcLiveLoadReductionFactor
+  modulePath: [design, srcAiksrc2k]
+  payloadTypeName: SrcLiveLoadReductionFactorPayload
+  nestedTypes:
+    - {path: REDUCTION_DATA, name: SrcLiveLoadReductionDataItem, namespace: DesignSrcAiksrc2kTypes}
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 27_Design_SRC_AIKSRC2K.md
+    section: "4. `DESIGN/SRC/AIK-SRC2K/LLRF` — Live Load Reduction Factor (활하중 저감계수)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-07-26
+    - product: gen
+      ref: db-read-sweep-2026-07-26
+
+operations:
+  - method: DELETE
+    risk: destructive
+    mitigation: none
+    request:
+      wrapper: none
+    response:
+      wrapper: unknown
+    notes: >-
+      The manual shows a bodyless DELETE at this endpoint, but does not
+      state the deletion scope or response shape.
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: CALC_RULE
+    description: >-
+      — 0=일반 설계 기준; 1=중국 표준 기준
+    type: integer
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: APPLIED_COMP
+    description: >-
+      적용 성분 선택
+    type: array
+    items:
+      type: string
+    requirement: optional
+    documentedDefault: ["AXIAL"]
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: LIVE_LOAD_CASES
+    description: >-
+      활하중 케이스 이름 (사용자 정의 목록)
+    type: array
+    items:
+      type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: REDUCTION_DATA
+    description: >-
+      활하중 저감계수 테이블 데이터
+    type: array
+    items:
+      type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: STORY
+        description: >-
+          층 이름
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'REDUCTION_DATA' with a tree marker
+        # rather than a path
+      - key: XMIN
+        description: >-
+          X 최소 좌표
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'REDUCTION_DATA' with a tree marker
+        # rather than a path
+      - key: XMAX
+        description: >-
+          X 최대 좌표
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'REDUCTION_DATA' with a tree marker
+        # rather than a path
+      - key: YMIN
+        description: >-
+          Y 최소 좌표
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'REDUCTION_DATA' with a tree marker
+        # rather than a path
+      - key: YMAX
+        description: >-
+          Y 최대 좌표
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'REDUCTION_DATA' with a tree marker
+        # rather than a path
+      - key: RANGE_MAX
+        description: >-
+          구간 최대값 (General Design Code 전용) — 가능값 11개: 1 ~ 0.5
+        type: number
+        requirement: optional
+        documentedDefault: 1
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'REDUCTION_DATA' with a tree marker
+        # rather than a path
+      - key: RANGE_MIN
+        description: >-
+          구간 최소값 (General Design Code 전용) — 가능값 11개: 1 ~ 0.5
+        type: number
+        requirement: optional
+        documentedDefault: 0.5
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'REDUCTION_DATA' with a tree marker
+        # rather than a path
+
+extraction:
+  source: 27_Design_SRC_AIKSRC2K.md line 619
+  table: 파라미터

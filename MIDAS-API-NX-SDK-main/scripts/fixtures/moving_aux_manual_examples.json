@@ -1,0 +1,224 @@
+{
+  "source": "08_DB_Moving_Loads.md, JSON Request Body blocks",
+  "sha256": "e09314b3ed83ddd6474a44412ec35e35110dfec70fd5b938816666d2dedad273",
+  "examples": {
+    "/db/IMPF": [
+      {
+        "Assign": {
+          "82": {
+            "ITEMS": [
+              {
+                "ID": 1,
+                "LANE_TYPE": "LINE",
+                "LANE_NAME": "LL_01",
+                "FACT_TYPE": "IMPACT_FACT",
+                "FACTOR": 0.3
+              }
+            ]
+          }
+        }
+      },
+      {
+        "Assign": {
+          "163": {
+            "ITEMS": [
+              {
+                "ID": 1,
+                "LANE_TYPE": "LINE",
+                "LANE_NAME": "LL_01",
+                "ELEMTYPE": "BEAM",
+                "FACT_TYPE": "EFF_SPAN_LEN_AUTO",
+                "FACTOR": 0,
+                "PARTS": [
+                  true,
+                  true,
+                  true,
+                  true,
+                  true
+                ],
+                "COMPONENTS": [
+                  true,
+                  true,
+                  true,
+                  true,
+                  true,
+                  true,
+                  false,
+                  false
+                ]
+              }
+            ]
+          }
+        }
+      },
+      {
+        "Assign": {
+          "527": {
+            "ITEMS": [
+              {
+                "ID": 1,
+                "LANE_TYPE": "SURFACE",
+                "LANE_NAME": "SL_01",
+                "FACT_TYPE": "IMPACT_FACT",
+                "FACTOR": 0.3
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "/db/MLSP": [
+      {
+        "Assign": {
+          "1": {
+            "TYPE": "AutoInput",
+            "GROUP_NAME": "CrossBeam"
+          }
+        }
+      },
+      {
+        "Assign": {
+          "1": {
+            "TYPE": "UserInput",
+            "ELEMENT_NO": 179,
+            "ELEMENT_TYPE": "BEAM",
+            "POSITION": "Both"
+          },
+          "2": {
+            "TYPE": "UserInput",
+            "ELEMENT_NO": 180,
+            "ELEMENT_TYPE": "BEAM",
+            "POSITION": "End-I"
+          }
+        }
+      },
+      {
+        "Assign": {
+          "1": {
+            "TYPE": "UserInput",
+            "ELEMENT_NO": 540,
+            "ELEMENT_TYPE": "PLATE"
+          }
+        }
+      }
+    ],
+    "/db/MLSR": [
+      {
+        "Assign": {
+          "60": {
+            "NODE": 0
+          },
+          "201": {
+            "NODE": 0
+          },
+          "202": {
+            "NODE": 0
+          },
+          "203": {
+            "NODE": 0
+          }
+        }
+      }
+    ],
+    "/db/SINF": [
+      {
+        "Assign": {
+          "1": {
+            "ELEM_LISTS": [
+              438,
+              439,
+              444,
+              462,
+              463
+            ]
+          }
+        }
+      }
+    ],
+    "/db/MVHLtr": [
+      {
+        "Assign": {
+          "1": {
+            "NAME": "Trans",
+            "P": 120,
+            "W": 2.3,
+            "LW": 10,
+            "NUM": 4,
+            "DW": 0.3,
+            "DV": 0.4,
+            "DE": 0.5,
+            "OPT_MEDIAN_STRIP": false
+          },
+          "2": {
+            "NAME": "Trans_Medians",
+            "P": 120,
+            "W": 2.3,
+            "LW": 10,
+            "NUM": 4,
+            "DW": 0.3,
+            "DV": 0.4,
+            "DE": 0.5,
+            "OPT_MEDIAN_STRIP": true,
+            "ML": 15,
+            "MW": 1,
+            "LEFT_LANES": 2
+          }
+        }
+      }
+    ],
+    "/db/LLAN": [
+      {
+        "Assign": {
+          "1": {
+            "COMMON": {
+              "LL_NAME": "LL_01",
+              "LOAD_DIST": "LANE",
+              "GROUP_NAME": "",
+              "SKEW_START": 0,
+              "SKEW_END": 0,
+              "MOVING": "FORWARD",
+              "WHEEL_SPACE": 1.8,
+              "WIDTH": 3,
+              "OPT_AUTO_LANE": true,
+              "ALLOW_WIDTH": 3
+            },
+            "LANE_ITEMS": [
+              {
+                "ELEM": 1,
+                "ECC": -1.5
+              },
+              {
+                "ELEM": 2,
+                "ECC": -1.5
+              },
+              {
+                "ELEM": 3,
+                "ECC": -1.5
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "/db/MVLDtr": [
+      {
+        "Assign": {
+          "1": {
+            "LCNAME": "MV_Case1",
+            "DESC": "",
+            "MVHL_NAME": "Trans",
+            "SCALEFACTOR": 1,
+            "LLAN_NAME": "LL_01",
+            "NUM_LANE": 3,
+            "ITEMS": [
+              1,
+              1,
+              0.9,
+              0.75
+            ]
+          }
+        }
+      }
+    ]
+  }
+}

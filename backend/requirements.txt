@@ -1,0 +1,41 @@
+# StructAI backend dependencies.
+#
+# Owner of the DDL: 《StructAI MCP V2.1 设计框架规范》§4 (49 tables).
+# Owner of the MIDAS facts: 《MIDAS API 对接规范 v1.0》.
+
+# --- Phase 0: persistence -------------------------------------------------
+sqlalchemy>=2.0.30
+alembic>=1.13
+pydantic>=2.7
+pydantic-settings>=2.3
+cryptography>=42
+passlib[bcrypt]>=1.7
+PyJWT>=2.8
+
+# --- Phase 1: HTTP service + adapter transport ----------------------------
+fastapi>=0.111
+uvicorn[standard]>=0.30
+httpx>=0.27
+python-multipart>=0.0.9
+
+# --- Phase 1: MCP layer ---------------------------------------------------
+# mcp 2.x renamed FastMCP -> MCPServer (mcp.server.mcpserver). Verified live:
+#   from mcp.server.mcpserver import MCPServer
+# Do NOT pin mcp<2 — the layer is written against the 2.x surface.
+mcp>=2.0
+
+# --- validation -----------------------------------------------------------
+# The MCP tool arguments are validated against the JSON Schemas published by
+# the server. Verified installed: 4.26.0.
+jsonschema>=4.20
+
+# --- tests ----------------------------------------------------------------
+# The earlier adapter/MCP work was authored in a session whose sandbox blocked
+# the shell, so the suite could not be executed there. These are the packages
+# needed to actually run it:
+#   ..\.venv\Scripts\python.exe -m pytest tests -q
+pytest>=8.0
+pytest-asyncio>=0.23
+
+# NOTE (still pending): sse-starlette arrives with the SSE work
+# (总纲 §7 Phase 2, item 2.2) — the task/log streams in v1.2 §21 and §22.3.

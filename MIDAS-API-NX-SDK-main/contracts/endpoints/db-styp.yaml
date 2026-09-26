@@ -1,0 +1,153 @@
+# /db/STYP
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-styp
+endpoint: /db/STYP
+name: Structure Type
+surface:
+  className: StructureType
+  exportName: structureType
+  modulePath: [db, project]
+  payloadTypeName: StructureTypePayload
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 02_DB_Project_Structure.md
+    section: "3. `/db/STYP` — Structure Type"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-write-sweep-2026-08-16
+    - product: gen
+      ref: db-write-sweep-2026-08-16
+
+operations:
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: STYP
+    description: >-
+      Structure Type · 0=3-D / 1=X-Z Plane / 2=Y-Z Plane / 3=X-Y Plane /
+      4=Constraint RZ
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedDefaultNote: System
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: MASS
+    description: >-
+      Mass Type · 1=Lumped Mass / 2=Consistent Mass
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bMASSOFFSET
+    description: >-
+      Consider Off-diagonal Masses
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bSELFWEIGHT
+    description: >-
+      Convert Self-Weight to Mass
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: SMASS
+    description: >-
+      Structure Mass Type (자중→질량 변환 시) · 1=Convert to X,Y,Z / 2=Convert to X,Y /
+      3=Convert to Z
+    type: integer
+    requirement: optional
+    documentedDefault: 1
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: GRAV
+    description: >-
+      Gravity Acceleration (m/s
+    type: number
+    requirement: optional
+    documentedDefault: null
+    documentedDefaultNote: System
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: TEMP
+    description: >-
+      Initial Temperature
+    type: number
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bALIGNBEAM
+    description: >-
+      Align Top of Beam Section
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bALIGNSLAB
+    description: >-
+      Align Top of Slab (Plate)
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bROTRIGID
+    description: >-
+      Considering Rotational Rigid
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+
+extraction:
+  source: 02_DB_Project_Structure.md line 376
+  table: Specifications

@@ -1,0 +1,80 @@
+# /view/SELECT
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: view-select
+endpoint: /view/SELECT
+name: Select
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 16_VIEW.md
+    section: "1. `/view/SELECT` — Select"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-07-30
+    - product: gen
+      ref: db-read-sweep-2026-07-30
+
+operations:
+  - method: GET
+    surface:
+      exportName: getSelection
+      modulePath: [view]
+      documentation: |-
+        docs/manual/16_VIEW.md #1 — /view/SELECT — Select.
+
+        GET-only, no request body. Returns the currently selected node/element
+        ID lists, e.g. ``{"SELECT": {"NODE_LIST": [...], "ELEM_LIST": [...]}}``.
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: NODE_LIST
+    description: >-
+      선택된 노드 ID 목록
+    type: array
+    items:
+      type: integer
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: manual
+  - key: ELEM_LIST
+    description: >-
+      선택된 요소 ID 목록
+    type: array
+    items:
+      type: integer
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: manual
+
+extraction:
+  source: 16_VIEW.md line 58
+  table: Parameters
+  missingColumns:
+    - heading: Parameters
+      line: 58
+      columns: [Default]

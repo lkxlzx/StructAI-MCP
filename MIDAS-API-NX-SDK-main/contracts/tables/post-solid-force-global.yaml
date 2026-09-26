@@ -1,0 +1,18 @@
+contractVersion: 1
+id: post-solid-force-global
+endpoint: /post/TABLE
+name: Solid Force Global
+summary: Global solid force components.
+products: [gen, civil]
+source: {manual: {status: documented, repo: Dennis5882/MIDAS-API, chapterFile: 20_POST_AnalysisResult_2.md, section: "21. Solid Force (Global)"}}
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getSolidForceGlobalTable
+  modulePath: [result1]
+  tableType: SOLIDFG
+  factory: fixed
+  optionNames: [components, constructionStage, loadCaseNames, nodeElements, stageSteps, styles, tableName, unit]
+  documentation: |-
+    docs/manual/20_POST_AnalysisResult_2.md #21 — Solid Force (Global).
+tableTypes: [{value: SOLIDFG, description: Global solid force, head: [Index, Elem, Load, Node, FX, FY, FZ], provenance: manual}]

@@ -1,0 +1,123 @@
+# /ope/EDMP
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: ope-edmp
+endpoint: /ope/EDMP
+name: Change Property
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 15_OPE.md
+    section: "8. `/ope/EDMP` — Change Property"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-write-sweep-2026-08-07
+    - product: gen
+      ref: db-write-sweep-2026-08-07
+
+operations:
+  - method: POST
+    surface:
+      exportName: changeProperty
+      modulePath: [ope]
+      argumentTypeName: ChangePropertyArgument
+      documentation: |-
+        docs/manual/15_OPE.md #8 — /ope/EDMP — Change Property.
+      nestedTypes:
+        - {path: NODE_ELEMS, name: TargetKeys, namespace: OpeTypes}
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: NODE_ELEMS
+    description: >-
+      대상 노드/요소 번호
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: KEYS
+        description: >-
+          번호 배열 (예: [101, 102, 103])
+        type: array
+        items:
+          type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+  - key: TYPE
+    description: >-
+      변경 방법 · 명목크기: "NSM" / 체적표면비: "VSR"
+    type: string
+    requirement: optional
+    documentedDefault: NSM
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: AUTO
+    description: >-
+      자동계산 여부 (체적표면비는 false만 가능)
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: CODE
+    description: >-
+      기준 코드 · 한국표준: "Korean Standard" / CEB-FIP(1990) / 일본표준 / 중국표준 (AUTO=true이고
+      TYPE="NSM"일 때만 사용)
+    type: string
+    requirement: optional
+    documentedDefault: Korean Standard
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: PARAMETER
+    description: >-
+      파라미터 값(a) (AUTO=false일 때 필수)
+    type: number
+    requirement: conditional
+    condition: AUTO=false
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: H_VS
+    description: >-
+      변경값 · 명목크기: h / 체적표면비: v/s
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+
+extraction:
+  source: 15_OPE.md line 1333
+  table: Parameters

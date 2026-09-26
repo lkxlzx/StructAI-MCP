@@ -1,0 +1,96 @@
+# /DESIGN/STEEL/DSTL
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: design-steel-dstl
+endpoint: /DESIGN/STEEL/DSTL
+name: Design Code
+surface:
+  className: SteelDesignCodeSelection
+  exportName: steelDesignCodeSelection
+  modulePath: [design, steelKds]
+  payloadTypeName: SteelDesignCodeSelectionPayload
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 25_Design_Steel_KDS41302022.md
+    section: "0. `DESIGN/STEEL/DSTL` — Design Code (강재 설계 코드 선택)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-09-16
+    - product: gen
+      ref: db-read-sweep-2026-09-16
+    - product: gen
+      ref: design-write-2026-09-17
+
+operations:
+  - method: DELETE
+    risk: destructive
+    mitigation: none
+    request:
+      wrapper: none
+    response:
+      wrapper: unknown
+    notes: >-
+      The manual shows a bodyless DELETE at this endpoint, but does not
+      state the deletion scope or response shape.
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      2026-09-17, Build 09/15/2026, on a fresh document: Gen NX accepted the
+      manual's body and echoed the stored record. Civil NX refused the same
+      body with "[Error] Errors detected in Steel Design Control Data.(Item:)"
+      and stored nothing. What Civil needs first is not established; the
+      value was not varied, because this enum has one documented member.
+
+fields:
+  - key: Assign
+    description: >-
+      Assign 래퍼 (ID 문자열 키, 1개)
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: DGNCODE
+    description: >-
+      강재 설계 코드 · 현재 "KDS 41 30 : 2022" 1개 값만 지원
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    enum: ["KDS 41 30 : 2022"]
+    safeToOmit: unverified
+    provenance: manual
+
+extraction:
+  source: 25_Design_Steel_KDS41302022.md line 152
+  table: 파라미터

@@ -1,0 +1,105 @@
+# /DESIGN/SRC/AIK-SRC2K/DCTL
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: design-src-aik-src2k-dctl
+endpoint: /DESIGN/SRC/AIK-SRC2K/DCTL
+name: Definition of Frame
+surface:
+  className: SrcDefinitionOfFrame
+  exportName: srcDefinitionOfFrame
+  modulePath: [design, srcAiksrc2k]
+  payloadTypeName: SrcDefinitionOfFramePayload
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 27_Design_SRC_AIKSRC2K.md
+    section: "3. `DESIGN/SRC/AIK-SRC2K/DCTL` — Definition of Frame (프레임 정의)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-07-26
+    - product: gen
+      ref: db-read-sweep-2026-07-26
+
+operations:
+  - method: DELETE
+    risk: destructive
+    mitigation: none
+    request:
+      wrapper: none
+    response:
+      wrapper: unknown
+    notes: >-
+      The manual shows a bodyless DELETE at this endpoint, but does not
+      state the deletion scope or response shape.
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: FRAMEX
+    description: >-
+      X방향 프레임 — Unbraced Sway=비횡지지 | Sway; Braced Non-sway=횡지지 | Non-sway
+    type: string
+    requirement: optional
+    documentedDefault: Braced Non-sway
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: FRAMEY
+    description: >-
+      Y방향 프레임 — Unbraced Sway=비횡지지 | Sway; Braced Non-sway=횡지지 | Non-sway
+    type: string
+    requirement: optional
+    documentedDefault: Braced Non-sway
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bAUTOKF
+    description: >-
+      유효좌굴길이계수 자동계산
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: DT
+    description: >-
+      설계 타입 — 3D=3-D; XZ=X-Z 평면; YZ=Y-Z 평면; XY=X-Y 평면
+    type: string
+    requirement: optional
+    documentedDefault: 3D
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+
+extraction:
+  source: 27_Design_SRC_AIKSRC2K.md line 401
+  table: 파라미터

@@ -1,0 +1,559 @@
+# /db/TDME
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-tdme
+endpoint: /db/TDME
+name: Time Dependent Material – Compressive Strength
+surface:
+  className: TimeDependentMaterialStrength
+  exportName: timeDependentMaterialStrength
+  modulePath: [db, properties, material]
+  payloadTypeName: TimeDependentMaterialStrengthPayload
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 04_DB_Properties.md
+    section: "7. `/db/TDME`"
+    url: https://support.midasuser.com/hc/en-us/articles/35808102389401
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-write-sweep-2026-08-27
+    - product: gen
+      ref: db-write-sweep-2026-08-27
+    - product: civil
+      ref: tdme-codename-branches-2026-09-03
+    - product: civil
+      ref: tdme-japan-codenames-2026-09-03-patched
+    - product: gen
+      ref: tdme-japan-codenames-2026-09-03-patched
+    - product: gen
+      ref: tdme-codename-branches-2026-09-03
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/TDME/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: NAME
+    description: >-
+      Material Name
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: TYPE
+    description: >-
+      Material Type · Code: "CODE" / User: "USER"
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    enum: [CODE, USER]
+  - key: CODENAME
+    description: >-
+      Code Name. Which extra fields the record needs depends on this value; see
+      the variants below.
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    appliesWhen:
+      - path: TYPE
+        equals: CODE
+    enum:
+      - ACI
+      - "CEB-FIP(2010)"
+      - "CEB-FIP(1990)"
+      - Ohzagi
+      - European
+      - "INDIA(IRC:18-2000)"
+      - "CEB-FIP(1978)"
+      - AS 5100.5-2017
+      - AS 5100.5-2016
+      - AS/RTA 5100.5-2011
+      - AS 3600-2009
+      - "INDIA(IRC:112-2011)"
+      - "INDIA(IRC:112-2020)"
+      - Russian
+      - GILBERT AND RANZI
+      - KDS-2016
+      - KCI-USD12
+      - Korean Standard
+    # RESOLVED: the chapter's code table lists twenty values and this enum
+    # carries eighteen. "Japan(hydration)" and "Japan(elastic)" are iGen's,
+    # a different MIDAS product, and both answer Wrong Field on Gen NX and
+    # Civil NX - measured against a live product on 2026-09-03, seven
+    # spellings, both products, and re-measured the same day on build
+    # 09/02/2026 with each branch's own companion fields supplied. The answer
+    # stayed Wrong Field rather than becoming "input data contain errors",
+    # which is what a recognised code name with wrong companions returns, so
+    # the value itself is what this API does not know. Declaring them would
+    # say this API serves a value it does not. Registered as MD-14; the fields
+    # those two branches need are still in /info/db/TDME, because the schema
+    # is shared across products even where the code names are not.
+  - key: STRENGTH
+    description: >-
+      Compression Strength
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    appliesWhen:
+      - path: TYPE
+        equals: CODE
+
+variants:
+  - when:
+      - path: TYPE
+        equals: USER
+    source:
+      table: "`TYPE = \"USER\"` (User Defined) 전용 필드"
+      line: 667
+    fields:
+      - key: SCALE
+        description: >-
+          Scale Factor
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: aDATA
+        description: >-
+          Function Data (Array of {TIME, COMP, TENS, ELAST})
+        type: array
+        items:
+          type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: TIME
+            description: >-
+              Time (day)
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'aDATA' by numbering it '(1)', not
+            # by naming a path
+          - key: COMP
+            description: >-
+              Compression Strength
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'aDATA' by numbering it '(2)', not
+            # by naming a path
+          - key: TENS
+            description: >-
+              Tensile Strength
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'aDATA' by numbering it '(3)', not
+            # by naming a path
+          - key: ELAST
+            description: >-
+              Elastic Modulus
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'aDATA' by numbering it '(4)', not
+            # by naming a path
+
+  - when:
+      - path: TYPE
+        equals: CODE
+      - path: CODENAME
+        in:
+          - "ACI"
+          - "Korean Standard"
+    source:
+      table: "`ACI`, `Korean Standard` 전용 추가 필드"
+      line: 610
+    fields:
+      - key: A
+        description: >-
+          Factor, a
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: sending only the four common fields under CODENAME "ACI" was measured
+        # against a live product on 2026-09-03 and refused with "[Error] ... input
+        # data contain errors.", so this branch's extra fields are not
+        # collectively omissible. Which of the two the server wants was not
+        # separated, and "Korean Standard" was not driven at all, so safeToOmit
+        # stays unverified per field
+      - key: B
+        description: >-
+          Factor, b
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+  - when:
+      - path: TYPE
+        equals: CODE
+      - path: CODENAME
+        in:
+          - "CEB-FIP(1990)"
+          - "Ohzagi"
+          - "European"
+          - "INDIA(IRC:112-2011)"
+          - "KCI-USD12"
+    source:
+      table: "`CEB-FIP(1990)` · `Ohzagi` · `European` · `INDIA(IRC:112-2011)` · `KCI-USD12` 전용 추가 필드"
+      line: 617
+    fields:
+      - key: iCTYPE
+        description: >-
+          Cement Type
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: under CODENAME "European" this was omitted and the record stored anyway,
+        # the server supplying iCTYPE: 2 - measured against a live product on
+        # 2026-09-03, both products. The manual marks it Required and the product
+        # defaults it, which is the documentedOptional / safeToOmit split exactly.
+        # One of this variant's five values was driven, so the field-level claim
+        # stays unverified
+  - when:
+      - path: TYPE
+        equals: CODE
+      - path: CODENAME
+        in:
+          - "CEB-FIP(2010)"
+          - "INDIA(IRC:112-2020)"
+    source:
+      table: "`CEB-FIP(2010)` · `INDIA(IRC:112-2020)` 전용 추가 필드"
+      line: 623
+    fields:
+      - key: iCTYPE
+        description: >-
+          Cement Type
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: under CODENAME "CEB-FIP(2010)" both of this branch's fields were omitted
+        # and the record stored anyway, the server filling iCTYPE - measured
+        # against a live product on 2026-09-03, both products.
+        # "INDIA(IRC:112-2020)" was not driven
+      - key: nAGGRE
+        description: >-
+          Aggregate Type · Basalt/dense limestone: 0 / Quartzite: 1 / Limestone: 2 /
+          Sandstone: 3
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+  - when:
+      - path: TYPE
+        equals: CODE
+      - path: CODENAME
+        equals: "Russian"
+    source:
+      table: "`Russian` 전용 추가 필드"
+      line: 630
+    fields:
+      - key: iCTYPE
+        description: >-
+          Cement Type
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: sending only the four common fields under CODENAME "Russian" was
+        # measured against a live product on 2026-09-03 and refused. That proves
+        # the five extra fields are not all omissible together; it does not say
+        # which one the server missed, so no field here claims safeToOmit false on
+        # its own
+      - key: CMETH
+        description: >-
+          Curing Method · Natural Cure: 0 / Steam Cure: 1
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: CTYPE
+        description: >-
+          Concrete Type · Heavy Concrete: 0 / Fine-Grained Concrete: 1
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual flags it in its own callout - this branch's CTYPE
+        # (Concrete Type, Integer) is a different field from the endpoint's
+        # top-level TYPE (Code/User, String) despite the near-collision, and
+        # both are transcribed as they stand
+      - key: MAXS
+        description: >-
+          Maximum Aggregate Size
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: PZ
+        description: >-
+          Specific Content of the Cement Paste
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+  - when:
+      - path: TYPE
+        equals: CODE
+      - path: CODENAME
+        in:
+          - "GILBERT AND RANZI"
+          - "KDS-2016"
+    source:
+      table: "`GILBERT AND RANZI`, **`KDS-2016`** 전용 추가 필드"
+      line: 643
+    fields:
+      - key: iCTYPE
+        description: >-
+          Cement Type
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: CODENAME "KDS-2016" with the four common fields alone was refused and
+        # the section's own Request Example - the same four plus iCTYPE: 1 and
+        # DENSITY: 230 - was stored, measured against a live product on 2026-09-03
+        # on both products. So this pair is genuinely enforced where
+        # CEB-FIP(2010)'s is not, which is why the branches are separate variants
+        # and not one merged table
+      - key: DENSITY
+        description: >-
+          Weight Density
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+
+manualDefects:
+  - describes: field_name
+    manualSays: >-
+      The Specifications table gives the key `"SCALE"` to two different rows: `5
+      Scale Factor` (Number) and `6 Function Data (Array of {TIME, COMP, TENS,
+      ELAST})` (Array[Object]). The vendored chapter flags the duplicate in its
+      own callout and transcribes both, because no example in the section sends
+      either row.
+    actual: >-
+      `GET /info/db/TDME` lists `"SCALE"` as a `number` described "Scale Factor"
+      and a separate `"aDATA"` array whose items are `{TIME, COMP, TENS,
+      ELAST}`. Row 5 is correct; row 6's key is the typo, and the array is
+      `aDATA`. Civil NX and Gen NX return identical schemas.
+    evidence: >-
+      docs/live_verification_notes.md, "an /info sweep of the 18 endpoints no
+      contract could reach" (2026-09-02), captured verbatim in
+      schema/info-schemas.json. Registered as MD-13.
+
+  - describes: enum
+    manualSays: >-
+      The `CODENAME` code table lists twenty values as this endpoint's, entries
+      16 and 17 being `"Japan(hydration)"` and `"Japan(elastic)"`, each with its
+      own table of extra fields and neither marked as belonging elsewhere.
+    actual: >-
+      Both answer `Wrong Field` on Gen NX and Civil NX, in all seven spellings
+      tried, and again on build 09/02/2026 with each branch's documented
+      companion fields supplied - so it is the code name that is unknown, not
+      its companions that are missing. That refusal is correct: the two codes
+      are iGen's, a different
+      MIDAS product, and this API is not talking to iGen. The product is not
+      failing to honour its documentation - the table is listing values the
+      reader cannot reach here and saying nothing about it. This contract's
+      `CODENAME` enum therefore carries eighteen values, and the two branch
+      tables are recorded under `extraction.unmergedTables` as deliberately
+      excluded rather than unresolved.
+    evidence: >-
+      docs/live_verification_notes.md, "/db/TDME's code-name branches, tested
+      one at a time" (2026-09-03), both products, against documents confirmed
+      empty first. Registered as MD-14.
+  - describes: requiredness
+    manualSays: >-
+      Every field in every one of the seven branch tables is marked
+      **Required**, uniformly.
+    actual: >-
+      The product enforces that for some branches and not others. With only the
+      four common fields sent, `CODENAME` `"ACI"`, `"Russian"` and `"KDS-2016"`
+      are refused with "[Error] ... input data contain errors.", while
+      `"CEB-FIP(2010)"` and `"European"` are stored and the server supplies the
+      missing `iCTYPE` itself. The documentation's claim is uniform and the
+      behaviour is not, which is why `documentedOptional` stays `false`
+      throughout while `safeToOmit` stays `unverified` - the fields were driven
+      per branch, not one at a time, so no single field has been proven
+      omissible or required on its own.
+    evidence: >-
+      docs/live_verification_notes.md, "/db/TDME's code-name branches, tested
+      one at a time" (2026-09-03), identical on both products, checked case for
+      case.
+sdkRules:
+  - id: db-tdme-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-tdme-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 04_DB_Properties.md line 598
+  table: Specifications
+  # Additional parameter tables in this section were NOT merged. They are
+  # usually conditional variants selected by a type/code field. Decide
+  # whether they belong in this contract's fields, as nested `properties`,
+  # or as a separate contract - do not assume the first table is the whole
+  # schema.
+  unmergedTables:
+    - heading: "`Japan (Hydration)` 전용 추가 필드"
+      resolution: >-
+        Left out on purpose. This branch's CODENAME belongs to iGen, a different
+        MIDAS product, and both spellings answer Wrong Field on Gen NX and Civil
+        NX in all seven spellings tried (2026-09-03, MD-14). Its fields are in
+        /info/db/TDME because the schema is shared across products, but a variant
+        here would say this API serves a value it does not.
+      fields: 6
+      line: 650
+      excluded: true
+      fieldNames: ["TENS_STRN_FACTOR", "bUSE", "A", "B", "D", "iCTYPE"]
+    - heading: "`Japan (Elastic)` 전용 추가 필드"
+      resolution: >-
+        Left out on purpose. This branch's CODENAME belongs to iGen, a different
+        MIDAS product, and both spellings answer Wrong Field on Gen NX and Civil
+        NX in all seven spellings tried (2026-09-03, MD-14). Its fields are in
+        /info/db/TDME because the schema is shared across products, but a variant
+        here would say this API serves a value it does not.
+      fields: 1
+      line: 661
+      excluded: true
+      fieldNames: ["iECTYPE"]

@@ -1,0 +1,278 @@
+# /db/SLANch
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-slanch
+endpoint: /db/SLANch
+name: Traffic Surface Lanes – China
+surface:
+  className: TrafficSurfaceLanesChina
+  exportName: trafficSurfaceLanesChina
+  modulePath: [db, movingLoads]
+  payloadTypeName: TrafficSurfaceLanesChinaPayload
+  nestedTypes:
+    - {path: LANE_ITEMS, name: SurfaceLaneChinaItem, namespace: DbMovingLoadsTypes}
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 08_DB_Moving_Loads.md
+    section: 8. /db/SLANch – Traffic Surface Lanes – China
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-07-26
+    - product: gen
+      ref: db-read-sweep-2026-07-26
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/SLANch/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: NAME
+    description: >-
+      Name of Surface Lane
+    type: string
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: manual
+    # RESOLVED: taken from the section's Request Example and its Python
+    # example, which agree. This section has exactly one Parameters table
+    # and it describes LANE_ITEMS' members, not the record's own - so the
+    # record's eight fields have no table anywhere. GET /info/db/SLANch
+    # declares them and one more, SEQ. See MD-43.
+  - key: WIDTH
+    description: >-
+      Lane Width
+    type: number
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: manual
+  - key: WHEEL_SPACE
+    description: >-
+      Wheel Spacing
+    type: number
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: manual
+  - key: SKEW_START
+    description: >-
+      Skew Start
+    type: number
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: manual
+  - key: SKEW_END
+    description: >-
+      Skew End
+    type: number
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: manual
+  - key: bOPTIMIZE
+    description: >-
+      Transverse Lane Optimization
+    type: boolean
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: manual
+  - key: ALLOW_WIDTH
+    description: >-
+      Allow Width for Optimization
+    type: number
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: manual
+  - key: MV_DIR
+    description: >-
+      Moving Direction ("FORWARD" / "BACKWARD" / "BOTH")
+    type: string
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: manual
+  - key: SEQ
+    description: >-
+      Sequence Number (Must be Unique)
+    type: integer
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: info_schema
+    # RESOLVED: declared by /info and absent from the manual - the whole
+    # manual was searched for the name, not just this section. The sibling
+    # /db/SLAN documents SEQ as row 9 of its own Parameters table, Integer,
+    # default 1, Optional; requirement here stays `unstated`, because that
+    # is a claim /db/SLAN's section makes about /db/SLAN.
+  - key: LANE_ITEMS
+    description: >-
+      Lane Items
+    type: array
+    items:
+      type: object
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: manual
+    # RESOLVED: stated elsewhere in the same section - the Request Example
+    # sends it, and the section's one Parameters table is headed
+    # "Parameters - LANE_ITEMS" and lists its three members. Until
+    # 2026-09-04 this contract had those three members as its only fields,
+    # at the root, and the array itself did not exist. See MD-43.
+    properties:
+      - key: NODE
+        description: >-
+          Node No.
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: OFFSET
+        description: >-
+          Offset Distance to Lane Center
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: SPAN_LENGTH
+        description: >-
+          Span Length
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+
+manualDefects:
+  - describes: field_name
+    manualSays: >-
+      Section 8's only Parameters table is headed "Parameters - LANE_ITEMS" and
+      gives three rows: `NODE`, `OFFSET`, `SPAN_LENGTH`.
+    actual: >-
+      Those three are members of the `LANE_ITEMS` array, not the record. The
+      record's own eight fields - `NAME`, `WIDTH`, `WHEEL_SPACE`,
+      `SKEW_START`, `SKEW_END`, `bOPTIMIZE`, `ALLOW_WIDTH`, `MV_DIR` - appear
+      only in the Request Example and the Python example, with no Specifications
+      row anywhere, and `GET /info/db/SLANch` declares a ninth, `SEQ`. The
+      sibling `/db/SLAN` one section earlier tables all nine properly, so this
+      is a gap in one section rather than a convention. This contract carried
+      the three array members as its only fields, at the root, until 2026-09-04
+      - a payload type that named nothing the record actually holds.
+    evidence: >-
+      GET /info/db/SLANch on Civil NX, captured 2026-09-03, against
+      docs/manual/08_DB_Moving_Loads.md section 8 (lines 632-680) and section 7's
+      own table for comparison. Found by scripts/info_baseline.py
+      --against-contracts, which reported 13 declared properties against a
+      contract sharing none of them. Registered as MD-43.
+
+sdkRules:
+  - id: db-slanch-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-slanch-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 08_DB_Moving_Loads.md line 664
+  table: Parameters – LANE_ITEMS

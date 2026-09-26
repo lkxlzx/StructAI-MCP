@@ -1,0 +1,66 @@
+# Displacements — a table on the shared /post/TABLE route.
+#
+# Sources: docs/manual/19_POST_AnalysisResult_1.md #2 in Dennis5882/MIDAS-API.
+# No SDK source was consulted.
+contractVersion: 1
+id: post-displacements
+endpoint: /post/TABLE
+name: Displacements
+summary: Nodal displacements, in the global or local frame.
+
+products: [gen, civil]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 19_POST_AnalysisResult_1.md
+    section: "2. Displacements"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: gen
+      ref: post-table-response-key-2026-07-26
+    - product: civil
+      ref: post-table-response-key-2026-07-26
+
+risk: read_only
+
+surface:
+  exportName: getDisplacementTable
+  modulePath: [result1]
+  tableType: DISPLACEMENTG
+  factory: variable
+  optionNames: [components, constructionStage, loadCaseNames, nodeElements, stageSteps, styles, tableName, unit]
+  documentation: |-
+    docs/manual/19_POST_AnalysisResult_1.md #2 — Displacements.
+
+    table_type: TABLE_TYPE_DISPLACEMENT_GLOBAL (default) or _LOCAL.
+tableTypes:
+  - value: DISPLACEMENTG
+    description: Global coordinate system
+    head: ["Index", "Node", "Load", "DX", "DY", "DZ", "RX", "RY", "RZ"]
+    headNote: A construction-stage query inserts Stage and Step columns after Load.
+    provenance: manual
+
+  - value: DISPLACEMENTL
+    description: Local coordinate system
+    head: ["Index", "Node", "Load", "DX", "DY", "DZ", "RX", "RY", "RZ"]
+    headNote: >-
+      The manual gives one HEAD for both variants, unlike Reaction where the
+      local variant switches to lower-case component names. Not checked against
+      a running product.
+    provenance: manual
+
+requestFields:
+  additional:
+    - key: DISP_OPT
+      description: >-
+        How construction-stage displacement is reported - Accumulative, Current
+        or Real.
+      type: string
+      requirement: optional
+      provenance: manual

@@ -1,0 +1,266 @@
+# Known MIDAS NX product risks, and the cross-endpoint rules every SDK must follow.
+#
+# Endpoint contracts reference entries here by id, through `knownDefects[].ref`
+# and `sdkRules[].riskRef`. A risk that no contract references is a validation
+# error: either it belongs to an endpoint that has not been contracted yet, or it
+# is stale.
+schemaVersion: 1
+
+# ---------------------------------------------------------------------------
+# Rules that hold for every endpoint, regardless of contract.
+# ---------------------------------------------------------------------------
+clientRules:
+  - id: timeout-is-not-rollback
+    title: A timeout is not a rollback
+    statement: >-
+      A client-side timeout stops the SDK waiting. It does not cancel, undo or
+      roll back anything on the MIDAS NX side. The product may still be
+      executing the request, may complete it after the SDK has already raised,
+      and may have mutated the model or written files by then. Model state after
+      a timeout is unknown until it is read back.
+    requiredOfSdks: >-
+      Document this wherever a timeout is configurable or raised, in text that
+      survives into the published API documentation, and never describe a
+      timeout as cancelling the operation.
+    evidence: >-
+      Observed repeatedly on hanging *-ANAL design checks and on the /db/NMAS
+      crash, where the call timed out client-side while the product was still
+      wedged. docs/live_verification_notes.md.
+
+  - id: http-200-is-not-success
+    title: A 200 does not mean success
+    statement: >-
+      Several endpoints answer HTTP 200 - and sometimes 201 - with an
+      {"error": {...}} body. Others report failure in a plain "message" string:
+      /doc/ANAL reports a failed solve as {"message": "... Analysis failed."}
+      and /doc/SAVEAS returns "... command complete" for a save that never
+      happened.
+    requiredOfSdks: >-
+      Inspect the response body, not only the status line, and raise on an error
+      body by default. Do not assume one error shape covers every endpoint;
+      verify the failure shape of each write endpoint against a live product.
+
+  - id: response-key-is-unstable
+    title: Match the response table by shape, not by key name
+    statement: >-
+      /post/TABLE's top-level response key has been observed as "Result Table",
+      as "empty", and as the TABLE_NAME that was requested. "empty" is simply
+      the default key for a blank TABLE_NAME and can carry a full table, so it
+      must never be read as "no data".
+    requiredOfSdks: >-
+      Locate the payload by finding the object carrying HEAD/DATA, never by
+      indexing a key name.
+
+  - id: paths-resolve-on-the-nx-host
+    title: Every path belongs to the machine running NX
+    statement: >-
+      Calls travel through the MIDASIT relay, so the product commonly runs on a
+      different machine from the script. EXPORT_PATH, /doc/SAVEAS, /doc/OPEN,
+      report and image paths all resolve on the NX host. A path that does not
+      exist there raises a modal dialog on that machine and blocks the session,
+      while the HTTP call still answers with a success-shaped message.
+    requiredOfSdks: >-
+      Document that paths are host-side, and verify a write by reading it back
+      through the API rather than by checking the local filesystem.
+
+  - id: modal-dialog-blocks-the-session
+    title: A dialog blocks the whole API session
+    statement: >-
+      Any call that raises a confirmation or error dialog on the NX host blocks
+      every subsequent API call, not just its own, until a human dismisses it.
+      /mapikey/verify keeps answering "connected" throughout, because the relay
+      serves it, so a connection check cannot detect this state. Read-shaped
+      calls are not exempt: GET /db/CAMB raised an access-denied dialog purely
+      because the open document lived under Program Files.
+    requiredOfSdks: >-
+      Never treat a successful connection check as proof that the session is
+      responsive.
+
+# ---------------------------------------------------------------------------
+# Endpoint-specific product defects.
+# ---------------------------------------------------------------------------
+risks:
+  - id: db-nmas-omitted-rotational-mass
+    title: POST/PUT /db/NMAS crashes when rmX/rmY/rmZ are omitted
+    severity: product_crash_risk
+    endpoints: ["/db/NMAS"]
+    products: [gen, civil]
+    symptom: >-
+      The call hangs for 15-60 seconds and never returns. Every following /db/*
+      call then times out too, and the product raises its "Failed to disconnect
+      the work session" licence dialog, which kills the application and holds
+      the licence until the process is restarted properly.
+    rootCause: >-
+      The server reads an uninitialized value for rmX, rmY and rmZ specifically
+      when they are absent from the payload, instead of applying their
+      documented default of 0. Sending them explicitly - even as 0.0 - avoids it
+      entirely. Confirmed symmetrically on both products in one session: a
+      full-fields call survives and an immediately following omitted-fields call
+      on a different node kills that same session, every time.
+    ruledOut: >-
+      Not an idle timeout, not a blocking save-changes dialog, not model
+      topology, and not which machine the HTTP request originates from. 15+
+      reproductions across multiple Civil and Gen versions and builds, a real
+      production model, a same-LAN caller, and a from-scratch minimal fully
+      connected model.
+    mitigation: normalized
+    sdkRule: nmas-rotational-mass-defaults
+    status: >-
+      Fixed server-side on Civil NX 2026 v2.2 build 08/12/2026, on one account:
+      a raw re-trigger bypassing the SDK returned in 0.1s and read back
+      rmX/rmY/rmZ as 0, meaning the server now applies the documented default.
+      That is one build on one installation, not every deployed installation, so
+      the SDK rule stays.
+
+      Re-measured 2026-09-04 on BOTH products - Civil NX 2026 v2.2 and Gen NX
+      2026 v2.1, both build 09/02/2026 - hard, with the author's consent that a
+      crash was acceptable: roughly 500 omitted-field writes over three rounds - single calls, 200 sequential writes, and an eight-node frame with
+      real beam elements and a constraint - and neither session ever stopped
+      answering. A read back of a record written without the fields returns
+      rmX/rmY/rmZ as 0 on both products, so the server applies the documented
+      default rather than storing the record without them; the write response
+      does not report that, and reading the echo alone suggests otherwise.
+
+      The rule still stays, and the severity is unchanged. One clean session on
+      one build on one machine does not overturn 15+ reproductions across
+      several versions, builds, models and calling machines; the products
+      auto-update, so an SDK release cannot assume its users are on this build;
+      and sending the values costs a caller nothing, because they are the
+      documented default. A mitigated crash risk is still a crash risk. What
+      this does not establish is that the defect is fixed - an uninitialized
+      read is exactly the bug that hides when the memory happens to be zero, and
+      these were near-empty scratch documents.
+
+      Re-checked 2026-09-05 on the same continuously-running 09/02/2026 build
+      sessions after the wider non-TEMP crash-family sweep: one additional raw
+      POST per product omitted rmX/rmY/rmZ by deriving the payload from the
+      shared live fixture and removing only those three keys. Both calls
+      returned normally, GET stored all three omitted fields as 0, and a
+      follow-up NODE read confirmed each session remained responsive. This is
+      corroboration on the same build, not a reason to remove the mitigation.
+    firstObserved: "2026-07-29"
+    rootCausedOn: "2026-07-29"
+    lastChecked: "2026-09-05"
+    evidence:
+      - docs/live_verification_notes.md
+    reportedToVendor: A-1
+
+  - id: db-delete-body-empties-table
+    title: DELETE with an id-keyed Assign body empties the whole table
+    severity: destructive
+    endpoints: ["/db/*"]
+    products: [gen, civil]
+    symptom: >-
+      DELETE against the bare endpoint with an id-keyed body deletes every
+      record in the table and ignores the ids named in that body. For /db/NODE
+      this takes every element attached to those nodes with it. This is the form
+      the official manual documents as deleting one record.
+    rootCause: >-
+      Behaviour of the documented route. The undocumented DELETE {endpoint}/{id}
+      is the one that deletes a single record, and deleting an absent id there
+      is a harmless no-op.
+    mitigation: confirmation_required
+    sdkRule: node-delete-per-id
+    status: >-
+      Open. Verified across /db/NODE, /db/STLD, /db/LDGR and /db/MATL; treated
+      as a property of /db/* DELETE rather than of any one endpoint.
+    firstObserved: "2026-07-26"
+    lastChecked: "2026-07-26"
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: post-table-unstable-response-key
+    title: /post/TABLE's response key is not the one you asked for
+    severity: read_only
+    endpoints: ["/post/TABLE"]
+    products: [gen, civil]
+    symptom: >-
+      The top-level key wrapping the returned table has been observed as the
+      TABLE_NAME that was requested, as "Result Table", and as "empty". An SDK
+      that indexes the response by the name it sent gets a KeyError on a call
+      that actually succeeded.
+    rootCause: >-
+      "empty" is the server's default key for a blank TABLE_NAME. It is not a
+      signal that the table is empty - it can carry a full table - so reading it
+      as "no data" silently discards results.
+    mitigation: normalized
+    sdkRule: post-table-unwrap-by-shape
+    status: >-
+      Open, and treated as permanent: the SDKs locate the payload by finding the
+      object carrying HEAD and DATA rather than by key name, which is correct
+      whichever key the server picks.
+    firstObserved: "2026-07-26"
+    lastChecked: "2026-07-26"
+    evidence:
+      - docs/live_verification_notes.md
+
+
+  - id: temp-src-ocheck-ends-the-session
+    title: POST /TEMP/DESIGN/SRC/AIK-SRC2K/OCHECK ends the NX session
+    severity: crash
+    endpoints: ["/TEMP/DESIGN/SRC/AIK-SRC2K/OCHECK"]
+    products: [gen, civil]
+    symptom: >-
+      The call never answers. It times out client-side after 30-35 seconds, the
+      product raises its "Failed to disconnect the work session" licence dialog,
+      and every following call times out or reports a disconnected session. The
+      licence is held until the process is restarted properly.
+    rootCause: >-
+      Unknown, and MIDASIT has not committed to one. The trigger is a precondition
+      of the model rather than of the request: a run against a document with a
+      real section SRC design cannot use crashes, while the identical call against
+      a document with no sections answers a clean `Section 1 does not exist.`
+      error and leaves the session healthy.
+    ruledOut: >-
+      Not build-dependent: reproduced on Gen NX 2026 v2.1 build 08/11/2026 and on
+      Civil NX 2026 v2.2 builds 08/12/2026 and 08/24/2026. Not fixed by the path
+      move: MIDASIT relocated the route to the /TEMP/ prefix on 2026-08-06 to mark
+      it as an unofficial, paused-development API, and the new path reproduces the
+      crash identically. Not a payload problem: the same shape that crashes
+      against a model with sections is answered cleanly against an empty one.
+    mitigation: none
+    sdkRule: temp-src-ocheck-unofficial-and-unsafe
+    status: >-
+      Open, and expected to stay open. MIDASIT classified it as an unofficial API
+      with paused development and no fix timeline, which is what the /TEMP/ prefix
+      records. Four reproductions across two products and four builds; each needed
+      a full product restart to recover.
+    firstObserved: "2026-07-31"
+    lastChecked: "2026-08-24"
+    evidence:
+      - docs/live_verification_notes.md
+  - id: db-rebb-write-path-refuses-every-payload
+    title: POST/PUT /db/REBB answers "Wrong Field" whatever the body
+    severity: write
+    endpoints: ["/db/REBB"]
+    products: [gen]
+    symptom: >-
+      Every write answers {"error": ... "Wrong Field"} and changes nothing. The
+      message names no field, so it reads as a payload problem and invites a
+      caller to keep permuting field names.
+    rootCause: >-
+      Unknown, and not the request body. A literally empty item, {"ITEMS":
+      [{}]}, fails identically to a fully specified one - which is what rules
+      the payload out, because an empty object cannot contain a wrong field.
+      Same class as the standing /db/NLLP and /db/WVLD write failures.
+    ruledOut: >-
+      Not a missing target: a C24 material, an SB section, a beam element using
+      it and a design code were built from scratch for the test. Not the
+      payload shape: this SDK's shape, the official article's own embedded
+      LAYER1/LAYER2 + DT/DB schema, mixtures of the two, and an empty item all
+      answered the same. Not the session: verify_connection() reported a clean
+      connected status rather than a blocked-modal false positive, and an
+      unrelated GET /db/NODE succeeded in the same session. GET /db/REBB works
+      throughout.
+    mitigation: none
+    sdkRule: db-rebb-write-path-unconfirmed
+    status: >-
+      Open. Observed on one account and one session, so it is recorded as a
+      standing failure rather than proven universal - what is proven is that no
+      request body fixes it. This is why /db/REBB's field names rest on the
+      /info schema and the section's own example rather than on a round trip:
+      there is no write to confirm them with.
+    firstObserved: "2026-08-27"
+    lastChecked: "2026-09-03"
+    evidence:
+      - docs/live_verification_notes.md

@@ -1,0 +1,113 @@
+# /DESIGN/SRC/AIK-SRC2K/FMAG
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: design-src-aik-src2k-fmag
+endpoint: /DESIGN/SRC/AIK-SRC2K/FMAG
+name: Moment Magnifier(B1/Delta_b, B2/Delta_s)
+surface:
+  className: SrcMomentMagnifier
+  exportName: srcMomentMagnifier
+  modulePath: [design, srcAiksrc2k]
+  payloadTypeName: SrcMomentMagnifierPayload
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 27_Design_SRC_AIKSRC2K.md
+    section: "10. `DESIGN/SRC/AIK-SRC2K/FMAG` — Moment Magnifier(B1/Delta_b, B2/Delta_s) (모멘트 확대계수)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-07-26
+    - product: gen
+      ref: db-read-sweep-2026-07-26
+
+operations:
+  - method: DELETE
+    risk: destructive
+    mitigation: none
+    request:
+      wrapper: none
+    response:
+      wrapper: unknown
+    notes: >-
+      The manual shows a bodyless DELETE at this endpoint, but does not
+      state the deletion scope or response shape.
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: B1Y_DELTA_BY
+    description: >-
+      B1y - Δby (1차 모멘트 Y)
+    type: number
+    requirement: optional
+    documentedDefault: 1
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: B1Z_DELTA_BZ
+    description: >-
+      B1z - Δbz (1차 모멘트 Z)
+    type: number
+    requirement: optional
+    documentedDefault: 1
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: B2Y_DELTA_SY
+    description: >-
+      B2y - Δsy (2차 모멘트 Y)
+    type: number
+    requirement: optional
+    documentedDefault: 1
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: B2Z_DELTA_SZ
+    description: >-
+      B2z - Δsz (2차 모멘트 Z)
+    type: number
+    requirement: optional
+    documentedDefault: 1
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+
+extraction:
+  source: 27_Design_SRC_AIKSRC2K.md line 1647
+  table: 파라미터

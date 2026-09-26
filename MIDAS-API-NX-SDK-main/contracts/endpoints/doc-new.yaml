@@ -1,0 +1,49 @@
+# /doc/NEW
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: doc-new
+endpoint: /doc/NEW
+name: New Project
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 01_DOC.md
+    section: "1. `/doc/NEW` — New Project"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-write-sweep-2026-07-22
+    - product: gen
+      ref: db-write-sweep-2026-07-22
+
+operations:
+  - method: POST
+    risk: write
+    request:
+      wrapper: argument
+      itemSchema: empty
+    response:
+      wrapper: table
+      keyStability: stable
+
+# No parameter table could be parsed from this section. Transcribe the
+# fields by hand, or check whether the endpoint takes no payload at all.
+fields: []
+
+extraction:
+  source: 01_DOC.md line ?
+  table: none found

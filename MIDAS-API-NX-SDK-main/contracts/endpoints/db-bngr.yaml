@@ -1,0 +1,92 @@
+# /db/BNGR
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-bngr
+endpoint: /db/BNGR
+name: Boundary Group
+surface:
+  className: BoundaryGroup
+  exportName: boundaryGroup
+  modulePath: [db, project]
+  payloadTypeName: BoundaryGroupPayload
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 02_DB_Project_Structure.md
+    section: "6. `/db/BNGR` — Boundary Group"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-write-sweep-2026-07-29
+    - product: gen
+      ref: db-write-sweep-2026-07-29
+
+operations:
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: NAME
+    description: >-
+      Boundary Group Name
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: AUTOTYPE
+    description: >-
+      Auto-generated boundary groups for CR/SH in Composite Section · 0=Creep /
+      1=Shrinkage
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedDefaultNote: Auto
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's BoundaryGroup case completed a live
+      create-read-update-delete round trip on gen and civil without this field
+      in its payload. That is evidence the call is accepted, not that the
+      resulting model is what an engineer wanted.
+    provenance: manual
+
+extraction:
+  source: 02_DB_Project_Structure.md line 694
+  table: Specifications

@@ -1,0 +1,28 @@
+# Source: 19_POST_AnalysisResult_1.md section 3. No SDK source was used.
+contractVersion: 1
+id: post-truss-force
+endpoint: /post/TABLE
+name: Truss Force
+summary: Axial force at each end of truss elements.
+products: [gen, civil]
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 19_POST_AnalysisResult_1.md
+    section: "3. Truss Force"
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getTrussForceTable
+  modulePath: [result1]
+  tableType: TRUSSFORCE
+  factory: fixed
+  optionNames: [components, constructionStage, loadCaseNames, nodeElements, stageSteps, styles, tableName, unit]
+  documentation: |-
+    docs/manual/19_POST_AnalysisResult_1.md #3 — Truss Force.
+tableTypes:
+  - value: TRUSSFORCE
+    description: Truss force
+    head: [Index, Elem, Load, Force-I, Force-J]
+    provenance: manual

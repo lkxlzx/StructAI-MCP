@@ -1,0 +1,96 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "midas-nx"
+# Read from src/midas_nx/__init__.py's __version__ (see [tool.hatch.version]),
+# so the installed distribution and midas_nx.__version__ can't drift apart —
+# they did between v0.10.0 and v0.11.2, when only this file was being bumped.
+dynamic = ["version"]
+description = "Unified Python SDK for the MIDAS NX Open API (Civil NX + Gen NX) - employee-led open source, not an official MIDAS IT product"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+authors = [{ name = "Dennis" }]
+keywords = [
+  "midas", "midas-nx", "midas-gen", "midas-civil", "civil-nx", "gen-nx",
+  "midas-gen-nx", "midas-civil-nx", "midas-api", "midas-open-api",
+  "structural-engineering", "structural-analysis", "finite-element",
+  "fea", "bridge-design", "sdk", "api-wrapper", "midasit",
+]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Operating System :: OS Independent",
+  "Intended Audience :: Science/Research",
+  "Intended Audience :: Developers",
+  "Topic :: Scientific/Engineering",
+  "Topic :: Scientific/Engineering :: Physics",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Typing :: Typed",
+]
+dependencies = [
+  "requests>=2.34.2",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=9.1.1",
+  "responses>=0.26.2",
+  "ruff>=0.15",
+  "mypy>=2.3.0",
+  "types-requests",
+  # contracts/ tooling only. Deliberately not a runtime dependency: the
+  # contracts are consumed at generation and validation time, so an installed
+  # midas-nx still needs nothing but requests.
+  "pyyaml>=6.0",
+  "types-PyYAML",
+  "jsonschema>=4.23",
+]
+docs = [
+  "mkdocs-material>=9.5",
+  "mkdocstrings[python]>=1.0.6",
+]
+
+[project.urls]
+Homepage = "https://github.com/Dennis5882/MIDAS-API-NX-SDK"
+Repository = "https://github.com/Dennis5882/MIDAS-API-NX-SDK"
+Documentation = "https://dennis5882.github.io/MIDAS-API-NX-SDK/"
+"Bug Tracker" = "https://github.com/Dennis5882/MIDAS-API-NX-SDK/issues"
+Changelog = "https://github.com/Dennis5882/MIDAS-API-NX-SDK/releases"
+Manual = "https://github.com/Dennis5882/MIDAS-API"
+"Ask the author" = "https://www.linkedin.com/in/dennis58"
+
+[tool.hatch.version]
+path = "src/midas_nx/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/midas_nx"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.11"
+files = ["src/midas_nx"]
+ignore_missing_imports = true
+# Deliberately not --strict. The payload TypedDicts are documentation of a
+# heavily conditional external schema, not a model to validate against, so
+# strict mode's untyped-def/Any rules would produce noise rather than defects.
+# What is enforced is the part that catches real mistakes: no implicit
+# Optional, and no silently-ignored type errors.
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["F", "I"]

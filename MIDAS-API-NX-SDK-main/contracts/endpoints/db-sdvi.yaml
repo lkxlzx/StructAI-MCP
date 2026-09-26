@@ -1,0 +1,393 @@
+# /db/SDVI
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-sdvi
+endpoint: /db/SDVI
+name: Seismic Device – Viscous/Oil Damper
+surface:
+  className: SeismicDeviceViscousDamper
+  exportName: seismicDeviceViscousDamper
+  modulePath: [db, boundary]
+  payloadTypeName: SeismicDeviceViscousDamperPayload
+  nestedTypes:
+    - {path: COMMON, name: SeismicDeviceCommon, namespace: DbBoundaryTypes}
+    - {path: ITEM, name: SeismicDeviceViscousDamperItem, namespace: DbBoundaryTypes}
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 05_DB_Boundary.md
+    section: "16. `/db/SDVI` — Seismic Device – Viscous/Oil Damper"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-08-16
+    - product: gen
+      ref: db-read-sweep-2026-08-16
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/SDVI/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: COMMON
+    description: >-
+      Common Data
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: NAME
+        description: >-
+          Name
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'COMMON' by numbering it '(1)', not by
+        # naming a path
+      - key: DESC
+        description: >-
+          Description
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'COMMON' by numbering it '(2)', not by
+        # naming a path
+      - key: INPUT_METHOD
+        description: >-
+          Input Method · 0=사용자 입력, 1=참조 DB
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'COMMON' by numbering it '(3)', not by
+        # naming a path
+      - key: COMPANY
+        description: >-
+          Company
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'COMMON' by numbering it '(4)', not by
+        # naming a path
+      - key: PRODUCT_NAME
+        description: >-
+          Product Name
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'COMMON' by numbering it '(5)', not by
+        # naming a path
+      - key: TYPE_NUMBER
+        description: >-
+          Type Number
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'COMMON' by numbering it '(6)', not by
+        # naming a path
+  - key: DEVICE_TYPE
+    description: >-
+      Device Type
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: DAMPER_TYPE
+    description: >-
+      Damper Model · 0=Single Dashpot, 1=Kelvin(Voigt), 2=Maxwell
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: DASHPOT_TYPE
+    description: >-
+      Dashpot Type · 0=Linear Elastic, 1=Bilinear, 2=Exponential
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: INPUT_TYPE
+    description: >-
+      Input Type · 0=감쇠비 α, 1=감쇠상수 C
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: INPUT_TYPE_EXFN
+    description: >-
+      Input Type (Exponential Function Type용)
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: ITEM
+    description: >-
+      Property Data (DOF별 6항목)
+    type: array
+    items:
+      type: object
+    minItems: 6
+    maxItems: 6
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: OPT_DOF
+        description: >-
+          DOF 활성화 여부
+        type: boolean
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEM' by numbering it '(1)', not by
+        # naming a path
+      - key: CE
+        description: >-
+          초기 감쇠계수 CE
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEM' by numbering it '(2)', not by
+        # naming a path
+      - key: P1
+        description: >-
+          최대 감쇠력 P
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEM' by numbering it '(3)', not by
+        # naming a path
+      - key: C1
+        description: >-
+          이차 감쇠계수 C
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEM' by numbering it '(4)', not by
+        # naming a path
+      - key: ALPHA1
+        description: >-
+          감쇠 감소 계수 α
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEM' by numbering it '(5)', not by
+        # naming a path
+      - key: K0
+        description: >-
+          초기 강성 K
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEM' by numbering it '(6)', not by
+        # naming a path
+      - key: EXFN_PY
+        description: >-
+          감쇠력(Exponential, Damping Force)
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEM' by numbering it '(7)', not by
+        # naming a path
+      - key: EXFN_VY
+        description: >-
+          기준 속도(Exponential, Reference Velocity)
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEM' by numbering it '(8)', not by
+        # naming a path
+      - key: EXFN_DE
+        description: >-
+          감쇠 지수(Exponential, Damping Exponent)
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEM' by numbering it '(9)', not by
+        # naming a path
+      - key: EXFN_DC
+        description: >-
+          감쇠계수(Exponential, Damping Coefficient)
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEM' by numbering it '(10)', not by
+        # naming a path
+      - key: OPT_EXFN_CE
+        description: >-
+          Exponential 초기 감쇠계수 사용 여부
+        type: boolean
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEM' by numbering it '(11)', not by
+        # naming a path
+      - key: EXFN_CE
+        description: >-
+          Exponential 초기 감쇠계수 값
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEM' by numbering it '(12)', not by
+        # naming a path
+
+sdkRules:
+  - id: db-sdvi-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-sdvi-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 05_DB_Boundary.md line 1290
+  table: 요청 파라미터
+  missingColumns:
+    - heading: 요청 파라미터
+      line: 1290
+      columns: [Default]

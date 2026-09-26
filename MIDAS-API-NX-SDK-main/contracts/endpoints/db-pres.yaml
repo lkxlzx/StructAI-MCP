@@ -1,0 +1,465 @@
+# /db/PRES
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then
+# reviewed. The whole reason this one sat in NEEDS_HAND_REVIEW is DIRECTION:
+# the Specifications row marks it Optional with the default "NORMAL", and on
+# 2026-09-03 a live plate refused both halves of that statement. The manual's
+# own availability matrix, one table further down the same section, already
+# said Normal is unavailable for PLATE + FACE - so the correction is recorded
+# here rather than the row transcribed.
+contractVersion: 1
+id: db-pres
+endpoint: /db/PRES
+name: Assign Pressure Loads
+surface:
+  className: PressureLoad
+  exportName: pressureLoad
+  modulePath: [db, staticLoads]
+  payloadTypeName: PressureLoadPayload
+  nestedTypes:
+    - {path: ITEMS, name: PressureLoadItem, namespace: DbStaticLoadsTypes}
+
+products: [civil, gen]
+
+recordKey:
+  kind: element_id
+  description: >-
+    The element the pressure is assigned to. Measured 2026-09-03: the server
+    resolves the element from this key and not from ITEMS[].ID, which only
+    echoes back. The same body sent under key 1 - the seed model's beam - was
+    refused with "[Error] The element no. 1 is an element type in which
+    Pressure loads cannot be assigned" and stored when moved to key 4, the
+    plate. ITEMS[].ID looks like the selector and is not.
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 06_DB_Static_Loads.md
+    section: 10. /db/PRES — Assign Pressure Loads
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-write-sweep-2026-07-26
+    - product: gen
+      ref: pres-direction-2026-09-03
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/PRES/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      A pressure load can only go on an element type that takes one. Naming an
+      element of the wrong type in the Assign key is refused outright with
+      "[Error] The element no. N is an element type in which Pressure loads
+      cannot be assigned" - a real error, not a silent no-op.
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: ITEMS
+    description: >-
+      Pressure Load items
+    type: array
+    items:
+      type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: ID
+        description: >-
+          Serial Number
+        type: integer
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: live_verified
+        provenanceNote: >-
+          Documented as a serial number and confirmed to be exactly that. It
+          does not select the element - see recordKey - and it echoes back
+          unchanged.
+        # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(1)', not
+        # by naming a path
+      - key: LCNAME
+        description: >-
+          Load Case Name
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(2)', not
+        # by naming a path
+      - key: GROUP_NAME
+        description: >-
+          Load Group Name
+        type: string
+        requirement: optional
+        documentedDefault: ""
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(3)', not
+        # by naming a path
+      - key: CMD
+        description: >-
+          Command Type ("PRES")
+        type: string
+        requirement: optional
+        documentedDefault: PRES
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(4)', not
+        # by naming a path
+      - key: ELEM_TYPE
+        description: >-
+          Element Type ("PLATE" / "SOLID" / "PLANE")
+        type: string
+        enum: [PLATE, SOLID, PLANE]
+        requirement: optional
+        documentedDefault: PLATE
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(5)', not
+        # by naming a path
+      - key: FACE_EDGE_TYPE
+        description: >-
+          Pressure Type ("FACE" / "EDGE" / "PRES")
+        type: string
+        enum: [FACE, EDGE, PRES]
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(6)', not
+        # by naming a path
+      - key: DIRECTION
+        description: >-
+          Direction ("NORMAL" / "LX" / "LY" / "LZ" / "GX" / "GY" / "GZ" / "VECTOR")
+        type: string
+        enum: [NORMAL, LX, LY, LZ, GX, GY, GZ, VECTOR]
+        enumNote: >-
+          Every member is a recognised value - an invented spelling such as
+          "LOCAL_Z" answers the generic "Wrong Field" - but which members a
+          given record may use depends on ELEM_TYPE and FACE_EDGE_TYPE. The
+          section's availability matrix states the four documented pairs:
+          PLATE+FACE excludes NORMAL, PLANE+EDGE excludes GX/GY/GZ, and
+          PLATE+EDGE and SOLID+PRES take all eight.
+        requirement: conditional
+        condition: >-
+          Documented Optional with the default "NORMAL", which the same
+          section's availability matrix marks unavailable for ELEM_TYPE
+          "PLATE" with FACE_EDGE_TYPE "FACE". For that combination the field
+          has to be sent, and sent as something other than "NORMAL".
+        documentedDefault: null
+        documentedDefaultNote: >-
+          The manual gives "NORMAL". It is deliberately not recorded as this
+          contract's default, because a default is a value an SDK may apply and
+          this one is refused for the commonest case. What the manual claims is
+          kept under manualDefects, where nothing reads it as a value.
+        documentedOptional: true
+        safeToOmit: false
+        omissionEffect: >-
+          On a PLATE with FACE_EDGE_TYPE "FACE" the request is refused with
+          "[Error] Errors detected in Pressure Loads Data.(Item:Load
+          Direction)" - the same message sending "NORMAL" gets, which is how
+          the default was shown to be applied and unusable. "LZ" (element
+          local z, normal to the plate) and "GZ" are stored. Omission may well
+          be safe for the other three documented ELEM_TYPE/FACE_EDGE_TYPE
+          pairs, where the matrix marks NORMAL available; nobody has measured
+          those, and false is the answer that keeps a caller out of the case
+          that is known to fail.
+        provenance: live_corrected
+        # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(7)', not
+        # by naming a path
+      - key: VECTORS
+        description: >-
+          Vector [X, Y, Z] (if DIRECTION="VECTOR")
+        type: array
+        items:
+          type: number
+        minItems: 3
+        maxItems: 3
+        requirement: optional
+        appliesWhen:
+          - path: ITEMS.DIRECTION
+            equals: VECTOR
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: true
+        omissionEvidence: >-
+          scripts/live_crud_check.py's /db/PRES case, confirmed, sends
+          DIRECTION "LZ" and no VECTORS. The field only carries meaning under
+          DIRECTION "VECTOR", where a 2026-07-26 probe supplied
+          VECTORS [0, 0, -1] and the load was accepted.
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(8)', not
+        # by naming a path
+      - key: OPT_PROJECTION
+        description: >-
+          Projection (GX/GY/GZ only)
+        type: boolean
+        requirement: optional
+        documentedDefault: false
+        documentedOptional: true
+        safeToOmit: true
+        omissionEvidence: >-
+          scripts/live_crud_check.py's /db/PRES case, confirmed, omits it.
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(9)', not
+        # by naming a path
+      - key: EDGE_FACE
+        description: >-
+          Face/Edge Number (Solid: 1~6, Plate/Plane: 1~4)
+        type: integer
+        minimum: 1
+        maximum: 6
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(10)',
+        # not by naming a path
+      - key: PSLT_KEY
+        description: >-
+          The /db/PSLT pressure load type this item refers to.
+        type: integer
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: true
+        omissionEvidence: >-
+          scripts/live_crud_check.py's /db/PRES case, confirmed, omits it and
+          stores the load, so a pressure load does not need a /db/PSLT type
+          behind it.
+        provenance: info_schema
+        provenanceNote: >-
+          Present in GET /info/db/PRES on both products and absent from the
+          manual chapter entirely. requirement is unstated because /info
+          declares no required array - "optional" would be a claim nobody has
+          made. The name is the only thing recorded here; what the referenced
+          /db/PSLT record does to the load has not been measured.
+
+variants:
+  - when:
+      - path: FACE_EDGE_TYPE
+        in:
+          - FACE
+          - PRES
+    source:
+      table: "FACE_EDGE_TYPE = \"FACE\" or \"PRES\""
+      line: 879
+    fields:
+      - key: FORCES
+        description: >-
+          Forces [PU,0,0,0,0] or [0,P1,P2,P3,P4]
+        type: array
+        items:
+          type: number
+        maxItems: 5
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: live_verified
+        provenanceNote: >-
+          The manual types this Array [Number, 5] and all three of its worked
+          examples send five entries, matching /info/db/PRES's maxItems of 5.
+          No minItems is declared here because the confirmed live case sends
+          four and the server accepts it, echoing five back - so five is the
+          width the record has, not the width a request must have.
+  - when:
+      - path: FACE_EDGE_TYPE
+        equals: EDGE
+    source:
+      table: "FACE_EDGE_TYPE = \"EDGE\""
+      line: 881
+    fields:
+      - key: EDGE_LOADS
+        description: >-
+          Edge Loads [EPU,0,0] or [0,EP1,EP2]
+        type: array
+        items:
+          type: number
+        minItems: 3
+        maxItems: 3
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+
+manualDefects:
+  - describes: requiredness
+    manualSays: >-
+      The Specifications table marks `DIRECTION` `Optional`.
+    actual: >-
+      On the commonest pressure load there is - a 4-node PLATE with
+      `FACE_EDGE_TYPE: "FACE"` - omitting it is refused with `[Error] Errors
+      detected in Pressure Loads Data.(Item:Load Direction)`. The official
+      article's own availability matrix already implied it: Normal is `-` for
+      PLATE + FACE while the local and global axes are `O`, so the matrix and
+      the product agree and only this row is out of step.
+    evidence: >-
+      docs/live_verification_notes.md, "/db/PRES: B-4 measured, with the error
+      string" (2026-09-03), against the plate in live_crud_check.py's own seed.
+      Vendor report B-4.
+  - describes: default
+    manualSays: >-
+      The same row gives `DIRECTION` the default `"NORMAL"`.
+    actual: >-
+      `"NORMAL"` is the one value that combination refuses, with the same error
+      as omitting the field. `"LZ"` and `"GZ"` are stored. So both halves of the
+      row are wrong for PLATE + FACE, not just the Required half.
+    evidence: >-
+      docs/live_verification_notes.md, "/db/PRES: B-4 measured, with the error
+      string" (2026-09-03). Vendor report B-4.
+  - describes: field_name
+    manualSays: >-
+      The Specifications table lists ten members of `ITEMS`, and the chapter
+      names no others anywhere.
+    actual: >-
+      `GET /info/db/PRES` declares an eleventh, `PSLT_KEY`, an integer
+      referring to a `/db/PSLT` pressure load type. Both products return it and
+      their schemas agree. The contract carries it because a field a caller can
+      send should not be discoverable only by asking the server, and it carries
+      `requirement: unstated` because `/info` declares no required array - the
+      manual's silence is not the same as the manual saying Optional.
+    evidence: >-
+      schema/info-schemas.json, the /db/PRES entry captured from both products
+      on 2026-09-01. Noted earlier in docs/live_verification_notes.md, "/db/PRES's
+      documented default DIRECTION is rejected" (2026-07-26).
+  - describes: field_value
+    manualSays: >-
+      The section's Python example assigns a PLATE + FACE pressure with
+      `"DIRECTION": "NORMAL"`.
+    actual: >-
+      That is the combination the same section's availability matrix marks `-`,
+      and the product refuses it. The section's other worked example, the JSON
+      request body, sends `"LZ"` for the identical combination and is correct.
+      So the two examples in one section disagree, and the matrix settles it.
+    evidence: >-
+      06_DB_Static_Loads.md, the Python example under section 10 read against
+      the availability matrix in the same section, plus the 2026-09-03
+      measurement.
+
+sdkRules:
+  - id: db-pres-direction-must-be-explicit
+    kind: reject_request
+    appliesTo: [POST, PUT]
+    fields: [DIRECTION]
+    rejects: omission
+    reason: >-
+      Omitting DIRECTION makes the server apply the documented default
+      "NORMAL", and on a PLATE with FACE_EDGE_TYPE "FACE" it then refuses the
+      record. The trap is that the caller never chose that value - the manual
+      told them the field was optional. So both SDKs require it on the wire
+      rather than let a default nobody typed decide the answer. Nothing is
+      lost: a pressure load has a direction, every worked example in the
+      section sends one, and the request that omits it could not have
+      succeeded on the commonest element type there is.
+    alternative: >-
+      Name the direction. "LZ" is element local z, normal to a plate face;
+      "GX"/"GY"/"GZ" are the global axes; "VECTOR" takes VECTORS. "NORMAL" is
+      valid for the other three ELEM_TYPE / FACE_EDGE_TYPE pairs the section's
+      availability matrix lists, and only there.
+  - id: db-pres-direction-normal-on-a-plate-face
+    kind: warn
+    appliesTo: [POST, PUT]
+    fields: [DIRECTION]
+    reason: >-
+      "NORMAL" sent explicitly on a PLATE with FACE_EDGE_TYPE "FACE" is refused
+      with "[Error] Errors detected in Pressure Loads Data.(Item:Load
+      Direction)". This half stays a warning rather than joining the rule
+      above: the value is a legitimate choice for the other three documented
+      combinations, the product's own error is explicit rather than silent, and
+      an SDK that refused a value the caller typed would be overruling an
+      engineering decision. What the SDK owes here is the reason, which the
+      product's message does not give.
+    alternative: >-
+      Pass "LZ" for a plate face - element local z is normal to the plate.
+  - id: db-pres-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-pres-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 06_DB_Static_Loads.md line 866
+  table: 파라미터

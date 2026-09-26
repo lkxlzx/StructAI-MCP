@@ -1,0 +1,51 @@
+{
+  "source": "09_DB_Dynamic_Loads.md, sections 4-5, first JSON Request Body at vendored commit 7920759",
+  "sha256": "888731740f163f9ffbcd96ff4daa3e1802b9ee914f83a241d9fc7df77635f2ef",
+  "examples": {
+    "/db/THGC-M1": {
+      "1": {
+        "GEO_NONL_TYPE": 1,
+        "INIT_LOAD_TYPE": 0,
+        "INIT_LOAD_LIST": [{"LC_NAME": "DL", "SF": 0.75, "LC_TYPE": "ST"}],
+        "INCREMENT_STEP": {"NSTEP": 10, "OUT_TYPE": 1, "STEP_INC": 1},
+        "ITER_PARAM": {
+          "PERMIT_FAIL": true,
+          "MAX_ITER": 30,
+          "NORM_CTRL": {
+            "DISP": {"OPT_USE": true, "VALUE": 0.001},
+            "FORCE": {"OPT_USE": true, "VALUE": 0.001},
+            "ENERGY": {"OPT_USE": true, "VALUE": 0.001}
+          },
+          "STIFF_UPD_SCHEME": 0,
+          "ITER_BEF_UPDATE": 5,
+          "MAX_BISECT_LEVEL": 5,
+          "SMART_BISECT": false,
+          "DIVERGENCE_THRESHOLD": 3,
+          "LINE_SEARCH": {
+            "OPT_USE": true,
+            "LINE_SEARCH_OPT": 1,
+            "START_ITER_NO": 3,
+            "MAX_LINE_SEARCH_ITER": 4,
+            "LINE_SEARCH_TOL": 0.5
+          }
+        },
+        "IGNORE_ELEM": false,
+        "SEQ_LOAD_TYPE": 1,
+        "HINGE_OPT": {"PSPRING_SUP": 0, "EL": 1}
+      }
+    },
+    "/db/THOO-M1": {
+      "1": {
+        "OUT_OPT": {"HINGE_OUT": 1, "COMMON_OPT": false, "FIBER_OUT": 1},
+        "RESULT_SELECTION": {
+          "ENERGY_RESULT": true,
+          "SDVI": true,
+          "SDVE": true,
+          "SDST": true,
+          "SDHY": true,
+          "SDIS": true
+        }
+      }
+    }
+  }
+}

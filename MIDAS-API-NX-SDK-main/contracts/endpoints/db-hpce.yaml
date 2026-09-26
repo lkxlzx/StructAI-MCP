@@ -1,0 +1,259 @@
+# /db/HPCE
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-hpce
+endpoint: /db/HPCE
+name: Pipe Cooling
+surface:
+  className: PipeCooling
+  exportName: pipeCooling
+  modulePath: [db, constructionStage]
+  payloadTypeName: PipeCoolingPayload
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 10_DB_Construction_Stage.md
+    section: 13. /db/HPCE – Pipe Cooling
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-08-17
+    - product: gen
+      ref: db-read-sweep-2026-08-17
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/HPCE/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: NAME
+    description: >-
+      파이프 쿨링 이름
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: DIAMETER
+    description: >-
+      파이프 직경
+    type: number
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: COEF
+    description: >-
+      대류 계수
+    type: number
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: HEAT
+    description: >-
+      비열
+    type: number
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: DENSITY
+    description: >-
+      단위 중량 밀도
+    type: number
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: TEMPER
+    description: >-
+      유입 온도
+    type: number
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: FLOW_RATE
+    description: >-
+      유량
+    type: number
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: START_TIME
+    description: >-
+      유입 시작 시간
+    type: integer
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: END_TIME
+    description: >-
+      유입 종료 시간
+    type: integer
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: ITEMS
+    description: >-
+      절점 목록
+    type: array
+    items:
+      type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: START_STAGE
+    description: >-
+      Start Stage
+    type: string
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: info_schema
+    # RESOLVED: declared by /info and absent from the manual - the whole
+    # manual was searched for the name, not just this section.
+    # The section documents START_TIME/END_TIME, integer hours of flow. The
+    # server declares those and this pair of stage names as well. Found by
+    # /info on 2026-08-17 while root-causing this endpoint's live write
+    # failure, and sent both empty and omitted with no change to the error -
+    # so the pair is declared and recorded, and nothing is claimed about what
+    # it does. That failure is still open; see docs/live_verification_notes.md.
+  - key: END_STAGE
+    description: >-
+      End Stage
+    type: string
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: info_schema
+    # RESOLVED: declared by /info and absent from the manual - the whole
+    # manual was searched for the name, not just this section.
+
+manualDefects:
+  - describes: field_name
+    manualSays: >-
+      /db/HPCE takes ten fields, among them `START_TIME` and `END_TIME`,
+      integer hours of inflow.
+    actual: >-
+      `GET /info/db/HPCE` declares those two and also `START_STAGE` and
+      `END_STAGE`, both strings. The pair was already found on 2026-08-17
+      while root-causing this endpoint's live write failure, and recorded
+      in docs/live_verification_notes.md; sending them empty and omitting
+      them both left the error unchanged, so nothing is claimed here about
+      what they do. The gap this sweep found is that the finding never
+      reached the contract.
+    evidence: >-
+      Found by scripts/info_baseline.py --against-contracts on 2026-09-04,
+      sweeping the 2026-09-03 /info capture against every contract. The
+      manual was then searched in full for the name, not just this
+      section. Also docs/live_verification_notes.md, 2026-08-17.
+      Registered as MD-41.
+
+sdkRules:
+  - id: db-hpce-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-hpce-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 10_DB_Construction_Stage.md line 1344
+  table: 13-2. 파라미터

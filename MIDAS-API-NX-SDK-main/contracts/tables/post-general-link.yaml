@@ -1,0 +1,35 @@
+# Source: 20_POST_AnalysisResult_2.md section 27. No SDK source was used.
+contractVersion: 1
+id: post-general-link
+endpoint: /post/TABLE
+name: General Link
+summary: General-link force or deformation results.
+products: [gen, civil]
+source: {manual: {status: documented, repo: Dennis5882/MIDAS-API, chapterFile: 20_POST_AnalysisResult_2.md, section: "27. General Link"}}
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getGeneralLinkTable
+  modulePath: [result1]
+  tableType: GENERAL_LINK_FORCE
+  factory: variable
+  optionNames: [components, constructionStage, loadCaseNames, nodeElements, stageSteps, styles, tableName, unit]
+  documentation: |-
+    docs/manual/20_POST_AnalysisResult_2.md #27 — General Link.
+
+    table_type: TABLE_TYPE_GENERAL_LINK_FORCE (default),
+    TABLE_TYPE_GENERAL_LINK_FORCE_BY_MAX (max-value basis), or
+    TABLE_TYPE_GENERAL_LINK_DEFORM (deformation instead of force).
+tableTypes:
+  - value: GENERAL_LINK_FORCE
+    description: General-link force
+    head: [Index, No., Load, Node, Axial, Shear-y, Shear-z, Torsion, Moment-y, Moment-z]
+    provenance: manual
+  - value: GENERAL_LINK_FORCEVBM
+    description: General-link force by maximum value
+    head: [Index, No., Load, Node, Component, Axial, Shear-y, Shear-z, Torsion, Moment-y, Moment-z]
+    provenance: manual
+  - value: GENERAL_LINK_DEFORM
+    description: General-link deformation
+    head: [Index, No., Load, Node, Dx, Dy, Dz, Rx, Ry, Rz, Node, Dx, Dy, Dz, Rx, Ry, Rz]
+    provenance: manual

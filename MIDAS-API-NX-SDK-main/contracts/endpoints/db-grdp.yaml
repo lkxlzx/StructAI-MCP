@@ -1,0 +1,531 @@
+# /db/GRDP
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-grdp
+endpoint: /db/GRDP
+name: Group Damping
+surface:
+  className: GroupDamping
+  exportName: groupDamping
+  modulePath: [db, properties, damping]
+  payloadTypeName: GroupDampingPayload
+  nestedTypes:
+    - {path: GROUP_DAMPING_ITEMS, name: GroupDampingRayleighItem, namespace: DbPropertiesDampingTypes}
+    - {path: STRAIN_GROUP_ITEMS, name: GroupDampingItem, namespace: DbPropertiesDampingTypes}
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 04_DB_Properties.md
+    section: "30. `/db/GRDP`"
+    url: https://support.midasuser.com/hc/en-us/articles/35944577940633
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_gen
+  records:
+    - product: gen
+      ref: db-write-sweep-2026-08-27
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/GRDP/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: bExistStrain
+    description: >-
+      Strain Energy Proportional 사용 여부
+    type: boolean
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: STRAIN_GROUP_ITEMS
+    description: >-
+      Damping Ratio Items(재료/구조군/경계군별 감쇠비)
+    type: array
+    items:
+      type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: GROUP_TYPE
+        description: >-
+          Damping Ratio Type · Material: "MATERIAL" / Structure Group: "STRUCTURE" /
+          Boundary: "BOUNDARY"
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'STRAIN_GROUP_ITEMS' by numbering it
+        # '(1)', not by naming a path
+      - key: GROUP_NAME
+        description: >-
+          Damping Ratio Name(재료는 ID, 구조군/경계군은 이름)
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'STRAIN_GROUP_ITEMS' by numbering it
+        # '(2)', not by naming a path
+      - key: DAMPING_RATIO
+        description: >-
+          Damping Ratio
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'STRAIN_GROUP_ITEMS' by numbering it
+        # '(3)', not by naming a path
+  - key: OPT_CALC_WHEN_USED
+    description: >-
+      Calculate Only When Used
+    type: boolean
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: STRAIN_GROUP_PRIORITY
+    description: >-
+      Priority: Material Data vs Structure Group · Material: 0 / Structure
+      Group: 1
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: STRAIN_VALUE_PRIORITY
+    description: >-
+      Priority between Structure Groups · Smallest: 0 / Largest: 1
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: bExistElement
+    description: >-
+      Element Mass & Stiffness Proportional 사용 여부
+    type: boolean
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: OPT_MASS_PROP_DEFAULT
+    description: >-
+      (미지정 요소) Mass Proportional 옵션
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: OPT_STIFF_PROP_DEFAULT
+    description: >-
+      (미지정 요소) Stiffness Proportional 옵션
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: DIRECT_CALC_MODE_DEFAULT
+    description: >-
+      직접 입력/모드 기반 산정 · Direct: 0 / Calculate from Modal Damping: 1
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: MASS_COEF_DEFAULT
+    description: >-
+      Mass Proportional 값
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: STIFF_COEF_DEFAULT
+    description: >-
+      Stiffness Proportional 값
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: FREQ_PERIOD_MODE_DEFAULT
+    description: >-
+      계수 산정 기준 · Frequency: 0 / Period: 1
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: FREQ_MODE_1_DEFAULT
+    description: >-
+      Frequency Mode 1
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: FREQ_MODE_2_DEFAULT
+    description: >-
+      Frequency Mode 2
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: PERIOD_MODE_1_DEFAULT
+    description: >-
+      Period Mode 1
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: PERIOD_MODE_2_DEFAULT
+    description: >-
+      Period Mode 2
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: DAMPING_MODE_1_DEFAULT
+    description: >-
+      Damping Ratio Mode 1
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: DAMPING_MODE_2_DEFAULT
+    description: >-
+      Damping Ratio Mode 2
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: GROUP_DAMPING_ITEMS
+    description: >-
+      그룹별 Rayleigh 감쇠 오버라이드
+    type: array
+    items:
+      type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: GROUP_TYPE
+        description: >-
+          Damping Ratio Type · Material: "MATERIAL" / Structure Group: "STRUCTURE" / Boundary: "BOUNDARY"
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'GROUP_DAMPING_ITEMS' by naming it
+        # in a sentence rather than a table row - one paragraph says the array
+        # overrides rows 7 to 18 per group and uses "`_DEFAULT` 접미사만 빠진 이름",
+        # then lists all fifteen. The parser reads tables, so it read none of them,
+        # and this array shipped with no members at all until 2026-09-04. Type,
+        # requiredness and default below are each the corresponding `_DEFAULT` row's,
+        # which is what the sentence says they are; GROUP_TYPE and GROUP_NAME are
+        # STRAIN_GROUP_ITEMS'. GET /info/db/GRDP declares exactly these fifteen, on
+        # both products, and src/midas_nx/db/properties/damping.py has carried them
+        # since 2026-08-27 - the contract was behind its own SDK. See MD-42.
+      - key: GROUP_NAME
+        description: >-
+          Damping Ratio Name(재료는 ID, 구조군/경계군은 이름)
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: STIFF_COEF
+        description: >-
+          Stiffness Proportional 값
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: OPT_STIFF_PROP
+        description: >-
+          Stiffness Proportional 옵션
+        type: boolean
+        requirement: optional
+        documentedDefault: false
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: MASS_COEF
+        description: >-
+          Mass Proportional 값
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: OPT_MASS_PROP
+        description: >-
+          Mass Proportional 옵션
+        type: boolean
+        requirement: optional
+        documentedDefault: false
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: DIRECT_CALC_MODE
+        description: >-
+          직접 입력/모드 기반 산정 · Direct: 0 / Calculate from Modal Damping: 1
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: FREQ_PERIOD_MODE
+        description: >-
+          계수 산정 기준 · Frequency: 0 / Period: 1
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: FREQ_MODE_1
+        description: >-
+          Frequency Mode 1
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: FREQ_MODE_2
+        description: >-
+          Frequency Mode 2
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: PERIOD_MODE_1
+        description: >-
+          Period Mode 1
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: PERIOD_MODE_2
+        description: >-
+          Period Mode 2
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: DAMPING_RATIO_MODE
+        description: >-
+          Using Material Data / Direct Define Mode Index
+        type: integer
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: no enum is transcribed. The prose sentence lists this field and
+        # the manual states no values for it anywhere - it is the one member with no
+        # `_DEFAULT` row to inherit a meaning from. /info calls it "Using Material
+        # Data / Direct Define Mode Index" and states no enum either, so requirement
+        # is `unstated` rather than borrowed from its neighbours.
+      - key: DAMPING_RATIO_MODE_1
+        description: >-
+          Damping Ratio Mode 1
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: DAMPING_RATIO_MODE_2
+        description: >-
+          Damping Ratio Mode 2
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+  - key: ELEM_GROUP_PRIORITY
+    description: >-
+      Priority: Material Data vs Structure Group(요소 쪽)
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: ELEM_VALUE_PRIORITY
+    description: >-
+      Priority between Structure Groups(요소 쪽)
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+
+sdkRules:
+  - id: db-grdp-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-grdp-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 04_DB_Properties.md line 2271
+  table: Strain Energy Proportional
+  prose:
+    - line: 2304
+      quote: >-
+        GROUP_DAMPING_ITEMS[]는 위 7~18번과 동일한 의미의 필드를 그룹 단위로
+        오버라이드하며, "_DEFAULT" 접미사만 빠진 이름을 쓴다:
+        GROUP_TYPE/GROUP_NAME(위 STRAIN_GROUP_ITEMS와 동일한 3-way 규칙) +
+        STIFF_COEF/OPT_STIFF_PROP/MASS_COEF/OPT_MASS_PROP/DIRECT_CALC_MODE/
+        FREQ_PERIOD_MODE/FREQ_MODE_1/FREQ_MODE_2/PERIOD_MODE_1/PERIOD_MODE_2/
+        DAMPING_RATIO_MODE/DAMPING_RATIO_MODE_1/DAMPING_RATIO_MODE_2.
+      paths:
+        - GROUP_DAMPING_ITEMS.GROUP_TYPE
+        - GROUP_DAMPING_ITEMS.GROUP_NAME
+        - GROUP_DAMPING_ITEMS.STIFF_COEF
+        - GROUP_DAMPING_ITEMS.OPT_STIFF_PROP
+        - GROUP_DAMPING_ITEMS.MASS_COEF
+        - GROUP_DAMPING_ITEMS.OPT_MASS_PROP
+        - GROUP_DAMPING_ITEMS.DIRECT_CALC_MODE
+        - GROUP_DAMPING_ITEMS.FREQ_PERIOD_MODE
+        - GROUP_DAMPING_ITEMS.FREQ_MODE_1
+        - GROUP_DAMPING_ITEMS.FREQ_MODE_2
+        - GROUP_DAMPING_ITEMS.PERIOD_MODE_1
+        - GROUP_DAMPING_ITEMS.PERIOD_MODE_2
+        - GROUP_DAMPING_ITEMS.DAMPING_RATIO_MODE
+        - GROUP_DAMPING_ITEMS.DAMPING_RATIO_MODE_1
+        - GROUP_DAMPING_ITEMS.DAMPING_RATIO_MODE_2
+  structuralTables:
+    - heading: "Element Mass & Stiffness Proportional"
+      line: 2284
+      paths:
+        - "<root>"

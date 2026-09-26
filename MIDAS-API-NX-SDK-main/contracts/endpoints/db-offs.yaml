@@ -1,0 +1,231 @@
+# /db/OFFS
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then
+# reviewed: products, methods, operation risk and verification status were
+# each checked against docs/coverage.json's live record rather than accepted
+# from the manual's framing. safeToOmit is answered `true` only where a
+# confirmed live payload actually omitted the field.
+contractVersion: 1
+id: db-offs
+endpoint: /db/OFFS
+name: Beam End Offsets
+surface:
+  className: BeamEndOffset
+  exportName: beamEndOffset
+  modulePath: [db, boundary]
+  payloadTypeName: BeamEndOffsetPayload
+  nestedTypes:
+    - {path: ITEMS, name: BeamEndOffsetItem, namespace: DbBoundaryTypes}
+
+products: [gen, civil]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 05_DB_Boundary.md
+    section: "13. `/db/OFFS` — Beam End Offsets"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: gen
+      ref: db-crud-batch-2026-07-29
+    - product: civil
+      ref: db-crud-batch-2026-07-29
+
+operations:
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: DELETE
+    variant: per_id
+    path: /db/OFFS/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+
+fields:
+  - key: ITEMS
+    description: >-
+      Beam End Offsets (배열로 삽입)
+    type: array
+    items:
+      type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: ID
+        description: >-
+          Serial Number
+        type: integer
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(1)', not by
+        # naming a path
+      - key: GROUP_NAME
+        description: >-
+          Load Group Name
+        type: string
+        requirement: optional
+        documentedDefault: ""
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(2)', not by
+        # naming a path
+      - key: TYPE
+        description: >-
+          Reference CS · "GLOBAL" / "ELEMENT"
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(3)', not by
+        # naming a path
+      - key: RGDXi
+        description: >-
+          i-단 X방향 오프셋 (GCS)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(4)', not by
+        # naming a path
+      - key: RGDYi
+        description: >-
+          i-단 Y방향 오프셋 (GCS)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(5)', not by
+        # naming a path
+      - key: RGDZi
+        description: >-
+          i-단 Z방향 오프셋 (GCS)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(6)', not by
+        # naming a path
+      - key: RGDXj
+        description: >-
+          j-단 X방향 오프셋 (GCS)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(7)', not by
+        # naming a path
+      - key: RGDYj
+        description: >-
+          j-단 Y방향 오프셋 (GCS)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(8)', not by
+        # naming a path
+      - key: RGDZj
+        description: >-
+          j-단 Z방향 오프셋 (GCS)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(9)', not by
+        # naming a path
+
+sdkRules:
+  - id: db-offs-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-offs-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 05_DB_Boundary.md line 1068
+  table: 요청 파라미터

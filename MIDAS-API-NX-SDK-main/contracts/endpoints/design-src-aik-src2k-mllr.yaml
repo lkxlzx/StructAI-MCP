@@ -1,0 +1,133 @@
+# /DESIGN/SRC/AIK-SRC2K/MLLR
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: design-src-aik-src2k-mllr
+endpoint: /DESIGN/SRC/AIK-SRC2K/MLLR
+name: Modify Live Load Reduction Factor
+surface:
+  className: SrcModifyLiveLoadReductionFactor
+  exportName: srcModifyLiveLoadReductionFactor
+  modulePath: [design, srcAiksrc2k]
+  payloadTypeName: SrcModifyLiveLoadReductionFactorPayload
+  nestedTypes:
+    - {path: COMPONENTS, name: SrcLiveLoadReductionComponents, namespace: DesignSrcAiksrc2kTypes}
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 27_Design_SRC_AIKSRC2K.md
+    section: "11. `DESIGN/SRC/AIK-SRC2K/MLLR` — Modify Live Load Reduction Factor (활하중 저감계수 수정)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-07-26
+    - product: gen
+      ref: db-read-sweep-2026-07-26
+
+operations:
+  - method: DELETE
+    risk: destructive
+    mitigation: none
+    request:
+      wrapper: none
+    response:
+      wrapper: unknown
+    notes: >-
+      The manual shows a bodyless DELETE at this endpoint, but does not
+      state the deletion scope or response shape.
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: FACTOR
+    description: >-
+      저감계수
+    type: number
+    minimum: 0.3
+    maximum: 1
+    requirement: optional
+    documentedDefault: 1
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: COMPONENTS
+    description: >-
+      적용 성분
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: AXIAL
+        description: >-
+          축력
+        type: boolean
+        requirement: optional
+        documentedDefault: false
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'COMPONENTS' with a tree marker rather
+        # than a path
+      - key: MOMENT
+        description: >-
+          모멘트
+        type: boolean
+        requirement: optional
+        documentedDefault: false
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'COMPONENTS' with a tree marker rather
+        # than a path
+      - key: SHEAR
+        description: >-
+          전단력
+        type: boolean
+        requirement: optional
+        documentedDefault: false
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'COMPONENTS' with a tree marker rather
+        # than a path
+
+extraction:
+  source: 27_Design_SRC_AIKSRC2K.md line 1811
+  table: 파라미터

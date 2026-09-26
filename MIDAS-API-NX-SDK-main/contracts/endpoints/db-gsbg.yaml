@@ -1,0 +1,225 @@
+# /db/GSBG
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products, verification status and the DELETE
+# shape come from docs/coverage.json's live record and the measured /db/* DELETE
+# behaviour, not from the manual's framing. safeToOmit is answered `true` only
+# where a confirmed live payload actually omitted the field.
+contractVersion: 1
+id: db-gsbg
+endpoint: /db/GSBG
+name: Bridge Girder Diagrams
+surface:
+  className: BridgeGirderDiagram
+  exportName: bridgeGirderDiagram
+  modulePath: [db, bridge]
+  payloadTypeName: BridgeGirderDiagramPayload
+
+products: [civil]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 17_DB_Bridge.md
+    section: "1. `/db/GSBG` — Bridge Girder Diagrams"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_civil
+  records:
+    - product: civil
+      ref: db-write-sweep-2026-08-17
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/GSBG/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: NAME
+    description: >-
+      그룹 이름
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: BATCH
+    description: >-
+      일괄 처리(Batch)
+    type: boolean
+    requirement: required
+    documentedDefault: true
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: BODY_ELEM_GRUP_K
+    description: >-
+      교량 거더 요소 그룹
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: ALLSTAGE
+    description: >-
+      생성 옵션 · 현재 단계-스텝: false / 전체 단계(마지막 스텝): true
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: DGRM_TYPE
+    description: >-
+      결과 타입 · 보 응력: 0 / 보 부재력·모멘트: 1
+    type: integer
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: BSTRSCOMP
+    description: >-
+      (응력일 때) 보 응력 성분 · Sax: 0 / +Sby: 1 / −Sby: 2 / +Sbz: 3 / −Sbz: 4 /
+      Combined: 5 / 7th DOF: 6
+    type: integer
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's BridgeGirderDiagram case completed a live
+      create-read-update-delete round trip on civil without this field in its
+      payload. That is evidence the call is accepted, not that the resulting
+      model is what an engineer wanted.
+    provenance: manual
+  - key: BSTRSCOMP_SUB
+    description: >-
+      (응력·7th DOF일 때) 응력 표시 위치 · Maximum: 0 / 1(−y,+z): 1 / 2(+y,+z): 2 /
+      3(+y,−z): 3 / 4(−y,−z): 4
+    type: integer
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's BridgeGirderDiagram case completed a live
+      create-read-update-delete round trip on civil without this field in its
+      payload. That is evidence the call is accepted, not that the resulting
+      model is what an engineer wanted.
+    provenance: manual
+  - key: _7TH_DOF_TYPE
+    description: >-
+      (응력·7th DOF일 때) 7th DOF 타입 · Sax(Warping): 0 / Ssy(Mt): 1 / Ssy(Mw): 2 /
+      Ssz(Mt): 3 / Ssz(Mw): 4 / Combined(Ssy): 5 / Combined(Ssz): 6
+    type: integer
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's BridgeGirderDiagram case completed a live
+      create-read-update-delete round trip on civil without this field in its
+      payload. That is evidence the call is accepted, not that the resulting
+      model is what an engineer wanted.
+    provenance: manual
+  - key: MOMENT_COMP
+    description: >-
+      (부재력일 때) 보 부재력·모멘트 성분 · Fx: 0 / Fy: 1 / Fz: 2 / Mx: 3 / My: 4 / Mz: 5 /
+      Mb: 6 / Mt: 7 / Mw: 8
+    type: integer
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: SCALEFACTOR
+    description: >-
+      스케일
+    type: number
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+
+sdkRules:
+  - id: db-gsbg-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-gsbg-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 17_DB_Bridge.md line 65
+  table: Parameters

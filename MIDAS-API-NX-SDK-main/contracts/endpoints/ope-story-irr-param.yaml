@@ -1,0 +1,109 @@
+# /ope/STORY_IRR_PARAM
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: ope-story-irr-param
+endpoint: /ope/STORY_IRR_PARAM
+name: Story Irregularity Check Parameter
+
+products: [gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 15_OPE.md
+    section: "11. `/ope/STORY_IRR_PARAM` — Story Irregularity Check Parameter"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_gen
+  records:
+    - product: gen
+      ref: db-read-sweep-2026-07-30
+
+operations:
+  - method: GET
+    surface:
+      exportName: getStoryIrregularityCheckParameter
+      modulePath: [ope]
+      documentation: |-
+        docs/manual/15_OPE.md #11 — /ope/STORY_IRR_PARAM — Story Irregularity Check Parameter (GET).
+
+        Live-confirmed Gen NX only (404 on Civil, twice independently, 2026-07-29)
+        — see db/base.py's GEN_ONLY docstring. Not enforced here: unlike
+        db/*/design/* resources, plain doc/ope/view functions have no PRODUCTS
+        gate in this SDK, so a Civil call reaches the server and 404s there
+        rather than raising client-side.
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    surface:
+      exportName: setStoryIrregularityCheckParameter
+      modulePath: [ope]
+      argumentTypeName: StoryIrregularityCheckParameterArgument
+      documentation: |-
+        docs/manual/15_OPE.md #11 — /ope/STORY_IRR_PARAM — Story Irregularity Check Parameter (POST).
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: COUNTRY_CODE
+    description: >-
+      국가 기준코드 · "NTC2018" / "NTC2012" / "NTC2008" / "KBC2009" / "NSR-10" /
+      "NTCS2020" / "NTCS2023" / "NSCP2015" / "IS1893(2016)" / "IS16700(2023)"
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: STORY_DRIFT_METHOD
+    description: >-
+      층간변위 산정방법 · 질량중심 변위: "Drift at the Center of Mass" / 최외곽점 최대변위: "Max.
+      Drift of Outer Extreme Points" / 전체 수직요소 최대변위: "Max. Drift of All Vertical
+      Elements"
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: STORY_STIFFNESS_METHOD
+    description: >-
+      층강성 산정방법 · "1 / Story Drift Ratio" / "Story Shear / Story Drift"
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: SEISMIC_BEHAVIOR_FACTOR
+    description: >-
+      지진거동계수(COUNTRY_CODE가 "NTCS2023" 또는 "NTCS2020"일 때만 필요) · "4" / "3 or below"
+    type: string
+    requirement: conditional
+    condition: "COUNTRY_CODE가 \"NTCS2023\" 또는 \"NTCS2020\"일 때만 필요"
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+
+extraction:
+  source: 15_OPE.md line 1629
+  table: Parameters

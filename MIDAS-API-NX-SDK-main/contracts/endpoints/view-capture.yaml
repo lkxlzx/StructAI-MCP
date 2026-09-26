@@ -1,0 +1,251 @@
+# /view/CAPTURE
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: view-capture
+endpoint: /view/CAPTURE
+name: Capture
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 16_VIEW.md
+    section: "2. `/view/CAPTURE` — Capture"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-08-10
+    - product: gen
+      ref: db-read-sweep-2026-08-10
+
+operations:
+  - method: POST
+    surface:
+      exportName: capture
+      modulePath: [view]
+      argumentTypeName: CaptureArgument
+      documentation: |-
+        docs/manual/16_VIEW.md #2 — /view/CAPTURE — Capture.
+      nestedTypes:
+        - {path: BGCOLOR_BOTTOM, name: RgbColor, namespace: ViewTypes}
+        - {path: BGCOLOR_TOP, name: RgbColor, namespace: ViewTypes}
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: EXPORT_PATH
+    description: >-
+      이미지 파일 저장 경로 및 파일명
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: FIGURE_NAME
+    description: >-
+      Smart Report 이미지 이름
+    type: string
+    requirement: conditional
+    condition: "Smart Report mode. No field selects the mode: sending FIGURE_NAME is what makes the call a Smart Report capture, and a User Setting capture omits it."
+    # The manual's table has a group column: Required under "Smart Report",
+    # absent from "User Setting".
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: STAGE_NAME
+    description: >-
+      시공단계 이름
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: SET_MODE
+    description: >-
+      해석 모드 선택 · Pre-Mode: "pre" / Post-Mode: "post"
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: SET_HIDDEN
+    description: >-
+      은선(Hidden) 옵션 · Hidden: true / Not Hidden: false
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: HEIGHT
+    description: >-
+      이미지 높이 픽셀 크기
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: WIDTH
+    description: >-
+      이미지 너비 픽셀 크기
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: ANGLE
+    description: >-
+      시점 (view/ANGLE 매뉴얼 참조)
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: ACTIVE
+    description: >-
+      활성화 (view/ACTIVE 매뉴얼 참조)
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: DISPLAY
+    description: >-
+      표시 (view/DISPLAY 매뉴얼 참조)
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: PERSPECTIVE
+    description: >-
+      원근감(Perspective)
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: ZOOM_LEVEL
+    description: >-
+      줌 레벨 · Zoom Out: 25 ≤ value < 100 / Zoom Fit: 100 / Zoom In: 100 < value <
+      200
+    type: number
+    requirement: optional
+    documentedDefault: 100
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: BGCOLOR_TOP
+    description: >-
+      상단 배경색
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: R
+        description: >-
+          Red
+        type: integer
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: G
+        description: >-
+          Green
+        type: integer
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: B
+        description: >-
+          Blue
+        type: integer
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+  - key: BGCOLOR_BOTTOM
+    description: >-
+      하단 배경색
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: R
+        description: >-
+          Red
+        type: integer
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: G
+        description: >-
+          Green
+        type: integer
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: B
+        description: >-
+          Blue
+        type: integer
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+  - key: RESULT_GRAPHIC
+    description: >-
+      결과 표시 (view/RESULTGRAPHIC 매뉴얼 참조)
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+
+extraction:
+  source: 16_VIEW.md line 128
+  table: Parameters

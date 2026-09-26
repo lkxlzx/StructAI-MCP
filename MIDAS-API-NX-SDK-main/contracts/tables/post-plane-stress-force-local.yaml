@@ -1,0 +1,18 @@
+contractVersion: 1
+id: post-plane-stress-force-local
+endpoint: /post/TABLE
+name: Plane Stress Force Local
+summary: Local plane-stress force components.
+products: [gen, civil]
+source: {manual: {status: documented, repo: Dennis5882/MIDAS-API, chapterFile: 20_POST_AnalysisResult_2.md, section: "8. Plane Stress Force (Local)"}}
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getPlaneStressForceLocalTable
+  modulePath: [result1]
+  tableType: PLANESTRESSFL
+  factory: fixed
+  optionNames: [components, constructionStage, loadCaseNames, nodeElements, stageSteps, styles, tableName, unit]
+  documentation: |-
+    docs/manual/20_POST_AnalysisResult_2.md #8 — Plane Stress Force (Local).
+tableTypes: [{value: PLANESTRESSFL, description: Local plane-stress force, head: [Index, Elem, Load, Node, Fx, Fy], provenance: manual}]

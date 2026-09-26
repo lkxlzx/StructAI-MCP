@@ -1,0 +1,836 @@
+# /db/THIS-M1
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-this-m1
+endpoint: /db/THIS-M1
+name: Time History Load Cases (Hyper-S)
+surface:
+  className: TimeHistoryLoadCaseHyperS
+  exportName: timeHistoryLoadCaseHyperS
+  modulePath: [db, dynamicLoads]
+  payloadTypeName: TimeHistoryLoadCaseHyperSPayload
+  nestedTypes:
+    - {path: ANAL_CASE, name: HyperSAnalysisCase, namespace: DbDynamicLoadsTypes}
+    - {path: SUBSEQ, name: HyperSSubsequentLoad, namespace: DbDynamicLoadsTypes}
+
+products: [civil]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 09_DB_Dynamic_Loads.md
+    section: 7. /db/THIS-M1 – Time History Load Cases (Hyper-S)
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_civil
+  records:
+    - product: civil
+      ref: db-write-sweep-2026-08-27
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/THIS-M1/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: NAME
+    description: >-
+      하중 케이스명
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: DESC
+    description: >-
+      설명
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: ANAL_CASE
+    description: >-
+      해석 케이스 옵션
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: ANAL_TYPE
+        description: >-
+          해석 타입 (0=Linear, 1=Nonlinear)
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        enum: [0, 1]
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ANAL_CASE' by numbering it '(1)',
+        # not by naming a path
+      - key: ANAL_METHOD
+        description: >-
+          해석 방법 (0=Modal, 1=Direct Integration, 2=Static)
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        enum: [0, 1, 2]
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ANAL_CASE' by numbering it '(2)',
+        # not by naming a path
+      - key: TH_TYPE
+        description: >-
+          시간이력 타입 (0=Transient, 1=Periodic) — Nonlinear+Direct Integration/Static은
+          Periodic 거부
+        type: integer
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        enum: [0, 1]
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ANAL_CASE' by numbering it '(3)',
+        # not by naming a path
+  - key: GEOM_NL_TYPE
+    description: >-
+      기하 비선형 타입 (0=None, 1=P-Delta, 2=Large Displacements, ANAL_TYPE=Nonlinear
+      시)
+    type: integer
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    enum: [0, 1, 2]
+    safeToOmit: unverified
+    provenance: manual
+  - key: ENDTIME
+    description: >-
+      종료 시간
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: TIME_INC
+    description: >-
+      시간 증분
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: OUTPUT_STEP
+    description: >-
+      출력 스텝 증분 수
+    type: integer
+    requirement: required
+    documentedDefault: 1
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: INC_STEP
+    description: >-
+      증분 스텝 수 (Nonlinear+Static일 때 사실상 필수)
+    type: integer
+    requirement: optional
+    documentedDefault: 1
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: INIT_METHOD
+    description: >-
+      초기 하중 방법 ("INIT" / "ORDER")
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    enum: [INIT, ORDER]
+    safeToOmit: unverified
+    provenance: manual
+  - key: USE_INIT_LOAD
+    description: >-
+      초기 하중 사용 (INIT_METHOD=INIT 시)
+    type: boolean
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: CUM_DVA
+    description: >-
+      D/V/A 결과 누적 (USE_INIT_LOAD=true 시)
+    type: boolean
+    requirement: required
+    documentedDefault: false
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: KEEP_LOAD
+    description: >-
+      최종 스텝 하중 유지
+    type: boolean
+    requirement: required
+    documentedDefault: false
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: SUBSEQ
+    description: >-
+      후속 하중 옵션 (INIT_METHOD=ORDER 시)
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: OPT_USE
+        description: >-
+          후속 하중 사용
+        type: boolean
+        requirement: optional
+        documentedDefault: false
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'SUBSEQ' by numbering it '(1)',
+        # not by naming a path
+      - key: SUBSEQ_LOAD
+        description: >-
+          후속 하중 타입 (0=하중케이스, 1=초기요소력, 2=기하강성초기력)
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        enum: [0, 1, 2]
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'SUBSEQ' by numbering it '(2)',
+        # not by naming a path
+      - key: LCTYPE
+        description: >-
+          하중 케이스 타입 ("ST" / "CS" / "TH")
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        enum: [ST, CS, TH]
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'SUBSEQ' by numbering it '(3)',
+        # not by naming a path
+      - key: CASE
+        description: >-
+          하중 케이스명
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'SUBSEQ' by numbering it '(4)',
+        # not by naming a path
+  - key: KEEP_ACC
+    description: >-
+      최종 스텝 가속도 유지
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: DAMPING
+    description: >-
+      감쇠 설정
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: DAMPING_METHOD
+        description: >-
+          감쇠 방법 (0=Direct Modal, 1=M&S Proportional, 2=Strain Energy, 3=Element M&S
+          — Modal+Element(3) 조합은 거부됨)
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        enum: [0, 1, 2, 3]
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'DAMPING' by numbering it '(1)',
+        # not by naming a path
+      - key: ALL_DAMPING_RATIO
+        description: >-
+          전체 모드 감쇠비 (DAMPING_METHOD=0 시)
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'DAMPING' by numbering it '(2)',
+        # not by naming a path
+      - key: MODAL_DAMPING_RATIO
+        description: >-
+          모드별 감쇠비 오버라이드 목록
+        type: array
+        items:
+          type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'DAMPING' by numbering it '(3)',
+        # not by naming a path
+  - key: NONL_CTRL_PARAM
+    description: >-
+      비선형 제어 파라미터 (ANAL_TYPE=1 시)
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: PERFORM_ITER
+        description: >-
+          반복 수행 여부
+        type: boolean
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'NONL_CTRL_PARAM' by numbering it
+        # '(1)', not by naming a path
+      - key: ITER_CTRL
+        description: >-
+          반복 제어 파라미터
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'NONL_CTRL_PARAM' by numbering it
+        # '(2)', not by naming a path
+        properties:
+          - key: BOUNDARY_NL_ANAL
+            type: object
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual names this object in the table heading and
+            # types its members; the nesting is declared by /info at
+            # NONL_CTRL_PARAM.ITER_CTRL; neither source states the container's
+            # requiredness or default.
+            properties:
+              - key: METHOD
+                description: >-
+                  적분법 (0=Fehlberg, 1=Cash-Karp, 2=Dormand-Prince)
+                type: integer
+                requirement: optional
+                documentedDefault: 0
+                documentedOptional: true
+                enum: [0, 1, 2]
+                safeToOmit: unverified
+                provenance: manual
+              - key: TOL
+                description: >-
+                  허용 오차
+                type: number
+                requirement: optional
+                documentedDefault: 1.0e-08
+                documentedOptional: true
+                safeToOmit: unverified
+                provenance: manual
+      - key: DAMP_UPDATE
+        description: >-
+          감쇠 매트릭스 업데이트 (0/1/2, DAMPING_METHOD가 M&S(1)/Element M&S(3)일 때만)
+        type: integer
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        enum: [0, 1, 2]
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'NONL_CTRL_PARAM' by numbering it
+        # '(3)', not by naming a path
+  - key: INC_CTRL
+    description: >-
+      증분 제어 (Increment Control)
+    type: object
+    requirement: conditional
+    condition: 'ANAL_METHOD=2 Static 전용'
+    appliesWhen:
+      - path: ANAL_CASE.ANAL_METHOD
+        equals: 2
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    # RESOLVED: the manual nests this under its own table heading - "증분 제어
+    # (ANAL_METHOD=2 Static 전용, `INC_CTRL`)" names the condition and the
+    # object in one line, and `INC_METHOD=1(`DISP_CTRL` 오브젝트)` names the
+    # second object as a sub-row. Until 2026-09-04 this contract kept the
+    # three tables as variants and offered their rows at the root, so a
+    # caller following it sent INC_METHOD where the server wants
+    # INC_CTRL.INC_METHOD. GET /info/db/THIS-M1 declares INC_CTRL with
+    # INC_METHOD, SF and DISP_CTRL, and DISP_CTRL with exactly these five.
+    # See extraction.structuralTables.
+    properties:
+      - key: INC_METHOD
+        description: >-
+          증분 방법 (0=Load Control, 1=Displacement Control)
+        type: integer
+        enum: [0, 1]
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: SF
+        description: >-
+          Scale Factor
+        type: number
+        requirement: conditional
+        condition: 'INC_METHOD=0'
+        appliesWhen:
+          - path: INC_CTRL.INC_METHOD
+            equals: 0
+        documentedDefault: 1
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: DISP_CTRL
+        description: >-
+          변위 제어 오브젝트
+        type: object
+        requirement: conditional
+        condition: 'INC_METHOD=1(`DISP_CTRL` 오브젝트)'
+        appliesWhen:
+          - path: INC_CTRL.INC_METHOD
+            equals: 1
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: CTRL_OPT
+            description: >-
+              제어 옵션 (0=Global, 1=Master Node Control)
+            type: integer
+            enum: [0, 1]
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: MAX_TRANS_DISP
+            description: >-
+              최대 병진 변위(Global 전용)
+            type: number
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: MASTER_NODE
+            description: >-
+              Master Node No.(Master Node Control 전용)
+            type: integer
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: MASTER_DIR
+            description: >-
+              Master Direction(0/1/2, Master Node Control 전용)
+            type: integer
+            enum: [0, 1, 2]
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: MAX_DISP
+            description: >-
+              최대 변위(Master Node Control 전용)
+            type: number
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+  - key: TIME_PARAM
+    description: >-
+      시간 적분 방법 (Time Parameters)
+    type: object
+    requirement: conditional
+    condition: 'ANAL_METHOD=1 Direct Integration 전용'
+    appliesWhen:
+      - path: ANAL_CASE.ANAL_METHOD
+        equals: 1
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    # RESOLVED: the manual nests this under its own table heading - "시간 적분
+    # 방법 (ANAL_METHOD=1 Direct Integration 전용, `TIME_PARAM`)". Same
+    # correction as INC_CTRL above, same day, same evidence: /info
+    # declares TIME_PARAM holding these four.
+    properties:
+      - key: METHOD
+        description: >-
+          적분 방법 (0=Newmark, 1=HHT)
+        type: integer
+        enum: [0, 1]
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: NEWMARK_METHOD
+        description: >-
+          Newmark 방법 타입(METHOD=0) 0=Constant/1=Linear Accel./2=User Input
+        type: integer
+        enum: [0, 1, 2]
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: GAMMA
+        description: >-
+          Gamma(NEWMARK_METHOD=2 시)
+        type: number
+        requirement: optional
+        documentedDefault: 0.5
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: BETA
+        description: >-
+          Beta(NEWMARK_METHOD=2 시)
+        type: number
+        requirement: optional
+        documentedDefault: 0.25
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+
+variants:
+  - when:
+      - path: DAMPING_METHOD
+        equals: 1
+    source:
+      table: "M&S Proportional 감쇠 세부 필드 (DAMPING_METHOD=1)"
+      line: 1775
+    fields:
+      - key: COEF_INPUT
+        description: >-
+          계수 산정 방식 (0=Direct Specification, 1=Calculate from Modal Damping)
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        enum: [0, 1]
+        safeToOmit: unverified
+        provenance: manual
+  - when:
+      - path: COEF_INPUT
+        equals: 0
+    source:
+      table: COEF_INPUT=0
+      line: 1778
+    fields:
+      - key: USE_MASS
+        description: >-
+          질량 비례 사용 (USE_MASS/USE_STIFF 중 최소 1개는 true)
+        type: boolean
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: MASS_VALUE
+        description: >-
+          질량 계수(Rm)
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: USE_STIFF
+        description: >-
+          강성 비례 사용
+        type: boolean
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: STIFF_VALUE
+        description: >-
+          강성 계수(Rk)
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+  - when:
+      - path: COEF_INPUT
+        equals: 1
+    source:
+      table: COEF_INPUT=1
+      line: 1783
+    fields:
+      - key: COEF_CALC
+        description: >-
+          계산 기준 (0=Frequency, 1=Period)
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        enum: [0, 1]
+        safeToOmit: unverified
+        provenance: manual
+      - key: FREQ1
+        description: >-
+          모드1 주파수 (COEF_CALC=0)
+        type: number
+        requirement: conditional
+        condition: COEF_CALC=0 (stated in the row's own description, not in
+          the Required column)
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual names two keys in this one cell; which of them
+        # applies is stated elsewhere in the same section - the row's own
+        # description, where COEF_CALC=0 selects the frequency and =1 the period.
+        # Split into the two properties that row describes; see MD-23.
+      - key: PERIOD1
+        description: >-
+          모드1 주기 (COEF_CALC=1)
+        type: number
+        requirement: conditional
+        condition: COEF_CALC=1 (stated in the row's own description, not in
+          the Required column)
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual names two keys in this one cell; which of them
+        # applies is stated elsewhere in the same section - the row's own
+        # description, where COEF_CALC=0 selects the frequency and =1 the period.
+        # Split into the two properties that row describes; see MD-23.
+      - key: DR1
+        description: >-
+          모드1 감쇠비
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: FREQ2
+        description: >-
+          모드2 주파수 (FREQ1≠FREQ2)
+        type: number
+        requirement: conditional
+        condition: COEF_CALC=0 (stated in the row's own description, not in
+          the Required column)
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual names two keys in this one cell; which of them
+        # applies is stated elsewhere in the same section - the row's own
+        # description, where COEF_CALC=0 selects the frequency and =1 the period.
+        # Split into the two properties that row describes; see MD-23.
+      - key: PERIOD2
+        description: >-
+          모드2 주기 (PERIOD1≠PERIOD2)
+        type: number
+        requirement: conditional
+        condition: COEF_CALC=1 (stated in the row's own description, not in
+          the Required column)
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual names two keys in this one cell; which of them
+        # applies is stated elsewhere in the same section - the row's own
+        # description, where COEF_CALC=0 selects the frequency and =1 the period.
+        # Split into the two properties that row describes; see MD-23.
+      - key: DR2
+        description: >-
+          모드2 감쇠비
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+sdkRules:
+  - id: db-this-m1-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-this-m1-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+manualDefects:
+  - describes: field_name
+    manualSays: >-
+      In the "M&S Proportional 감쇠 세부 필드 (DAMPING_METHOD=1)" table's
+      `COEF_INPUT=1` branch, rows 3 and 5 are keyed `FREQ1`/`PERIOD1` and
+      `FREQ2`/`PERIOD2` - two wire property names in one Key cell each.
+    actual: >-
+      They are two mutually exclusive properties, and the same rows say which
+      applies: row 3's own description reads "모드1 주파수(COEF_CALC=0) /
+      주기(COEF_CALC=1)", and `COEF_CALC` is the row above it, typed
+      `Integer(enum)` as "계산 기준 (0=Frequency, 1=Period)". The contract
+      declares four fields - `FREQ1`, `PERIOD1`, `FREQ2`, `PERIOD2` - each
+      `conditional` on the `COEF_CALC` value its own row names. Same family as
+      MD-07, MD-08, MD-13, MD-20 and MD-21: a Key cell carrying a set rather
+      than one property, with the answer elsewhere in the same section.
+    evidence: >-
+      docs/manual/09_DB_Dynamic_Loads.md section 7-2, the `COEF_INPUT=1` table
+      at line 1774 read against its own 설명 column. Registered as MD-23.
+
+extraction:
+  source: 09_DB_Dynamic_Loads.md line 1723
+  table: 공통 파라미터
+  # Additional parameter tables in this section were NOT merged. They are
+  # usually conditional variants selected by a type/code field. Decide
+  # whether they belong in this contract's fields, as nested `properties`,
+  # or as a separate contract - do not assume the first table is the whole
+  # schema.
+  structuralTables:
+    - heading: 비선형 경계요소 해석 (BOUNDARY_NL_ANAL)
+      line: 1815
+      paths: [NONL_CTRL_PARAM.ITER_CTRL.BOUNDARY_NL_ANAL]
+      note: >-
+        The manual heading names the object and its table types METHOD and TOL.
+        GET /info/db/THIS-M1 places that object beneath
+        NONL_CTRL_PARAM.ITER_CTRL, resolving the path without inferring it from
+        either SDK.
+    - heading: 증분 제어 (ANAL_METHOD=2 Static 전용, `INC_CTRL`)
+      line: 1787
+      paths: [INC_CTRL]
+      note: >-
+        A heading that states a condition and a parent object at once. Kept as
+        a variant until 2026-09-04, which put INC_METHOD at the root; the
+        server wants it inside INC_CTRL, and GET /info/db/THIS-M1 declares the
+        object. Merged into the parent the heading names, with the condition
+        kept on the parent.
+    - heading: INC_METHOD=0
+      line: 1795
+      paths: [INC_CTRL.SF]
+      note: >-
+        A sub-row of the INC_CTRL table, gating one field inside the object
+        rather than opening a record-level branch.
+    - heading: INC_METHOD=1(`DISP_CTRL` 오브젝트)
+      line: 1792
+      paths: [INC_CTRL.DISP_CTRL]
+      note: >-
+        The same heading names both the gate and a second object one level
+        down, which is the shape /info declares.
+    - heading: 시간 적분 방법 (ANAL_METHOD=1 Direct Integration 전용, `TIME_PARAM`)
+      line: 1801
+      paths: [TIME_PARAM]
+      note: >-
+        As INC_CTRL above: condition and parent object in one heading, merged
+        into the parent.

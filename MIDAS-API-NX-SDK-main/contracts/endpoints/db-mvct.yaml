@@ -1,0 +1,449 @@
+# /db/MVCT
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-mvct
+endpoint: /db/MVCT
+name: Moving Load Analysis Control
+surface:
+  className: MovingLoadAnalysisControl
+  exportName: movingLoadAnalysisControl
+  modulePath: [db, analysisControl]
+  payloadTypeName: MovingLoadAnalysisControlPayload
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 12_DB_Analysis_Control.md
+    section: 9. /db/MVCT — Moving Load Analysis Control
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-08-16
+    - product: gen
+      ref: db-read-sweep-2026-08-16
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/MVCT/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: METHOD
+    description: >-
+      Analysis Method (Exact: "EXACT" / Pivot: "PIVOT" / Quick: "QUICK")
+    type: string
+    requirement: optional
+    documentedDefault: EXACT
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: POINT
+    description: >-
+      Load Point Selection (Influence Line Dependent: "INF" / All Points: "ALL")
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: iIGP
+    description: >-
+      Influence Generating Points (Number/Line Element: 0 / Distance: 1)
+    type: integer
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: iIGPN
+    description: >-
+      Number/Line Element (when iIGP=0)
+    type: integer
+    requirement: required
+    condition: when iIGP=0
+    appliesWhen:
+      - path: iIGP
+        equals: 0
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: DIST
+    description: >-
+      Distance between Points (when iIGP=1)
+    type: number
+    requirement: required
+    condition: when iIGP=1
+    appliesWhen:
+      - path: iIGP
+        equals: 1
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: PLATE
+    description: >-
+      Plate Options (Center: "CENTER" / Center+Nodal: "NODAL")
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: bSTRCALC
+    description: >-
+      Plate – Stress
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bCONCURRENT
+    description: >-
+      Plate – Concurrent Force
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: FRAME
+    description: >-
+      Frame Options (Normal: "NORMAL" / Normal+Concurrent: "AXIAL")
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: bCSTRCALC
+    description: >-
+      Frame – Combined Stress
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bCONCLINK
+    description: >-
+      Link – Concurrent Force of Elastic/General Links
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bREAC
+    description: >-
+      Filter – Reactions
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bRG
+    description: >-
+      Reactions Option (All: false / Structure Group: true)
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: RGN
+    description: >-
+      Reactions Group Name (when bRG true)
+    type: string
+    requirement: required
+    condition: when bRG=true
+    appliesWhen:
+      - path: bRG
+        equals: true
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: bDISP
+    description: >-
+      Filter – Displacements
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bDG
+    description: >-
+      Displacements Option (All: false / Structure Group: true)
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: DGN
+    description: >-
+      Displacements Group Name (when bDG true)
+    type: string
+    requirement: required
+    condition: when bDG=true
+    appliesWhen:
+      - path: bDG
+        equals: true
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: bFM
+    description: >-
+      Filter – Forces/Moments
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bFG
+    description: >-
+      Forces/Moments Option (All: false / Structure Group: true)
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: FGN
+    description: >-
+      Forces/Moments Group Name (when bFG true)
+    type: string
+    requirement: required
+    condition: when bFG=true
+    appliesWhen:
+      - path: bFG
+        equals: true
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: bL
+    description: >-
+      Filter – Elastic/General Link
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bLG
+    description: >-
+      Link Option (All: false / Boundary Group: true)
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: LGN
+    description: >-
+      Link Group Name (when bLG true)
+    type: string
+    requirement: required
+    condition: when bLG=true
+    appliesWhen:
+      - path: bLG
+        equals: true
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: MATTYPE
+    description: >-
+      Mat Type
+    type: integer
+    requirement: conditional
+    condition: 'Russia 코드 적용 시 추가 파라미터'
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    # RESOLVED: the manual nests this under the section's Parameters table
+    # by writing a sentence after it rather than adding rows - one
+    # blockquote at line 988 names all eight Russia-code keys with their
+    # types, and the parser reads rows. See extraction.prose. The gate is
+    # the active moving-load code, which is /db/MVCD's record and not a
+    # field of this one, so `condition` carries the manual's wording and
+    # no `appliesWhen` accompanies it: every entry of `appliesWhen` must
+    # name a field path in this contract, and there is none to name.
+    # Descriptions are the server's own, from GET /info/db/MVCT; the
+    # sentence glosses only four of the eight.
+  - key: BRIDGETYPE
+    description: >-
+      Bridge Type
+    type: integer
+    requirement: conditional
+    condition: 'Russia 코드 적용 시 추가 파라미터'
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: AKMATTYPE
+    description: >-
+      Mat Type AK
+    type: integer
+    requirement: conditional
+    condition: 'Russia 코드 적용 시 추가 파라미터'
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: AKBRIDGETYPE
+    description: >-
+      Bridge Type AK
+    type: integer
+    requirement: conditional
+    condition: 'Russia 코드 적용 시 추가 파라미터'
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: MINFACTS2
+    description: >-
+      Minimum Factor (최소계수)
+    type: number
+    requirement: conditional
+    condition: 'Russia 코드 적용 시 추가 파라미터'
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: MAXV
+    description: >-
+      Max Successive Vehicle (최대 연속 차량)
+    type: integer
+    requirement: conditional
+    condition: 'Russia 코드 적용 시 추가 파라미터'
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: INCV
+    description: >-
+      Increment Vehicle (차량 증분)
+    type: integer
+    requirement: conditional
+    condition: 'Russia 코드 적용 시 추가 파라미터'
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: MAXSPACE
+    description: >-
+      Max Spacing Train (열차 최대 간격)
+    type: number
+    requirement: conditional
+    condition: 'Russia 코드 적용 시 추가 파라미터'
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+
+sdkRules:
+  - id: db-mvct-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-mvct-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 12_DB_Analysis_Control.md line 959
+  table: Parameters
+  prose:
+    - line: 988
+      quote: >-
+        > **Russia 코드** 적용 시 추가 파라미터: `MATTYPE`, `BRIDGETYPE`,
+        `AKMATTYPE`, `AKBRIDGETYPE`(Integer), `MINFACTS2`(Number, 최소계수),
+        `MAXV`(Integer, 최대 연속 차량), `INCV`(Integer, 차량 증분),
+        `MAXSPACE`(Number, 열차 최대 간격).
+      paths: [MATTYPE, BRIDGETYPE, AKMATTYPE, AKBRIDGETYPE, MINFACTS2, MAXV,
+              INCV, MAXSPACE]

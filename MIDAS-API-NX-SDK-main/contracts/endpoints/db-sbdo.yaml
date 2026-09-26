@@ -1,0 +1,375 @@
+# /db/SBDO
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-sbdo
+endpoint: /db/SBDO
+name: Define Sub-Domain
+surface:
+  className: SubDomain
+  exportName: subDomain
+  modulePath: [db, nodeElement]
+  payloadTypeName: SubDomainPayload
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 03_DB_Node_Element.md
+    section: "5. `/db/SBDO`"
+    url: https://support.midasuser.com/hc/en-us/articles/35807304820761
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-08-16
+    - product: gen
+      ref: db-read-sweep-2026-08-16
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/SBDO/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: SUB_DOMAIN_NAME
+    description: >-
+      Sub Domain Name
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: V1
+    description: >-
+      Rebar Dir.1
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: V2
+    description: >-
+      Rebar Dir.2
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: DOMAIN_NAME
+    description: >-
+      Domain Name
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: MEMB_TYPE_CIVIL
+    description: >-
+      Member Type Civil • None: 0 • Plate Beam (1D): 1 • Plate Column (1D): 2 •
+      Shell: 3
+    products: [civil]
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: REBAR_AXIS_TYPE
+    description: >-
+      Rebar Direction • Local: 0 • UCS: 1 • Reference Axis: 2
+    products: [civil]
+    type: integer
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: STR_UCS
+    description: >-
+      UCS (Rebar Direction이 UCS인 경우)
+    products: [civil]
+    type: string
+    requirement: optional
+    documentedDefault: ""
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: AXIS_VECTOR
+    description: >-
+      Axis Vector (Rebar Direction이 Reference Axis인 경우)
+    products: [civil]
+    type: array
+    items:
+      type: number
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    provenanceNote: >-
+      The section's Specifications table types this Number; its own JSON Schema
+      types it `{"type": "array", "items": {"type": "number"}}` and its own
+      Request Example sends `[0, 0, 0, 0, 0, 0]`. Two of the section's three
+      statements agree, and a vector is what the field is for. The
+      documentedDefault below stays 0 because that is what the table documents;
+      the example's all-zero vector does not contradict it, and nothing here
+      claims to know the wire default of a field whose type the manual gets
+      wrong. See MD-11.
+  - key: MEMBER_TYPE
+    description: >-
+      Member Type • None: 0 • Slab: 1 • Mat: 2
+    products: [gen]
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: OPT_BASIC_REBAR
+    description: >-
+      Basic Rebar Option
+    products: [gen]
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: TOP_REBAR_NAME_X
+    description: >-
+      Top Rebar Name (X-Dir)
+    products: [gen]
+    type: string
+    requirement: optional
+    documentedDefault: ""
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: TOP_REBAR_SPACE_X
+    description: >-
+      Top Rebar Space (X-Dir)
+    products: [gen]
+    type: number
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: BOTTOM_REBAR_NAME_X
+    description: >-
+      Bottom Rebar Name (X-Dir)
+    products: [gen]
+    type: string
+    requirement: optional
+    documentedDefault: ""
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: BOTTOM_REBAR_SPACE_X
+    description: >-
+      Bottom Rebar Space (X-Dir)
+    products: [gen]
+    type: number
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: TOP_REBAR_NAME_Y
+    description: >-
+      Top Rebar Name (Y-Dir)
+    products: [gen]
+    type: string
+    requirement: optional
+    documentedDefault: ""
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: TOP_REBAR_SPACE_Y
+    description: >-
+      Top Rebar Space (Y-Dir)
+    products: [gen]
+    type: number
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: BOTTOM_REBAR_NAME_Y
+    description: >-
+      Bottom Rebar Name (Y-Dir)
+    products: [gen]
+    type: string
+    requirement: optional
+    documentedDefault: ""
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: BOTTOM_REBAR_SPACE_Y
+    description: >-
+      Bottom Rebar Space (Y-Dir)
+    products: [gen]
+    type: number
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: OPT_REBAR_MATL
+    description: >-
+      Rebar Material Option
+    products: [gen]
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: REBAR_MATL_KEY
+    description: >-
+      Rebar Material Key
+    products: [gen]
+    type: integer
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bUseMt
+    description: >-
+      Use Mt
+    products: [gen]
+    type: boolean
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: THICKNESS
+    description: >-
+      Thickness
+    products: [gen]
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+
+manualDefects:
+  - describes: field_value
+    manualSays: >-
+      The Specifications table types `AXIS_VECTOR` as `Number` with default 0.
+    actual: >-
+      The same section's JSON Schema declares `"AXIS_VECTOR": {"description":
+      "Axis Vector", "type": "array", "items": {"type": "number"}}`, and the
+      section's own Request Example sends `"AXIS_VECTOR": [0, 0, 0, 0, 0, 0]`.
+      The Python SDK's `SectionBoundaryDataPayload` has always typed it
+      `List[float]`; only the contract, and the npm payload generated from it,
+      followed the table.
+    evidence: >-
+      docs/manual_defects_register.md MD-11, found by comparing every parameter
+      table's Value Type against the type its own section's JSON Schema
+      declares - nine disagreements in the whole manual, of which this and
+      `/db/MATL`'s `PARAM` are the two that change the shape of the value
+      rather than its numeric width.
+
+sdkRules:
+  - id: db-sbdo-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-sbdo-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 03_DB_Node_Element.md line 845
+  table: 공통 키
+  structuralTables:
+    - heading: CIVIL NX Only
+      line: 854
+      paths:
+        - "<root>"
+    - heading: GEN NX Only
+      line: 863
+      paths:
+        - "<root>"

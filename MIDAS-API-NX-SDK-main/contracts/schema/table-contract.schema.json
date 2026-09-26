@@ -1,0 +1,287 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Dennis5882/MIDAS-API-NX-SDK/contracts/schema/table-contract.schema.json",
+  "title": "MIDAS NX result-table contract",
+  "description": "One result table reachable through the shared POST /post/TABLE endpoint. Chapters 18-23 of the official manual describe 89 such tables behind a single route: the endpoint's request shape is contracted once in contracts/endpoints/post-table.yaml, and each table adds only what is its own - the TABLE_TYPE values that select it, the response columns it returns, and which of the shared request fields it does not honour. Sources are the same three permitted for an endpoint contract; see contracts/README.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contractVersion", "id", "endpoint", "name", "products", "source", "verification", "tableTypes"],
+  "properties": {
+    "contractVersion": { "const": 1 },
+    "draft": {
+      "const": false,
+      "description": "Machine-drafted files under contracts/drafts/ carry `draft: true` and are not contracts. Reviewing one is what removes the marker."
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "Stable slug; must match the file name without its .yaml suffix."
+    },
+    "endpoint": {
+      "type": "string",
+      "description": "The route this table is requested through - /post/TABLE for chapters 18-23, but design chapters route some tables through their own /DESIGN/.../TABLE path.",
+      "pattern": "^/"
+    },
+    "name": { "type": "string", "minLength": 1 },
+    "summary": { "type": "string" },
+    "products": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "enum": ["gen", "civil"] }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["manual"],
+      "properties": {
+        "manual": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status"],
+          "properties": {
+            "status": { "enum": ["documented", "absent", "contradicted"] },
+            "repo": { "type": "string" },
+            "chapterFile": { "type": "string", "pattern": "\\.md$" },
+            "section": { "type": "string" },
+            "url": { "type": "string", "format": "uri" },
+            "justification": { "type": "string" }
+          },
+          "allOf": [
+            {
+              "if": { "properties": { "status": { "const": "documented" } } },
+              "then": { "required": ["chapterFile", "section"] }
+            },
+            {
+              "if": { "properties": { "status": { "enum": ["absent", "contradicted"] } } },
+              "then": { "required": ["justification"] }
+            }
+          ]
+        },
+        "liveNotes": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": { "enum": ["manual_only", "verified_gen", "verified_civil", "verified_both"] },
+        "records": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["product", "ref"],
+            "properties": {
+              "product": { "enum": ["gen", "civil"] },
+              "ref": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "risk": {
+      "enum": ["read_only", "write", "destructive", "product_crash_risk"],
+      "description": "A result table is POST-shaped but usually a read. `read_only` is right for one that only extracts data; `write` belongs to a table that writes a file on the NX host via EXPORT_PATH; `product_crash_risk` to one that has ended a session, which several design-forces tables have on Gen NX."
+    },
+    "mitigation": {
+      "enum": ["none", "normalized", "confirmation_required", "opt_in_required", "warn_only"]
+    },
+    "surface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["exportName", "modulePath", "tableType", "factory", "optionNames"],
+      "description": "The npm table wrapper for this result table. Until 2026-09-22 the wrappers were found by walking the Python `post` modules for functions that call `get_table`; this records what that walk produced, seeded from it so the published wrappers did not change, and the generator now reads it instead.",
+      "properties": {
+        "exportName": { "type": "string", "minLength": 1, "description": "The npm export under `tables`, e.g. `getBeamForceTable`. A published API anchor." },
+        "modulePath": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 }, "description": "Where the export is nested under `tables`, e.g. [result1]." },
+        "tableType": { "type": "string", "minLength": 1, "description": "The TABLE_TYPE the wrapper sends by default. For a `directional` wrapper it is the prefix the direction is appended to, e.g. `MASS_SUMMARY_`." },
+        "factory": { "enum": ["fixed", "variable", "directional"], "description": "fixed: one TABLE_TYPE. variable: a default the caller may replace with another of `tableTypes`. directional: a prefix plus a direction the caller supplies." },
+        "optionNames": { "type": "array", "uniqueItems": true, "items": { "enum": ["additional", "calculationMethod", "components", "constructionStage", "exportPath", "loadCaseNames", "modes", "nodeElements", "parts", "stageSteps", "storyNames", "styles", "tableName", "unit"] }, "description": "The `TableOptions` members this wrapper accepts." },
+        "documentation": { "type": "string", "description": "The JSDoc npm publishes on the wrapper. Seeded from the Python docstring the generator rendered before; owned here from 2026-09-22." },
+        "nestedTypes": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Names the package already publishes for objects inside `requestFields.additional`, e.g. `ADDITIONAL` -> `PostStoryTypes.StoryDriftAdditional`. The generator builds each from this contract's field tree, as `surface.nestedTypes` does for an endpoint contract. A name several contracts declare must have the same shape in each once descriptions are set aside, or generation fails.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "name", "namespace"],
+            "properties": {
+              "path": { "type": "string", "minLength": 1, "description": "Dotted path inside `requestFields.additional`, e.g. `ADDITIONAL.SET_STORY_DRIFT_PARAMS`. For an array field the type is its element." },
+              "name": { "type": "string", "minLength": 1, "description": "Published npm type name." },
+              "namespace": { "type": "string", "minLength": 1, "description": "Published npm namespace the name sits in, e.g. `PostStoryTypes`." }
+            }
+          }
+        }
+      }
+    },
+    "tableTypes": {
+      "type": "array",
+      "minItems": 1,
+      "description": "The TABLE_TYPE strings that select this table. More than one means the same table in different coordinate systems or variants, which usually changes the response columns.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["value", "provenance"],
+        "properties": {
+          "value": { "type": "string", "minLength": 1 },
+          "description": { "type": "string" },
+          "head": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Response HEAD columns for this variant. Column sets differ between variants of the same table, so they are recorded per value rather than per table."
+          },
+          "headNote": {
+            "type": "string",
+            "description": "Where HEAD is not a fixed list - some tables repeat a block per element, or append Stage/Step columns for construction-stage queries."
+          },
+          "subTables": {
+            "type": "array",
+            "description": "Additional tables returned alongside DATA under a top-level SUB_TABLES array.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name"],
+              "properties": {
+                "name": { "type": "string" },
+                "head": { "type": "array", "items": { "type": "string" } },
+                "note": { "type": "string" }
+              }
+            }
+          },
+          "provenance": {
+            "enum": ["manual", "live_verified", "live_corrected", "info_schema"],
+            "description": "No value means an SDK implementation, which is never a permitted source."
+          },
+          "provenanceNote": { "type": "string" }
+        }
+      }
+    },
+    "requestFields": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "How this table departs from the shared request contract in contracts/endpoints/post-table.yaml. Absent means it honours the shared fields exactly.",
+      "properties": {
+        "unsupported": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Shared fields this table does not honour, e.g. BEAMFORCESTP ignores OPT_CS and STAGE_STEP."
+        },
+        "required": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Shared fields this table requires even though they are optional on the endpoint."
+        },
+        "additional": {
+          "type": "array",
+          "description": "Fields only this table accepts, normally carried under ADDITIONAL.",
+          "items": { "$ref": "#/$defs/requestField" }
+        }
+      }
+    },
+    "manualDefects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["describes", "manualSays", "actual", "evidence"],
+        "properties": {
+          "describes": { "enum": ["table_type", "head", "field_name", "field_value", "behaviour", "products"] },
+          "manualSays": { "type": "string" },
+          "actual": { "type": "string" },
+          "evidence": { "type": "string" },
+          "resolved": {
+            "type": "boolean",
+            "description": "False where the manual contradicts itself and nobody has checked which spelling the server accepts. An unresolved defect must say so rather than picking a winner silently."
+          },
+          "reportedToVendor": { "type": "string" }
+        }
+      }
+    },
+    "knownDefects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["ref"],
+        "properties": {
+          "ref": { "type": "string" },
+          "note": { "type": "string" }
+        }
+      }
+    },
+    "extraction": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source": { "type": "string" },
+        "table": { "type": "string" },
+        "unmergedTables": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "heading": { "type": "string" },
+              "fields": { "type": "integer" },
+              "line": { "type": "integer" },
+              "resolution": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "risk": { "enum": ["destructive", "product_crash_risk"] } }, "required": ["risk"] },
+      "then": { "required": ["mitigation"] }
+    }
+  ],
+  "$defs": {
+    "requestField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "requirement", "provenance"],
+      "description": "One request field a single table accepts. Nested objects carry `properties`; an array of objects carries `type: array`, `items: {type: object}` and `properties` for the element, as endpoint contracts do.",
+      "properties": {
+        "key": { "type": "string", "pattern": "^[A-Za-z0-9_]+$", "description": "One literal wire-property name. A manual row naming two keys (`LCOMS[].NAME` / `LCOMS[].FACTOR`) is two fields." },
+        "description": { "type": "string" },
+        "type": { "enum": ["string", "number", "integer", "boolean", "array", "object"] },
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type"],
+          "properties": { "type": { "enum": ["string", "number", "integer", "boolean", "object"] } },
+          "description": "Element type when `type` is array."
+        },
+        "properties": { "type": "array", "items": { "$ref": "#/$defs/requestField" }, "description": "Nested fields of an object, or of an array's object elements." },
+        "requirement": { "enum": ["required", "optional", "conditional", "read_only"] },
+        "condition": { "type": "string", "description": "The manual's condition wording, verbatim or close to it." },
+        "appliesWhen": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Structured translation of `condition`, as in endpoint contracts: each entry names a field path inside `requestFields.additional`, entries combine with AND.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path"],
+            "oneOf": [{ "required": ["equals"] }, { "required": ["in"] }],
+            "properties": {
+              "path": { "type": "string", "pattern": "^[A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)*$" },
+              "equals": { "type": ["string", "number", "boolean"] },
+              "in": { "type": "array", "minItems": 2, "uniqueItems": true, "items": { "type": ["string", "number", "boolean"] } }
+            }
+          }
+        },
+        "enum": { "type": "array", "minItems": 1, "items": { "type": ["string", "number", "boolean"] }, "description": "Values the manual lists for this field, and only where it lists them as the whole set." },
+        "documentedDefault": { "description": "The manual's Default column, where it states a literal." },
+        "documentedDefaultNote": { "type": "string", "description": "The Default column where it is not a literal, e.g. `System`." },
+        "provenance": { "enum": ["manual", "live_verified", "live_corrected", "info_schema"] },
+        "provenanceNote": { "type": "string" }
+      }
+    }
+  }
+}

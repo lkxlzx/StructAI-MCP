@@ -1,0 +1,39 @@
+# Source: 18_POST_PreProcess.md section 4. Manual transcription only.
+contractVersion: 1
+id: post-load-summary
+endpoint: /post/TABLE
+name: Load Summary Table
+summary: Load totals by load case in a selected direction.
+products: [gen, civil]
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 18_POST_PreProcess.md
+    section: "4. Load Summary Table"
+verification:
+  status: manual_only
+risk: read_only
+surface:
+  exportName: getLoadSummaryTable
+  modulePath: [preProcess]
+  tableType: LOAD_SUMMARY_
+  factory: directional
+  optionNames: [tableName]
+  documentation: |-
+    docs/manual/18_POST_PreProcess.md #4 — Load Summary Table.
+
+    direction: "X"/"Y"/"Z".
+tableTypes:
+  - value: LOAD_SUMMARY_X
+    description: X direction
+    head: [Index, Load, Concent, Beam, Floor, Pressure, SelfWeight, Sum]
+    provenance: manual
+  - value: LOAD_SUMMARY_Y
+    description: Y direction
+    head: [Index, Load, Concent, Beam, Floor, Pressure, SelfWeight, Sum]
+    provenance: manual
+  - value: LOAD_SUMMARY_Z
+    description: Z direction
+    head: [Index, Load, Concent, Beam, Floor, Pressure, SelfWeight, Sum]
+    provenance: manual

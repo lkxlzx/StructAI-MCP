@@ -1,0 +1,516 @@
+# /db/MVLDpl
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-mvldpl
+endpoint: /db/MVLDpl
+name: Moving Load Cases – Poland
+surface:
+  className: MovingLoadCasePoland
+  exportName: movingLoadCasePoland
+  modulePath: [db, movingLoads]
+  payloadTypeName: MovingLoadCasePolandPayload
+  nestedTypes:
+    - {path: DEFAULT, name: MovingLoadCasePolandDefault, namespace: DbMovingLoadsTypes}
+    - {path: DEFAULT.SUB_LOAD_DATAS, name: MovingLoadCasePolandSubLoadDataItem, namespace: DbMovingLoadsTypes}
+    - {path: AUTO_OPTIMIZE, name: MovingLoadCasePolandAutoOptimize, namespace: DbMovingLoadsTypes}
+    - {path: AUTO_OPTIMIZE.OPTIMIZE_ITEMS, name: MovingLoadCasePolandOptimizeItem, namespace: DbMovingLoadsTypes}
+    - {path: PERMIT_LOAD, name: MovingLoadCasePolandPermitLoad, namespace: DbMovingLoadsTypes}
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 08_DB_Moving_Loads.md
+    section: 17. /db/MVLDpl – Moving Load Cases – Poland
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-07-26
+    - product: gen
+      ref: db-read-sweep-2026-07-26
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/MVLDpl/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: LCNAME
+    description: >-
+      Load Case Name
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: DESC
+    description: >-
+      Description
+    type: string
+    requirement: optional
+    documentedDefault: ""
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bAUTO_OPTIMIZE
+    description: >-
+      Moving Load Optimization
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bPERMIT_LOAD
+    description: >-
+      Load Case for Permit Vehicle
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: LOAD_MODEL
+    description: >-
+      Load Model (1=Vehicle S/2S/Permit, 2=Vehicle K, 3=Military)
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: DEFAULT
+    description: >-
+      Sub-Load Cases
+    type: object
+    requirement: required
+    condition: "General Load(`bAUTO_OPTIMIZE`=false, `bPERMIT_LOAD`=false)"
+    appliesWhen:
+      - path: bAUTO_OPTIMIZE
+        equals: false
+      - path: bPERMIT_LOAD
+        equals: false
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: COMB_OPTION
+        description: >-
+          Loading Effect(`"COMBINED"`/`"INDEPENDENT"`)
+        type: string
+        enum: ["COMBINED", "INDEPENDENT"]
+        requirement: required
+        condition: "Vehicle S/2S/Permit(LOAD_MODEL=1)"
+        appliesWhen:
+          - path: LOAD_MODEL
+            equals: 1
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: VEHICLE_LOAD_NAME
+        description: >-
+          Vehicle Name
+        type: string
+        requirement: required
+        condition: "Vehicle K/Military(LOAD_MODEL=2/3)"
+        appliesWhen:
+          - path: LOAD_MODEL
+            in: [2, 3]
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: SUB_LOAD_DATAS
+        description: >-
+          Sub-Load Data
+        type: array
+        items:
+          type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: VEHICLE_NAME
+            description: >-
+              Vehicle Name
+            type: string
+            requirement: required
+            condition: "Vehicle S/2S/Permit(LOAD_MODEL=1)"
+            appliesWhen:
+              - path: LOAD_MODEL
+                equals: 1
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: SCALE_FACTOR
+            description: >-
+              Scale Factor
+            type: number
+            requirement: required
+            condition: "Vehicle S/2S/Permit(LOAD_MODEL=1)"
+            appliesWhen:
+              - path: LOAD_MODEL
+                equals: 1
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: MIN_LOADED_LANE
+            description: >-
+              Min. Number of Loaded Lane
+            type: integer
+            requirement: required
+            condition: "Vehicle S/2S/Permit(LOAD_MODEL=1)"
+            appliesWhen:
+              - path: LOAD_MODEL
+                equals: 1
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: MAX_LOADED_LANE
+            description: >-
+              Max. Number of Loaded Lane
+            type: integer
+            requirement: required
+            condition: "Vehicle S/2S/Permit(LOAD_MODEL=1)"
+            appliesWhen:
+              - path: LOAD_MODEL
+                equals: 1
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: LANE_NAMES
+            description: >-
+              Selected Lanes
+            type: array
+            items:
+              type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+    # Rows the table groups under its bold LOAD_MODEL rows - "Vehicle
+    # S/2S/Permit(LOAD_MODEL=1)" and "Vehicle K/Military(LOAD_MODEL=2/3)" -
+    # inside the General Load and Optimization groups; the Key cell writes each
+    # row's full path (DEFAULT.COMB_OPTION, SUB_LOAD_DATAS[].LANE_NAMES). A row
+    # both groups list is required under both LOAD_MODEL values.
+
+variants:
+  - when:
+      - path: bAUTO_OPTIMIZE
+        equals: true
+    source:
+      table: Moving Load Optimization(bAUTO_OPTIMIZE=true)
+      line: 2187
+    fields:
+      - key: AUTO_OPTIMIZE
+        description: >-
+          Sub-Load Cases
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: VEHICLE_LOAD_NAME
+            description: >-
+              Vehicle Name
+            type: string
+            requirement: required
+            condition: "Vehicle K/Military(LOAD_MODEL=2/3)"
+            appliesWhen:
+              - path: LOAD_MODEL
+                in: [2, 3]
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: MIN_VEHL_DIST
+            description: >-
+              Min. Vehicle Distance
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: LANE_NAME
+            description: >-
+              Loaded Lane
+            type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: MIN_NUM_VEHICLE
+            description: >-
+              Min. Number of Vehicle
+            type: integer
+            requirement: required
+            condition: "Vehicle S/2S(LOAD_MODEL=1)"
+            appliesWhen:
+              - path: LOAD_MODEL
+                equals: 1
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: MAX_NUM_VEHICLE
+            description: >-
+              Max. Number of Vehicle
+            type: integer
+            requirement: required
+            condition: "Vehicle S/2S(LOAD_MODEL=1)"
+            appliesWhen:
+              - path: LOAD_MODEL
+                equals: 1
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: COMB_OPTION
+            description: >-
+              Loading Effect(`"COMBINED"`/`"INDEPENDENT"`)
+            type: string
+            enum: ["COMBINED", "INDEPENDENT"]
+            requirement: required
+            condition: "Vehicle S/2S(LOAD_MODEL=1)"
+            appliesWhen:
+              - path: LOAD_MODEL
+                equals: 1
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: OPTIMIZE_ITEMS
+            description: >-
+              Sub-Load Cases
+            type: array
+            items:
+              type: object
+            requirement: required
+            condition: "Vehicle S/2S(LOAD_MODEL=1)"
+            appliesWhen:
+              - path: LOAD_MODEL
+                equals: 1
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            properties:
+              - key: VEHICLE_TYPE
+                description: >-
+                  Vehicle Type(`"VL"`/`"VC"`)
+                type: string
+                enum: ["VL", "VC"]
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              - key: VEHICLE_NAME
+                description: >-
+                  Vehicle Name
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              - key: SCALE_FACTOR
+                description: >-
+                  Scale Factor
+                type: number
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+          - key: NUM_LOADED_LANES
+            description: >-
+              Number of Loaded Lanes
+            type: integer
+            requirement: required
+            condition: "Vehicle K/Military(LOAD_MODEL=2/3)"
+            appliesWhen:
+              - path: LOAD_MODEL
+                in: [2, 3]
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+  - when:
+      - path: bPERMIT_LOAD
+        equals: true
+    source:
+      table: Load Case for Permit Vehicle(bPERMIT_LOAD=true)
+      line: 2204
+    fields:
+      - key: PERMIT_LOAD
+        description: >-
+          Permit Vehicle
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: VEHICLE_LOAD_NAME
+            description: >-
+              Vehicle Name
+            type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: REF_LANE
+            description: >-
+              Reference Lane
+            type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: ECC
+            description: >-
+              Eccentricity
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: SCALE_FACTOR
+            description: >-
+              Scale Factor
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+
+sdkRules:
+  - id: db-mvldpl-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-mvldpl-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 08_DB_Moving_Loads.md line 2166
+  table: Parameters
+  structuralTables:
+    - heading: Vehicle S/2S/Permit(LOAD_MODEL=1)
+      line: 2175
+      paths: [DEFAULT]
+      note: >-
+        A bold group row inside the General Load group (bAUTO_OPTIMIZE and
+        bPERMIT_LOAD false); its rows are DEFAULT's members for LOAD_MODEL 1.
+    - heading: Vehicle K/Military(LOAD_MODEL=2/3)
+      line: 2183
+      paths: [DEFAULT]
+      note: >-
+        The same group's rows for LOAD_MODEL 2 and 3.
+    - heading: Vehicle S/2S(LOAD_MODEL=1)
+      line: 2189
+      paths: [AUTO_OPTIMIZE]
+      note: >-
+        A bold group row inside the Moving Load Optimization group
+        (bAUTO_OPTIMIZE true); AUTO_OPTIMIZE's members for LOAD_MODEL 1.
+    - heading: Vehicle K/Military(LOAD_MODEL=2/3)
+      line: 2199
+      paths: [AUTO_OPTIMIZE]
+      note: >-
+        The same group's rows for LOAD_MODEL 2 and 3.

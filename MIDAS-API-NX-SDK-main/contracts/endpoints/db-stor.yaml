@@ -1,0 +1,319 @@
+# /db/STOR
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products, verification status and the DELETE
+# shape come from docs/coverage.json's live record and the measured /db/* DELETE
+# behaviour, not from the manual's framing. safeToOmit is answered `true` only
+# where a confirmed live payload actually omitted the field.
+contractVersion: 1
+id: db-stor
+endpoint: /db/STOR
+name: Story Data
+surface:
+  className: Story
+  exportName: story
+  modulePath: [db, project]
+  payloadTypeName: StoryPayload
+  nestedTypes:
+    - {path: STORY_AREA_ITEMS, name: StoryAreaItem, namespace: DbProjectTypes}
+
+products: [gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 02_DB_Project_Structure.md
+    section: "15. `/db/STOR` — Story Data"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_gen
+  records:
+    - product: gen
+      ref: db-write-sweep-2026-08-13
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/STOR/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: STORY_NAME
+    description: >-
+      Story Name
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: STORY_LEVEL
+    description: >-
+      Story Height (elevation)
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: bFLOOR_DIAPHRAGM
+    description: >-
+      Floor Diaphragm (강성 다이아프램 가정 여부)
+    type: boolean
+    requirement: required
+    documentedDefault: false
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: WIND_FLOOR_WIDTH_X
+    description: >-
+      Wind Floor Width X-Dir (GCS Y방향 풍하중에 노출되는 X축 폭)
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: WIND_FLOOR_WIDTH_Y
+    description: >-
+      Wind Floor Width Y-Dir (GCS X방향 풍하중에 노출되는 Y축 폭)
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: WIND_CENTER_X
+    description: >-
+      Wind Floor Center Xc
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: WIND_CENTER_Y
+    description: >-
+      Wind Floor Center Yc
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: WIND_ECCENT_X
+    description: >-
+      Wind Eccentricity X-Dir
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: WIND_ECCENT_Y
+    description: >-
+      Wind Eccentricity Y-Dir
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: SEIS_ACC_ECCENT_X
+    description: >-
+      Seismic Accidental Eccentricity X-Dir
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: SEIS_ACC_ECCENT_Y
+    description: >-
+      Seismic Accidental Eccentricity Y-Dir
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: SEIS_INHERENT_ECCENT_X
+    description: >-
+      Seismic Inherent Eccentricity X-Dir
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: SEIS_INHERENT_ECCENT_Y
+    description: >-
+      Seismic Inherent Eccentricity Y-Dir
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: SEIS_TORSIONAL_AMP_FACTOR_X
+    description: >-
+      Seismic Torsional Amplification Factor X-Dir
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: SEIS_TORSIONAL_AMP_FACTOR_Y
+    description: >-
+      Seismic Torsional Amplification Factor Y-Dir
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: STORY_AREA_ITEMS
+    description: >-
+      Story Area Items
+    type: array
+    items:
+      type: object
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: manual
+    # RESOLVED: stated elsewhere in the same section - in a different chapter,
+    # in fact. /db/STOR's own JSON Schema, Request Example and Specifications
+    # table all give fifteen properties and stop. /ope/STOR's POST response
+    # in 15_OPE.md is the same record field for field with this array added,
+    # and its prose names it: 층 면적 좌표 목록(STORY_AREA_ITEMS). The manual
+    # documents /db/STOR's sixteenth property in the section for a different
+    # endpoint. GET /info/db/STOR agrees, member for member. See MD-39.
+    properties:
+      - key: X
+        description: >-
+          X Factor
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: Y
+        description: >-
+          Y Factor
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: Z
+        description: >-
+          Z Factor
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+
+manualDefects:
+  - describes: field_name
+    manualSays: >-
+      /db/STOR's JSON Schema, Request Example and Specifications table
+      each give the same fifteen properties and stop.
+    actual: >-
+      There is a sixteenth: `STORY_AREA_ITEMS`, an array of `{X, Y, Z}`
+      factors. The manual does document it, in another chapter -
+      /ope/STOR's POST response in 15_OPE.md is this record field for
+      field with the array added, and the prose under it names it: 층 면적 좌표
+      목록(STORY_AREA_ITEMS). So this is an incompleteness rather than a
+      contradiction, and the contract takes the field from the manual,
+      with /info agreeing member for member.
+    evidence: >-
+      Found by scripts/info_baseline.py --against-contracts on 2026-09-04,
+      sweeping the 2026-09-03 /info capture against every contract. The
+      manual was then searched in full for the name, not just this
+      section. docs/manual/02_DB_Project_Structure.md section 15 against
+      docs/manual/15_OPE.md's /ope/STOR. Registered as MD-39.
+
+sdkRules:
+  - id: db-stor-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-stor-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 02_DB_Project_Structure.md line 1328
+  table: Specifications

@@ -1,0 +1,585 @@
+# /db/THGC-M1
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then reviewed
+# by hand: the section's three sub-parameter tables were merged into the object
+# fields they belong to, and `INIT_LOAD_TYPE`'s enum was corrected against live
+# /info because the manual prints the same literal twice. products and
+# verification status come from docs/coverage.json's live record, not from the
+# manual's framing. For /db/* endpoints, the DELETE shape comes from measured
+# /db/* DELETE behaviour. safeToOmit is answered `true` only where a confirmed
+# live payload actually omitted the field.
+contractVersion: 1
+id: db-thgc-m1
+endpoint: /db/THGC-M1
+name: Time History Global Control (Hyper-S)
+surface:
+  className: TimeHistoryGlobalControlHyperS
+  exportName: timeHistoryGlobalControlHyperS
+  modulePath: [db, dynamicLoads]
+  payloadTypeName: TimeHistoryGlobalControlHyperSPayload
+  nestedTypes:
+    - {path: HINGE_OPT, name: HyperSHingeOption, namespace: DbDynamicLoadsTypes}
+    - {path: INCREMENT_STEP, name: HyperSIncrementStep, namespace: DbDynamicLoadsTypes}
+    - {path: ITER_PARAM, name: HyperSIterationParameters, namespace: DbDynamicLoadsTypes}
+    - {path: ITER_PARAM.LINE_SEARCH, name: HyperSLineSearch, namespace: DbDynamicLoadsTypes}
+    - {path: ITER_PARAM.NORM_CTRL, name: HyperSNormControl, namespace: DbDynamicLoadsTypes}
+    - {path: ITER_PARAM.NORM_CTRL.DISP, name: HyperSNormCriterion, namespace: DbDynamicLoadsTypes}
+    - {path: ITER_PARAM.NORM_CTRL.ENERGY, name: HyperSNormCriterion, namespace: DbDynamicLoadsTypes}
+    - {path: ITER_PARAM.NORM_CTRL.FORCE, name: HyperSNormCriterion, namespace: DbDynamicLoadsTypes}
+
+products: [civil]
+productsEvidence: >-
+  Hyper-S. The draft carried the extractor's `[gen, civil]` placeholder;
+  docs/coverage.json records civil, and the 2026-09-03 /info sweep answered for
+  civil and not for gen, which is the HYPER_S_ONLY gate both SDKs already apply.
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 09_DB_Dynamic_Loads.md
+    section: 4. /db/THGC-M1 – Time History Global Control (Hyper-S)
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_civil
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-07-26
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/THGC-M1/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: GEO_NONL_TYPE
+    description: >-
+      기하 비선형 타입 (0=None, 1=Large Disp, 2=P-Delta)
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    enum: [0, 1, 2]
+    safeToOmit: unverified
+    provenance: manual
+  - key: INIT_LOAD_TYPE
+    description: >-
+      초기 하중 유형 (0=비선형 정적 해석, 1=정적/시공단계 결과 가져오기)
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    enum: [0, 1]
+    enumNote: >-
+      The manual types this `Integer(enum)` and names exactly two options, but
+      prints `0` as the literal for both - a value set that cannot be an enum.
+      The second literal is `1`, from the live /info schema's own description
+      ("Initial Load Type (Perform NL Static:0, Import Static:1)"), whose two
+      options match the manual's two in the same order. /info supplies one
+      corrected literal here; it did not supply the enum, which the manual
+      declares. Registered as MD-18.
+    safeToOmit: unverified
+    provenance: live_corrected
+    provenanceNote: >-
+      Captured 2026-09-03 by GET /info/db/THGC-M1 against Civil NX. The Python
+      SDK's TypedDict already carried `1`; that agreement is corroboration, not
+      a source - an SDK may never be one.
+  - key: INIT_LOAD_LIST
+    description: >-
+      초기 하중 목록
+    type: array
+    items:
+      type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: LC_NAME
+        description: >-
+          하중 케이스명
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'INIT_LOAD_LIST' by numbering it
+        # '(1)', not by naming a path. The section's request example confirms the
+        # nesting: "INIT_LOAD_LIST": [{"LC_NAME": "DL", "SF": 0.75, "LC_TYPE": "ST"}]
+      - key: SF
+        description: >-
+          스케일 계수
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'INIT_LOAD_LIST' by numbering it
+        # '(2)', not by naming a path; the section's Request Example confirms it.
+      - key: LC_TYPE
+        description: >-
+          하중 케이스 타입
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'INIT_LOAD_LIST' by numbering it
+        # '(3)', not by naming a path; the section's Request Example confirms it.
+  - key: INCREMENT_STEP
+    description: >-
+      초기 하중 케이스 증분 스텝
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      # RESOLVED: merged from the section's "INCREMENT_STEP 서브 파라미터" table,
+      # which the extractor left unmerged because a heading is not a path. The
+      # section's Request Example nests exactly these three keys under this field.
+      - key: NSTEP
+        description: >-
+          증분 스텝 수
+        type: integer
+        requirement: optional
+        documentedDefault: 1
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: OUT_TYPE
+        description: >-
+          결과 출력 타입 (0=최종 스텝만, 1=스텝 증분)
+        type: integer
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        enum: [0, 1]
+        safeToOmit: unverified
+        provenance: manual
+      - key: STEP_INC
+        description: >-
+          스텝 증분 수
+        type: integer
+        requirement: conditional
+        condition: OUT_TYPE=1 시
+        documentedDefault: 1
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+  - key: ITER_PARAM
+    description: >-
+      반복 파라미터
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      # RESOLVED: merged from the section's "ITER_PARAM 서브 파라미터" table. Two of
+      # its rows state a path rather than a key - `NORM_CTRL` is written with its
+      # children as `DISP` -> `{OPT_USE, VALUE}`, and `LINE_SEARCH`'s children are
+      # listed as '-' prefixed rows. The section's own Request Example resolves
+      # both nestings literally, so nothing here is inferred from a heading alone.
+      - key: PERMIT_FAIL
+        description: >-
+          수렴 실패 허용
+        type: boolean
+        requirement: optional
+        documentedDefault: true
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: MAX_ITER
+        description: >-
+          최대 반복 횟수
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: NORM_CTRL
+        description: >-
+          수렴 판정 기준
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: DISP
+            description: >-
+              변위 노름
+            type: object
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            properties:
+              - key: OPT_USE
+                description: >-
+                  사용 여부
+                type: boolean
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              - key: VALUE
+                description: >-
+                  수렴 허용값
+                type: number
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+          - key: FORCE
+            description: >-
+              하중 노름
+            type: object
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            properties:
+              - key: OPT_USE
+                description: >-
+                  사용 여부
+                type: boolean
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              - key: VALUE
+                description: >-
+                  수렴 허용값
+                type: number
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+          - key: ENERGY
+            description: >-
+              에너지 노름
+            type: object
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            properties:
+              - key: OPT_USE
+                description: >-
+                  사용 여부
+                type: boolean
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              - key: VALUE
+                description: >-
+                  수렴 허용값
+                type: number
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+      - key: STIFF_UPD_SCHEME
+        description: >-
+          강성 업데이트 방식 (0=Custom, 1=FullNR, 2=InitStiff)
+        type: integer
+        requirement: optional
+        documentedDefault: 1
+        documentedOptional: true
+        enum: [0, 1, 2]
+        safeToOmit: unverified
+        provenance: manual
+      - key: ITER_BEF_UPDATE
+        description: >-
+          강성 업데이트 전 반복 횟수
+        type: integer
+        requirement: conditional
+        condition: STIFF_UPD_SCHEME=0 시
+        documentedDefault: 5
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: MAX_BISECT_LEVEL
+        description: >-
+          최대 이분법 수준
+        type: integer
+        requirement: optional
+        documentedDefault: 5
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: SMART_BISECT
+        description: >-
+          스마트 이분법
+        type: boolean
+        requirement: optional
+        documentedDefault: false
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: DIVERGENCE_THRESHOLD
+        description: >-
+          발산 임계값
+        type: number
+        requirement: optional
+        documentedDefault: 3
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: LINE_SEARCH
+        description: >-
+          선형 탐색 옵션
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          # The manual marks all five children Required, while the same section's
+          # Python example sends `"LINE_SEARCH": {"OPT_USE": False}` and omits the
+          # other four. `requirement` records the table's claim, which is what a
+          # contract's requirement field is for; the disagreement is registered
+          # under manualDefects, and nobody has measured which side is right.
+          - key: OPT_USE
+            description: >-
+              선형 탐색 사용 여부
+            type: boolean
+            requirement: required
+            documentedDefault: true
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: LINE_SEARCH_OPT
+            description: >-
+              선형 탐색 옵션 (0=자동, 1=사용자 정의)
+            type: integer
+            requirement: required
+            documentedDefault: 0
+            documentedOptional: false
+            enum: [0, 1]
+            safeToOmit: unverified
+            provenance: manual
+          - key: START_ITER_NO
+            description: >-
+              선형 탐색 시작 반복 번호
+            type: integer
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: MAX_LINE_SEARCH_ITER
+            description: >-
+              최대 선형 탐색 반복 횟수
+            type: integer
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: LINE_SEARCH_TOL
+            description: >-
+              선형 탐색 허용오차
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+  - key: IGNORE_ELEM
+    description: >-
+      NL 해석 초기 하중 요소 무시 여부
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: SEQ_LOAD_TYPE
+    description: >-
+      적용 변위 기준 (0=미변형, 1=변형)
+    type: integer
+    requirement: optional
+    documentedDefault: 1
+    documentedOptional: true
+    enum: [0, 1]
+    safeToOmit: unverified
+    provenance: manual
+  - key: HINGE_OPT
+    description: >-
+      비탄성 힌지 데이터 옵션
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      # RESOLVED: merged from the section's "HINGE_OPT 서브 파라미터" table; the
+      # section's Request Example nests exactly these two keys under this field.
+      - key: PSPRING_SUP
+        description: >-
+          Point Spring Support (0=비선형 특성 적용, 1=선형으로 간주)
+        type: integer
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        enum: [0, 1]
+        safeToOmit: unverified
+        provenance: manual
+      - key: EL
+        description: >-
+          Elastic Link (0=비선형 특성 적용, 1=선형으로 간주)
+        type: integer
+        requirement: optional
+        documentedDefault: 1
+        documentedOptional: true
+        enum: [0, 1]
+        safeToOmit: unverified
+        provenance: manual
+
+manualDefects:
+  - describes: enum
+    manualSays: >-
+      The main Specifications table types `INIT_LOAD_TYPE` as `Integer(enum)`
+      and prints its two options as "0=비선형 정적 해석, 0=정적/시공단계 결과
+      가져오기" - the literal `0` for both.
+    actual: >-
+      The two options are `0` and `1`. The live /info schema describes the same
+      field as "Initial Load Type (Perform NL Static:0, Import Static:1)", whose
+      two options correspond to the manual's two in the same order. The
+      duplicate is self-refuting rather than merely unverified: an enum cannot
+      name one literal twice, so the row as printed cannot be followed at all.
+    evidence: >-
+      GET /info/db/THGC-M1 on Civil NX, captured 2026-09-03 during the
+      full /info sweep of every /db/* resource on both products. Registered as
+      MD-18.
+  - describes: field_name
+    manualSays: >-
+      The "ITER_PARAM 서브 파라미터" table's Key column does not give property
+      names for two of its groups. `NORM_CTRL`'s children are stated as a path
+      on one row - "`DISP` → `{OPT_USE, VALUE}`", repeated for `FORCE` and
+      `ENERGY` - and `LINE_SEARCH`'s five children follow as sibling rows
+      distinguished only by a "-" in the 설명 column.
+    actual: >-
+      Read as printed, that table yields a field literally named
+      `{OPT_USE, VALUE}` and puts ten children beside the two parents that own
+      them. The section's own Request Example nests all of them:
+      `"NORM_CTRL": {"DISP": {"OPT_USE": true, "VALUE": 0.001}, ...}` and
+      `"LINE_SEARCH": {"OPT_USE": true, "LINE_SEARCH_OPT": 1, ...}`. Same class
+      as MD-07, MD-08 and MD-13 - a Key cell carrying a path or a set instead
+      of one wire property. `ITER_PARAM`'s subtree in this contract is the
+      hand-resolved shape; the section's other two sub-tables need no such
+      correction and are merged mechanically by
+      `scripts/extract_contracts.py`'s structural-split registry.
+    evidence: >-
+      docs/manual/09_DB_Dynamic_Loads.md section 4-2 (the table, line 1062)
+      against 4-3 (the Request Body example). Registered as MD-20.
+  - describes: requiredness
+    manualSays: >-
+      The "ITER_PARAM 서브 파라미터" table marks all five children of
+      `LINE_SEARCH` Required - `OPT_USE`, `LINE_SEARCH_OPT`, `START_ITER_NO`,
+      `MAX_LINE_SEARCH_ITER` and `LINE_SEARCH_TOL`.
+    actual: >-
+      Unresolved, and recorded here rather than decided. The same section's
+      Python example sends `"LINE_SEARCH": {"OPT_USE": False}` and omits the
+      other four, so the chapter contradicts itself in the way MD-16 describes:
+      requiredness stated with no reference to the switch that governs it.
+      Nobody has put either form to a running product, so this contract keeps
+      the table's claim in `requirement` and leaves every `safeToOmit`
+      unverified. Measuring it needs a PUT, which mutates global solver
+      settings, so it is not something a read-only sweep can settle.
+    evidence: >-
+      docs/manual/09_DB_Dynamic_Loads.md section 4-2 (the table) against 4-4
+      (the Python example), same chapter, same section. Registered as MD-19.
+
+extraction:
+  source: 09_DB_Dynamic_Loads.md line 1047
+  table: 메인 파라미터
+  note: >-
+    All three supplementary tables are structural, not conditional: each heading
+    names the object field it belongs to, and the section's Request Example
+    carries all three nested under their parents in one payload, with no
+    discriminator selecting between them. None is listed under `unmergedTables`
+    because none is unresolved - the field list below is complete.
+  structuralTables:
+    - heading: INCREMENT_STEP 서브 파라미터
+      line: 1063
+      paths: [INCREMENT_STEP]
+    - heading: ITER_PARAM 서브 파라미터
+      line: 1071
+      paths: [ITER_PARAM]
+      note: >-
+        The only one of the three the extractor cannot merge mechanically, and
+        the reason is in the table rather than the heading: its Key column
+        states `NORM_CTRL`'s children as a path (`DISP` → `{OPT_USE, VALUE}`)
+        and lists `LINE_SEARCH`'s five children as sibling rows. Merged as
+        parsed it would invent a field named `{OPT_USE, VALUE}` and flatten two
+        levels, so the subtree here is hand-resolved against the section's
+        Request Example and the Key column is registered as MD-20. The other
+        two tables are in `scripts/extract_contracts.py`'s structural-split
+        registry and merge without judgment.
+    - heading: HINGE_OPT 서브 파라미터
+      line: 1093
+      paths: [HINGE_OPT]

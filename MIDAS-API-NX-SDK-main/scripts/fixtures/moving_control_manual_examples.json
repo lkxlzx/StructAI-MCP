@@ -1,0 +1,70 @@
+{
+  "source": "12_DB_Analysis_Control.md, sections 11-13, first JSON Request Body at vendored commit 7920759",
+  "sha256": "e302a84cdb1dc6ace65533913a3531bd6c7d6c8e434273b237308f881dba8c14",
+  "examples": {
+    "/db/MVCTid": {
+      "1": {
+        "iIGP": 0,
+        "UNUMT": 3,
+        "PLATE": "NODAL",
+        "bSTRCALC": true,
+        "FRAME": "AXIAL",
+        "bCSTRCALC": true,
+        "bREAC": true,
+        "bRGP": false,
+        "RGP": "",
+        "bDISP": true,
+        "bDGP": false,
+        "DGP": "",
+        "bFM": true,
+        "bFGP": false,
+        "FGP": "",
+        "bL": true,
+        "bLG": false,
+        "LGP": "",
+        "BRIDGE": 0,
+        "TRACKS": 0,
+        "WIDTHTYPE": 0,
+        "WIDTH": 0,
+        "DEPTH": 10,
+        "VHMAX": 10
+      }
+    },
+    "/db/MVCTbs": {
+      "1": {
+        "iIGP": 0,
+        "UNUMT": 3,
+        "PLATE": "NODAL",
+        "bSTRCALC": true,
+        "bCONCURRENT": true,
+        "FRAME": "AXIAL",
+        "bCSTRCALC": true,
+        "bREAC": true,
+        "bRGP": false,
+        "RGP": "",
+        "bDISP": true,
+        "bDGP": false,
+        "DGP": "",
+        "bFM": true,
+        "bFGP": false,
+        "FGP": "",
+        "bL": true,
+        "bLG": false,
+        "LGP": "",
+        "NUMLANE": 0
+      }
+    },
+    "/db/MVCTtr": {
+      "1": {
+        "LOAD_POINT_SEL": 1,
+        "INFL_GEN_POINT": 0,
+        "NUM_UNIT_LOAD": 3,
+        "ANALYSIS_RESULT": 2,
+        "OPT_COMBINED_STR": true,
+        "OPT_REACTIONS": true,
+        "OPT_DISPLACEMENTS": true,
+        "OPT_FORCE": false
+      }
+    }
+  }
+}

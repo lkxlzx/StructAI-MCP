@@ -1,0 +1,439 @@
+# /db/REBW
+#
+# The one contract in this directory whose fields come from no manual at all.
+# Every field name in the section's Specifications table and JSON Schema is
+# wrong - not drifted, wrong - and that was confirmed three ways against a real
+# production Gen NX model with 102 populated wall-rebar rows, then against
+# MIDASIT's own Zendesk article rather than the vendored copy. What is written
+# here is the server's own schema, corroborated by a GET of real data and by a
+# PUT round trip that changed a value, verified it, and restored it.
+#
+# The sibling endpoints rule out a family-wide problem: /db/REBB in the same
+# chapter and /DESIGN/RC/KDS-41-20-2022/REBW - the ch26 endpoint for the same
+# physical walls, the same 102 rows - both matched their own documentation
+# exactly in the same session.
+contractVersion: 1
+id: db-rebw
+endpoint: /db/REBW
+name: Modify Wall Rebar
+surface:
+  className: WallRebar
+  exportName: wallRebar
+  modulePath: [db, design]
+  payloadTypeName: WallRebarPayload
+  nestedTypes:
+    - {path: ITEMS, name: WallRebarItem, namespace: DbDesignTypes}
+    - {path: ITEMS.BE_HOR_BAR, name: RebarNameDist, namespace: DbDesignTypes}
+    - {path: ITEMS.END_BAR, name: RebarNameDist, namespace: DbDesignTypes}
+    - {path: ITEMS.HOR_BAR, name: RebarNameDist, namespace: DbDesignTypes}
+    - {path: ITEMS.VER_BAR, name: RebarNameDist, namespace: DbDesignTypes}
+
+products: [gen]
+productsEvidence: >-
+  Gen only, and not because the manual frames it that way. Both the route and
+  GET /info/db/REBW 404 on Civil NX, confirmed independently twice on
+  2026-07-29. Recorded in db/base.py's GEN_ONLY.
+
+recordKey:
+  kind: record_id
+  description: >-
+    The wall id. The 2026-07-29 round trip addressed wall 101 by this key and
+    the change landed on exactly that wall.
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 24_DB_Design.md
+    section: "12. `/db/REBW` — Modify Wall Rebar Data (벽체 철근 데이터 수정)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_gen
+  records:
+    - product: gen
+      ref: db-rebw-live-shape-2026-07-29
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/REBW/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      What made the defect visible. Against a model with real wall rebar in it,
+      the response carried none of the documented field names and all of the
+      ones below.
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Round-tripped live on 2026-07-29 against wall 101 of a production model:
+      VER_BAR.DIST changed 0.2 to 0.99, confirmed on a fresh GET, then restored
+      and confirmed byte-for-byte. That is what makes these names the write
+      contract and not only the read shape.
+
+fields:
+  - key: ITEMS
+    description: >-
+      Concrete Wall Rebar Items
+    type: array
+    items:
+      type: object
+    minItems: 1
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: live_verified
+    provenanceNote: >-
+      The only thing the manual and the server agree on for this endpoint: the
+      payload is an ITEMS array. Everything inside it is live_corrected.
+    properties:
+      - key: ID
+        description: >-
+          ID
+        type: integer
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: live_corrected
+      - key: bUSE_MODEL_THICK
+        description: >-
+          Use Model Thickness
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: live_corrected
+        provenanceNote: >-
+          The manual's `USE_MODEL_THICKNESS`, which the server does not answer
+          to.
+      - key: THICK
+        description: >-
+          Thickness (Input check-off Use Model Thickness)
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: live_corrected
+        provenanceNote: >-
+          The description is the server's own, verbatim, and it reads as a
+          condition on `bUSE_MODEL_THICK`. It is not recorded as one: an /info
+          schema states no branch anywhere and declares no required array, so
+          turning a description into an `appliesWhen` would be this contract
+          inventing a gate rather than transcribing one. The manual's
+          `THICKNESS` is the name that does not work.
+      - key: DW
+        description: >-
+          Dw (Concrete Face ~ Rebar Center)
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: live_corrected
+        provenanceNote: >-
+          Top level. The manual nests both distances inside a
+          `CONCRETE_FACE_TO_CENTER_OF_REBAR` object that the server does not
+          have.
+      - key: DE
+        description: >-
+          De (Concrete Face ~ Rebar Center)
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: live_corrected
+      - key: VER_BAR
+        description: >-
+          Vertical Rebar
+        type: object
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: live_corrected
+        provenanceNote: >-
+          The manual's `VERTICAL_REBAR`. This is the field the 2026-07-29 PUT
+          round trip wrote through, so the abbreviation is confirmed on the
+          write path and not only in the schema.
+        properties:
+          - key: NAME
+            description: >-
+              Name
+            type: string
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_corrected
+          - key: DIST
+            description: >-
+              Space
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_corrected
+      - key: HOR_BAR
+        description: >-
+          Horizontal Rebar
+        type: object
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: live_corrected
+        provenanceNote: The manual's `HORIZONTAL_REBAR`.
+        properties:
+          - key: NAME
+            description: >-
+              Name
+            type: string
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_corrected
+          - key: DIST
+            description: >-
+              Space
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_corrected
+      - key: END_BAR
+        description: >-
+          End Rebar
+        type: object
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: live_corrected
+        provenanceNote: >-
+          The manual's `END_REBAR`, and it carries two members rather than the
+          documented three: the count lives beside it as `NUM_END_BAR`, not
+          inside as `NUM`.
+        properties:
+          - key: NAME
+            description: >-
+              Name
+            type: string
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_corrected
+          - key: DIST
+            description: >-
+              Space
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_corrected
+      - key: NUM_END_BAR
+        description: >-
+          End Rebar Num
+        type: integer
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: live_corrected
+      - key: BE_HOR_BAR
+        description: >-
+          Boundary Element Horizontal Rebar
+        type: object
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: live_corrected
+        provenanceNote: The manual's `BE_HORIZONTAL_REBAR`.
+        properties:
+          - key: NAME
+            description: >-
+              Name
+            type: string
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_corrected
+          - key: DIST
+            description: >-
+              Space
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_corrected
+      - key: BE_LENGTH
+        description: >-
+          Boundary Element Length
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: live_corrected
+        provenanceNote: The manual's `BOUNDARY_ELEMENT_LENGTH`.
+      - key: vSTORY_NAME
+        description: >-
+          Story Key List
+        type: array
+        items:
+          type: string
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: live_corrected
+        provenanceNote: >-
+          A flat list of story names, and the field that replaces the manual's
+          `STORY: {FROM, TO}` range - a different shape, not a rename. The
+          manual repo's 2026-08-27 re-verification pass claimed this is
+          `vSTORY_KEY`, an integer array; a live GET /info/db/REBW the same day
+          still named it `vSTORY_NAME` with `items.type: "string"`, so that
+          correction is one of the four cases where the re-verification was
+          itself wrong. Do not apply it.
+
+manualDefects:
+  - describes: field_name
+    manualSays: >-
+      The Specifications table and the section's own JSON Schema give the
+      `ITEMS` entry twelve fields: `CREATE_SUB_WALL_ID`, `SUB_WALL_ID`,
+      `STORY: {FROM, TO}`, `VERTICAL_REBAR`, `HORIZONTAL_REBAR`,
+      `USE_END_REBAR`, `END_REBAR: {NAME, NUM, DIST}`, `BE_HORIZONTAL_REBAR`,
+      `BOUNDARY_ELEMENT_LENGTH`, `CONCRETE_FACE_TO_CENTER_OF_REBAR: {DW, DE}`,
+      `USE_MODEL_THICKNESS` and `THICKNESS`.
+    actual: >-
+      The server implements none of them. It answers to `ID`,
+      `bUSE_MODEL_THICK`, `THICK`, top-level `DW` and `DE`, `VER_BAR`,
+      `HOR_BAR`, `END_BAR`, `NUM_END_BAR`, `BE_HOR_BAR`, `BE_LENGTH` and
+      `vSTORY_NAME`. Two of the differences are structural rather than
+      cosmetic: the two rebar-centre distances are top-level and not members of
+      an object, and stories are a flat name list rather than a `{FROM, TO}`
+      range. `CREATE_SUB_WALL_ID` and `SUB_WALL_ID` have no counterpart at all.
+      This is the whole payload contract, not a drift - a caller following the
+      documented example has every field ignored or rejected.
+    evidence: >-
+      docs/live_verification_notes.md, "/db/REBW's manual section doesn't match
+      the live server at all" (2026-07-29). Three independent confirmations
+      against one production Gen NX model with 102 populated rows: a GET that
+      returned the names below, GET /info/db/REBW declaring them as the
+      server's own Argument schema, and a PUT round trip on wall 101 that
+      changed VER_BAR.DIST, verified it, and restored it. The sibling /db/REBB
+      and the ch26 /DESIGN/RC/KDS-41-20-2022/REBW - the same 102 walls - both
+      matched their own documentation exactly in that session, which is what
+      isolates this to one section.
+    reportedToVendor: B-5
+  - describes: behaviour
+    manualSays: >-
+      Nothing about where this documentation came from - the chapter reads as a
+      faithful transcription, and this repo's own drift checker treats it as
+      one.
+    actual: >-
+      The defect is upstream of the vendored repo. MIDASIT's own Zendesk
+      article for this endpoint, 59359110968345 "Modify Wall Rebar Data",
+      documents the same long-form names, so the vendored chapter transcribes
+      its source correctly and the source does not match its own server. That
+      matters for who can fix it: the manual repo cannot correct this one on
+      its own the way it corrects a transcription slip.
+    evidence: >-
+      The article fetched directly through the Zendesk Help Center JSON API on
+      2026-07-29, recorded in docs/live_verification_notes.md. Distinct from
+      59236271208729, the ch26 KDS article, which is correct.
+    reportedToVendor: B-5
+
+sdkRules:
+  - id: db-rebw-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-rebw-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog. Wall rebar is design input a caller cannot
+      reconstruct from the model geometry.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 24_DB_Design.md line 1
+  table: none
+  note: >-
+    No table. The extractor's draft was discarded rather than reviewed: it
+    transcribed a Specifications table that describes a schema the server does
+    not implement, so promoting any part of it would have put the defect into
+    the source of truth. The fields here come from GET /info/db/REBW,
+    corroborated by a GET of real data and a PUT round trip - the two permitted
+    sources that remain when the manual is the thing that is wrong.

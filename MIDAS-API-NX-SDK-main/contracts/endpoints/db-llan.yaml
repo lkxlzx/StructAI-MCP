@@ -1,0 +1,491 @@
+# /db/LLAN
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-llan
+endpoint: /db/LLAN
+name: Traffic Line Lanes
+surface:
+  className: TrafficLineLanes
+  exportName: trafficLineLanes
+  modulePath: [db, movingLoads]
+  payloadTypeName: TrafficLineLanePayload
+  nestedTypes:
+    - {path: COMMON, name: LineLaneCommon, namespace: DbMovingLoadsTypes}
+    - {path: LANE_ITEMS, name: LineLaneItem, namespace: DbMovingLoadsTypes}
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 08_DB_Moving_Loads.md
+    section: 2. /db/LLAN – Traffic Line Lanes
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-write-sweep-2026-08-17
+    - product: gen
+      ref: db-write-sweep-2026-08-17
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/LLAN/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: COMMON
+    description: >-
+      Common lane properties
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    # RESOLVED: stated elsewhere in the same section - the table these ten
+    # came from is headed "Parameters - COMMON", and the Request Example,
+    # the Python example and scripts/live_crud_check.py's confirmed
+    # payload all nest them under that key. Until 2026-09-04 this contract
+    # published them at the root and had neither COMMON nor LANE_ITEMS, so
+    # its npm payload type described a flat record the server has never
+    # accepted. GET /info/db/LLAN declares exactly COMMON, LANE_ITEMS and
+    # SPECIAL_LANE_ITEMS.
+    properties:
+      - key: LL_NAME
+        description: >-
+          Name of Line Lane
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # Until 2026-09-04 all ten of these carried `safeToOmit: true` and
+        # an omission-evidence sentence naming the confirmed live
+        # TrafficLineLanes payload. That payload sends nine of them; it
+        # omits only ALLOW_WIDTH. The claim came from comparing the
+        # payload's top-level keys against a field list that was flat when
+        # the payload is not, so every member of COMMON read as absent. A
+        # wrong shape does not stay a shape problem - it manufactures
+        # false claims on the axis the safety rules read.
+      - key: WIDTH
+        description: >-
+          Lane Width
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: WHEEL_SPACE
+        description: >-
+          Wheel Spacing
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: OPT_AUTO_LANE
+        description: >-
+          Transverse Lane Optimization
+        type: boolean
+        requirement: optional
+        documentedDefault: false
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: ALLOW_WIDTH
+        description: >-
+          Allow Width for Optimization
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: true
+        omissionEvidence: >-
+          scripts/live_crud_check.py's TrafficLineLanes case completed a
+          live create-read-update-delete round trip on both_products without
+          this field in its payload. That is evidence the call is accepted,
+          not that the resulting model is what an engineer wanted.
+        provenance: manual
+      - key: LOAD_DIST
+        description: >-
+          Load Distribution ("LANE" / "CROSS")
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: GROUP_NAME
+        description: >-
+          Name of Structure Group
+        type: string
+        requirement: optional
+        documentedDefault: ""
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: SKEW_START
+        description: >-
+          Skew Start
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: SKEW_END
+        description: >-
+          Skew End
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: MOVING
+        description: >-
+          Moving Direction ("FORWARD" / "BACKWARD" / "BOTH")
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+  - key: LANE_ITEMS
+    description: >-
+      Lane Items
+    type: array
+    items:
+      type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    # RESOLVED: stated elsewhere in the same section - the second
+    # parameter table is headed "Parameters - LANE_ITEMS (코드별 추가 필드)" and
+    # both examples send an array of objects.
+    properties:
+      - key: ELEM
+        description: >-
+          Element No.
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: stated elsewhere in the same section - the Request
+        # Example and the Python example send it in every LANE_ITEMS
+        # entry, and the per-code table names only the keys each code
+        # *adds*. The sibling sections /db/LLANch and /db/LLANid table it
+        # as row 1, Integer, Required.
+      - key: ECC
+        description: >-
+          Eccentricity
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: stated elsewhere in the same section - the "Parameters
+        # - LANE_ITEMS (코드별 추가 필드)" table lists it for every code it names
+        # and marks it "(Optional)" in its first row. That table has no
+        # Default column, hence null.
+      - key: FACT
+        description: >-
+          Impact Factor
+        type: number
+        requirement: conditional
+        condition: 'LANE_ITEMS (코드별 추가 필드): Korea, AASHTO Standard, Taiwan'
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: stated elsewhere in the same section, in the 코드별
+        # table's 추가 Key cell for Korea / AASHTO Standard / Taiwan,
+        # glossed 충격계수. The gate is the active moving-load code, which is
+        # /db/MVCD's record and not a field of this one, so `condition`
+        # carries the manual's wording and no `appliesWhen` accompanies
+        # it: every entry of `appliesWhen` must name a field path in this
+        # contract, and there is none to name.
+      - key: SPAN_START
+        description: >-
+          Span Start
+        type: boolean
+        requirement: conditional
+        condition: 'LANE_ITEMS (코드별 추가 필드): Korea, AASHTO Standard, Taiwan / AASHTO LRFD / PENNDOT / Australia, Poland'
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: stated elsewhere in the same section - four of the six
+        # 코드별 rows name it, glossed 경간시작.
+      - key: CENT_F
+        description: >-
+          Centrifugal Force Factor
+        type: number
+        requirement: conditional
+        condition: 'LANE_ITEMS (코드별 추가 필드): AASHTO LRFD'
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: stated elsewhere in the same section, in the AASHTO
+        # LRFD row, glossed 원심력계수. scripts/live_crud_check.py's confirmed
+        # TrafficLineLanes payload seeds AASHTO LRFD and sends CENT_F:
+        # 0.5.
+      - key: ECCEN_VERT_LOAD
+        description: >-
+          Eccentricity Considering Cant (vertical load)
+        type: number
+        requirement: conditional
+        condition: 'LANE_ITEMS (코드별 추가 필드): Eurocode'
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: stated elsewhere in the same section, in the Eurocode
+        # row, glossed 캔트 고려 수직편심.
+  - key: SPECIAL_LANE_ITEMS
+    description: >-
+      Used only when importing
+    type: array
+    items:
+      type: object
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: info_schema
+    # RESOLVED: declared by /info and absent from the manual - the whole
+    # manual was searched for the name, not just this section.
+    # The server's own description is the whole of what is known about
+    # when this applies. No rule is written from it.
+    properties:
+      - key: CENT_F
+        description: >-
+          CE
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: ECC
+        description: >-
+          Eccentricity
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: ECCEN_VERT_LOAD
+        description: >-
+          Eccen. Vert. Loads
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: ELEMS
+        description: >-
+          Key Elements
+        type: array
+        items:
+          type: integer
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: FACT
+        description: >-
+          Factor
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: SPAN_START
+        description: >-
+          Span Start
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: SPAN_START_NO_LIST
+        description: >-
+          Span Start No
+        type: array
+        items:
+          type: integer
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+
+manualDefects:
+  - describes: field_name
+    manualSays: >-
+      /db/LLAN's record is `COMMON` and `LANE_ITEMS`.
+    actual: >-
+      `GET /info/db/LLAN` declares a further property, `SPECIAL_LANE_ITEMS`,
+      an array of {`CENT_F`, `ECC`, `ECCEN_VERT_LOAD`, `ELEMS`, `FACT`,
+      `SPAN_START`, `SPAN_START_NO_LIST`} described " Used only when
+      importing". That description is the whole of what is known about when
+      it applies; no contract rule is written from it. The name appears
+      nowhere in the manual - the whole repo was searched, not just this
+      section.
+    evidence: >-
+      GET /info/db/LLAN on Civil NX, captured 2026-09-03, against
+      docs/manual/08_DB_Moving_Loads.md. The same undocumented array is on
+      /db/LLANtr, where it was first registered as MD-45; this is that
+      finding reaching its siblings.
+sdkRules:
+  - id: db-llan-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-llan-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 08_DB_Moving_Loads.md line 180
+  table: Parameters – COMMON
+  structuralTables:
+    - heading: Parameters – COMMON
+      line: 179
+      paths: [COMMON]
+      note: >-
+        The heading names the destination, and the record has no other shape:
+        the Request Example, the Python example, scripts/live_crud_check.py's
+        confirmed payload and GET /info/db/LLAN all nest these ten under
+        COMMON. `extraction.table` has said "Parameters – COMMON" since the
+        draft was made; until 2026-09-04 the contract published the rows at
+        the root anyway.
+    - heading: Parameters – LANE_ITEMS (코드별 추가 필드)
+      line: 198
+      paths: [LANE_ITEMS]
+      note: >-
+        A heading that states a destination and a condition at once. The
+        condition is the active moving-load code - /db/MVCD's record, not a
+        field of this one - so the rows are merged into LANE_ITEMS and each
+        carries the code list as `condition` text. There is no field here for
+        an `appliesWhen` to name.
+  prose:
+    - line: 168
+      quote: >-
+        "LANE_ITEMS": [ {"ELEM": 1, "ECC": -1.5}, {"ELEM": 2, "ECC": -1.5},
+        {"ELEM": 3, "ECC": -1.5} ]
+      paths: [LANE_ITEMS.ELEM]
+    - line: 202
+      quote: >-
+        | KSCE-LSD15, Canada, BS, Russia, South Africa | `"ECC"` |
+        Eccentricity (Optional) |
+      paths: [LANE_ITEMS.ECC]
+    - line: 203
+      quote: >-
+        | Korea, AASHTO Standard, Taiwan | `"ECC"`, `"FACT"`, `"SPAN_START"` |
+        ECC·충격계수·경간시작 |
+      paths: [LANE_ITEMS.ECC, LANE_ITEMS.FACT, LANE_ITEMS.SPAN_START]
+    - line: 204
+      quote: >-
+        | AASHTO LRFD | `"ECC"`, `"SPAN_START"`, `"CENT_F"` |
+        ECC·경간시작·원심력계수 |
+      paths: [LANE_ITEMS.ECC, LANE_ITEMS.SPAN_START, LANE_ITEMS.CENT_F]
+    - line: 205
+      quote: '| PENNDOT | `"ECC"`, `"SPAN_START"` | ECC·경간시작 |'
+      paths: [LANE_ITEMS.ECC, LANE_ITEMS.SPAN_START]
+    - line: 206
+      quote: >-
+        | Eurocode | `"ECC"`, `"ECCEN_VERT_LOAD"` | ECC·캔트 고려 수직편심 |
+      paths: [LANE_ITEMS.ECC, LANE_ITEMS.ECCEN_VERT_LOAD]
+    - line: 207
+      quote: '| Australia, Poland | `"ECC"`, `"SPAN_START"` | ECC·경간시작 |'
+      paths: [LANE_ITEMS.ECC, LANE_ITEMS.SPAN_START]

@@ -1,0 +1,31 @@
+# Source: 19_POST_AnalysisResult_1.md section 6. No SDK source was used.
+contractVersion: 1
+id: post-cable-configuration
+endpoint: /post/TABLE
+name: Cable Configuration
+summary: Cable geometry and configuration values.
+products: [gen, civil]
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 19_POST_AnalysisResult_1.md
+    section: "6. Cable Configuration"
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getCableConfigTable
+  modulePath: [result1]
+  tableType: CABLECONFIG
+  factory: fixed
+  optionNames: [components, constructionStage, loadCaseNames, nodeElements, stageSteps, styles, tableName, unit]
+  documentation: |-
+    docs/manual/19_POST_AnalysisResult_1.md #6 — Cable Configuration.
+tableTypes:
+  - value: CABLECONFIG
+    description: Cable configuration
+    head: [Index, Elem, NodeI, NodeJ, Load, Step, TotalLength, Elongation, UnstrainedLength, Sag, HorizontalDistance, VerticalDistance, Gradient, SkewAngle/IEnd, SkewAngle/JEnd]
+    headNote: >-
+      Construction-stage queries insert Stage before Step and omit
+      SkewAngle/IEnd and SkewAngle/JEnd.
+    provenance: manual

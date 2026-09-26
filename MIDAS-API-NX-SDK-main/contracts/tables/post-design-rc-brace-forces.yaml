@@ -1,0 +1,40 @@
+contractVersion: 1
+id: post-design-rc-brace-forces
+endpoint: /post/TABLE
+name: RC Brace Design Forces
+products: [gen, civil]
+source: {manual: {status: documented, repo: Dennis5882/MIDAS-API, chapterFile: 23_POST_Design.md, section: "5. Concrete Design – Brace Design Forces"}}
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getBraceDesignForcesTable
+  modulePath: [design]
+  tableType: BRACEDESIGNFORCES
+  factory: fixed
+  optionNames: [components, nodeElements, parts, styles, tableName, unit]
+  documentation: |-
+    docs/manual/23_POST_Design.md #5 — Concrete Design - Brace Design Forces.
+
+    Response shape matches Column Design Forces.
+
+    ⚠️ Confirmed crashing Gen NX (2026-08-10, build 08/06/2026, blank
+    ``/doc/NEW`` document): no response, then ``verify_connection()``
+    shows disconnected and every ``/db/*`` call 404s — same signature as
+    :func:`get_beam_design_forces_table`'s independently-confirmed crash.
+    Confirmed clean on Civil NX (2026-08-07/2026-08-10 retests).
+
+    Re-tested 2026-08-11 on Gen NX (v2.1, build 08/11/2026), same blank
+    ``/doc/NEW`` document shape as the confirmed crash: this time a clean
+    ``{"message": ""}`` response, no crash, session stayed healthy. A
+    single clean pass does **not** confirm a fix for a
+    historically-confirmed crash — could be intermittent/non-deterministic
+    rather than fixed; needs an independent second re-test before drawing
+    any conclusion.
+
+    That independent second blank-document re-test completed 2026-09-05 on
+    Gen NX v2.1 build 09/02/2026: clean empty response and a successful
+    liveness GET. Civil NX v2.2 on the same build returned its established
+    no-result error and stayed responsive. The old blank-document crash no
+    longer reproduces on the current build; a populated, analysed and
+    designed-model path was not re-tested.
+tableTypes: [{value: BRACEDESIGNFORCES, head: [Index, Memb, Part, LComName, Type, Fx, Fy, Fz, Mx, My, Mz], provenance: manual}]

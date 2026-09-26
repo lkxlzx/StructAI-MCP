@@ -1,0 +1,27 @@
+contractVersion: 1
+id: post-tendon-loss
+endpoint: /post/TABLE
+name: Tendon Loss
+summary: Tendon loss reported in force or stress terms for a tendon group and construction stage.
+products: [gen, civil]
+source: {manual: {status: documented, repo: Dennis5882/MIDAS-API, chapterFile: 20_POST_AnalysisResult_2.md, section: "33. Tendon Loss"}}
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getTendonLossTable
+  modulePath: [result1]
+  tableType: TNDN_LOSS_FORCE
+  factory: variable
+  optionNames: [components, nodeElements, styles, tableName, unit]
+  documentation: |-
+    docs/manual/20_POST_AnalysisResult_2.md #33 — Tendon Loss.
+
+    table_type: TABLE_TYPE_TENDON_LOSS_FORCE (default) or
+    TABLE_TYPE_TENDON_LOSS_STRESS.
+tableTypes:
+  - {value: TNDN_LOSS_FORCE, description: Tendon loss in force terms, head: [Index, Elem, Part, "Force(AfterImmediateLoss):A", "ElasticDeform.Loss:B", Ratio/A, Creep/ShrinkageLoss, RelaxationLoss, "Force(AfterAllLoss)/Force(AfterImmediateLoss)", EffectiveNum.], provenance: manual}
+  - {value: TNDN_LOSS_STRESS, description: Tendon loss in stress terms, head: [Index, Elem, Part, "Stress(AfterImmediateLoss):A", "ElasticDeform.Loss:B", Ratio/A, Creep/ShrinkageLoss, RelaxationLoss, "Stress(AfterAllLoss)/Stress(AfterImmediateLoss)", EffectiveNum.], provenance: manual}
+requestFields:
+  unsupported: [NODE_ELEMS, LOAD_CASE_NAMES, OPT_CS, STAGE_STEP]
+  additional:
+    - {key: ADDITIONAL, description: Required SET_TENDON_PARAMS object containing TENDON_GROUP and STAGE., type: object, requirement: required, provenance: manual}

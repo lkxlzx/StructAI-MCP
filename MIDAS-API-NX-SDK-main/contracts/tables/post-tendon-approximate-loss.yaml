@@ -1,0 +1,23 @@
+contractVersion: 1
+id: post-tendon-approximate-loss
+endpoint: /post/TABLE
+name: Tendon Approximate Loss
+summary: Approximate tendon force or stress loss components.
+products: [gen, civil]
+source: {manual: {status: documented, repo: Dennis5882/MIDAS-API, chapterFile: 20_POST_AnalysisResult_2.md, section: "36. Tendon Approximate Loss"}}
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getTendonApproxLossTable
+  modulePath: [result1]
+  tableType: TNDN_APPROX_LOSS_FORCE
+  factory: variable
+  optionNames: [components, nodeElements, styles, tableName, unit]
+  documentation: |-
+    docs/manual/20_POST_AnalysisResult_2.md #36 — Tendon Approximate Loss.
+
+    table_type: TABLE_TYPE_TENDON_APPROX_LOSS_FORCE (default) or
+    TABLE_TYPE_TENDON_APPROX_LOSS_STRESS.
+tableTypes:
+  - {value: TNDN_APPROX_LOSS_FORCE, description: Approximate tendon force loss, head: [Index, Elem, Part, ImmediateLoss, CreepLoss, ShrinkageLoss, RelaxationLoss, AllLoss, Force(ImmediateLoss), Force(AllLoss), Force(AllLoss)/Force], provenance: manual}
+  - {value: TNDN_APPROX_LOSS_STRESS, description: Approximate tendon stress loss, head: [Index, Elem, Part, ImmediateLoss, CreepLoss, ShrinkageLoss, RelaxationLoss, AllLoss, Stress(ImmediateLoss), Stress(AllLoss), Stress(AllLoss)/Stress], provenance: manual}

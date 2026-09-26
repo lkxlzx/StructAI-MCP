@@ -1,0 +1,380 @@
+# /db/THIK
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-thik
+endpoint: /db/THIK
+name: Thickness
+surface:
+  className: Thickness
+  exportName: thickness
+  modulePath: [db, properties, thickness]
+  payloadTypeName: ThicknessPayload
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 04_DB_Properties.md
+    section: "13. `/db/THIK`"
+    url: https://support.midasuser.com/hc/en-us/articles/35942236652697
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-write-sweep-2026-07-29
+    - product: gen
+      ref: db-write-sweep-2026-07-29
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/THIK/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: NAME
+    description: >-
+      Thickness Name
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    # TODO(review): nobody has omitted this against a live product.
+    # Leave it unverified, or find out - do not read the manual's
+    # 'Optional' as an answer; that is what documentedOptional records.
+    provenance: manual
+  - key: TYPE
+    description: >-
+      Thickness Type • Value: "VALUE" • Stiffened: "STIFFENED"
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    # TODO(review): nobody has omitted this against a live product.
+    # Leave it unverified, or find out - do not read the manual's
+    # 'Optional' as an answer; that is what documentedOptional records.
+    provenance: manual
+  - key: bINOUT
+    description: >-
+      Plane • false: In-plane & Out-of-plane (same) • true: Different I/O values
+    type: boolean
+    requirement: optional
+    condition: "TYPE=\"VALUE\""
+    appliesWhen:
+      - path: TYPE
+        equals: VALUE
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    # TODO(review): nobody has omitted this against a live product.
+    # Leave it unverified, or find out - do not read the manual's
+    # 'Optional' as an answer; that is what documentedOptional records.
+    provenance: manual
+  - key: T_IN
+    description: >-
+      In-plane Thickness
+    type: number
+    requirement: required
+    condition: "TYPE=\"VALUE\""
+    appliesWhen:
+      - path: TYPE
+        equals: VALUE
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    # TODO(review): nobody has omitted this against a live product.
+    # Leave it unverified, or find out - do not read the manual's
+    # 'Optional' as an answer; that is what documentedOptional records.
+    provenance: manual
+  - key: T_OUT
+    description: >-
+      Out-of-plane Thickness (when "bINOUT" is true)
+    type: number
+    requirement: required
+    condition: "TYPE=\"VALUE\"; when \"bINOUT\" is true"
+    appliesWhen:
+      - path: TYPE
+        equals: VALUE
+      - path: bINOUT
+        equals: true
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    # TODO(review): nobody has omitted this against a live product.
+    # Leave it unverified, or find out - do not read the manual's
+    # 'Optional' as an answer; that is what documentedOptional records.
+    provenance: manual
+  - key: OFFSET
+    description: >-
+      Plate Offset Option • None: 0 • Thickness Ratio: 1 • Value: 2
+    type: integer
+    requirement: optional
+    condition: "TYPE=\"VALUE\""
+    appliesWhen:
+      - path: TYPE
+        equals: VALUE
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's Thickness case completed a live
+      create-read-update-delete round trip on gen and civil without this field
+      in its payload. That is evidence the call is accepted, not that the
+      resulting model is what an engineer wanted.
+    provenance: manual
+  - key: O_VALUE
+    description: >-
+      Local z Direction Offset Value
+    type: number
+    requirement: optional
+    condition: "TYPE=\"VALUE\""
+    appliesWhen:
+      - path: TYPE
+        equals: VALUE
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    # TODO(review): nobody has omitted this against a live product.
+    # Leave it unverified, or find out - do not read the manual's
+    # 'Optional' as an answer; that is what documentedOptional records.
+    provenance: manual
+  - key: STYPE
+    description: >-
+      Stiffened Thickness Sub-Type • Value: "VALUE" • User: "USER" • DB: "DB"
+    type: string
+    requirement: required
+    condition: "TYPE=\"STIFFENED\""
+    appliesWhen:
+      - path: TYPE
+        equals: STIFFENED
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    # TODO(review): nobody has omitted this against a live product.
+    # Leave it unverified, or find out - do not read the manual's
+    # 'Optional' as an answer; that is what documentedOptional records.
+    provenance: manual
+  - key: RIB_POS
+    description: >-
+      Rib Position • "LOWER" • "UPPER"
+    type: string
+    requirement: required
+    condition: "Stiffened DB (TYPE=\"STIFFENED\", STYPE=\"DB\")"
+    appliesWhen:
+      - path: TYPE
+        equals: STIFFENED
+      - path: STYPE
+        equals: DB
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    # TODO(review): nobody has omitted this against a live product.
+    # Leave it unverified, or find out - do not read the manual's
+    # 'Optional' as an answer; that is what documentedOptional records.
+    provenance: manual
+  - key: SECTION
+    description: >-
+      Defined Stiffener
+    type: object
+    requirement: required
+    condition: "Stiffened DB (TYPE=\"STIFFENED\", STYPE=\"DB\")"
+    appliesWhen:
+      - path: TYPE
+        equals: STIFFENED
+      - path: STYPE
+        equals: DB
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    # TODO(review): nobody has omitted this against a live product.
+    # Leave it unverified, or find out - do not read the manual's
+    # 'Optional' as an answer; that is what documentedOptional records.
+    provenance: manual
+    properties:
+      - key: THIKNESS
+        description: >-
+          Thickness
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        # TODO(review): nobody has omitted this against a live product.
+        # Leave it unverified, or find out - do not read the manual's
+        # 'Optional' as an answer; that is what documentedOptional records.
+        provenance: manual
+        # RESOLVED: the manual nests this under 'SECTION' by numbering it '(1)',
+        # not by naming a path
+      - key: DBNAME
+        description: >-
+          DB Name
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        # TODO(review): nobody has omitted this against a live product.
+        # Leave it unverified, or find out - do not read the manual's
+        # 'Optional' as an answer; that is what documentedOptional records.
+        provenance: manual
+        # RESOLVED: the manual nests this under 'SECTION' by numbering it '(2)',
+        # not by naming a path
+      - key: XZ
+        description: >-
+          XZ Section
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        # TODO(review): nobody has omitted this against a live product.
+        # Leave it unverified, or find out - do not read the manual's
+        # 'Optional' as an answer; that is what documentedOptional records.
+        provenance: manual
+        # RESOLVED: the manual nests this under 'SECTION' by numbering it '(3)',
+        # not by naming a path
+        properties:
+          - key: bRIB
+            description: >-
+              Use Rib Attached
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            # TODO(review): nobody has omitted this against a live product.
+            # Leave it unverified, or find out - do not read the manual's
+            # 'Optional' as an answer; that is what documentedOptional records.
+            provenance: manual
+            # RESOLVED: the manual nests this under 'XZ' by numbering it 'i', not by
+            # naming a path
+          - key: SHAPE
+            description: >-
+              Shape
+            type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            # TODO(review): nobody has omitted this against a live product.
+            # Leave it unverified, or find out - do not read the manual's
+            # 'Optional' as an answer; that is what documentedOptional records.
+            provenance: manual
+            # RESOLVED: the manual nests this under 'XZ' by numbering it 'ii', not by
+            # naming a path
+          - key: NAME
+            description: >-
+              Section Name
+            type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            # TODO(review): nobody has omitted this against a live product.
+            # Leave it unverified, or find out - do not read the manual's
+            # 'Optional' as an answer; that is what documentedOptional records.
+            provenance: manual
+            # RESOLVED: the manual nests this under 'XZ' by numbering it 'iii', not by
+            # naming a path
+          - key: DIST
+            description: >-
+              Rib Spacing Distance
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            # TODO(review): nobody has omitted this against a live product.
+            # Leave it unverified, or find out - do not read the manual's
+            # 'Optional' as an answer; that is what documentedOptional records.
+            provenance: manual
+            # RESOLVED: the manual nests this under 'XZ' by numbering it 'iv', not by
+            # naming a path
+
+sdkRules:
+  - id: db-thik-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-thik-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 04_DB_Properties.md line 1384
+  table: "Specifications — Value (`\"TYPE\": \"VALUE\"`)"

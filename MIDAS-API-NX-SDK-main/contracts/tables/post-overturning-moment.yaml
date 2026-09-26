@@ -1,0 +1,61 @@
+contractVersion: 1
+id: post-overturning-moment
+endpoint: /post/TABLE
+name: Overturning Moment
+products: [gen, civil]
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 21_POST_StoryTables.md
+    section: "8. Overturning Moment"
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getOverturningMomentTable
+  modulePath: [story]
+  tableType: OVERTURNING_MOMENT
+  factory: fixed
+  optionNames: [additional, components, constructionStage, loadCaseNames, nodeElements, stageSteps, styles, tableName, unit]
+  documentation: |-
+    docs/manual/21_POST_StoryTables.md #8 — Overturning Moment.
+
+    Per-story overturning moment split by vertical-member type
+    (Frame/Wall), for two angles (Angle1/Angle2).
+    additional: angle (default 0) and response-spectrum scale/reduction-factor
+    settings — both optional, see OverturningMomentAdditional.
+  nestedTypes:
+    - {path: ADDITIONAL, name: OverturningMomentAdditional, namespace: PostStoryTypes}
+    - {path: ADDITIONAL.SET_OVERTURNING_MOMENT_PARAMS, name: OverturningMomentParams, namespace: PostStoryTypes}
+tableTypes:
+  - {value: OVERTURNING_MOMENT, provenance: manual}
+requestFields:
+  # 21_POST_StoryTables.md #8, "`ADDITIONAL` - 전도모멘트 산정 조건", rows 1 to 1-2-2.
+  additional:
+    - key: ADDITIONAL
+      description: 세부 설정 객체
+      type: object
+      requirement: optional
+      provenance: manual
+      properties:
+        - key: SET_ANGLE
+          description: 각도 설정
+          type: object
+          requirement: optional
+          provenance: manual
+          properties:
+            - {key: ANGLE, description: "Angle1 입력값 (Angle2 = Angle1 + 90°)", type: number, requirement: optional, documentedDefault: 0, provenance: manual}
+        - key: SET_OVERTURNING_MOMENT_PARAMS
+          description: 전도모멘트 산정 파라미터
+          type: object
+          requirement: optional
+          provenance: manual
+          properties:
+            - {key: SF_FOR_RS, description: 응답스펙트럼 스케일 계수, type: number, requirement: optional, documentedDefault: 1, provenance: manual}
+            - key: DEFINE_RF
+              description: '감소계수(Reduction Factor) 산정 방식: "FIXED"(1.0 고정) / "AUTO"(자동 산정)'
+              type: string
+              enum: [FIXED, AUTO]
+              requirement: optional
+              documentedDefault: FIXED
+              provenance: manual

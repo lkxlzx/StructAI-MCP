@@ -1,0 +1,312 @@
+# /db/SDHY
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-sdhy
+endpoint: /db/SDHY
+name: Seismic Device – Hysteretic Isolator (MSS)
+surface:
+  className: SeismicDeviceHystereticIsolator
+  exportName: seismicDeviceHystereticIsolator
+  modulePath: [db, boundary]
+  payloadTypeName: SeismicDeviceHystereticIsolatorPayload
+  nestedTypes:
+    - {path: COMMON, name: SeismicDeviceCommon, namespace: DbBoundaryTypes}
+
+products: [gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 05_DB_Boundary.md
+    section: "19. `/db/SDHY` — Seismic Device – Hysteretic Isolator (MSS)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_gen
+  records:
+    - product: gen
+      ref: db-write-sweep-2026-08-27
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/SDHY/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: COMMON
+    description: >-
+      Common Data
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: NAME
+        description: >-
+          Name
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: stated elsewhere in the same section - the row says only
+        # `Common Data`, and the section's own Request Example sends the object
+        # with these members. The full list with types and requiredness is
+        # /db/SDVI's table, section 16 of the same chapter, which /db/SDVE's row
+        # names outright as the shared structure. GET /info/db/SDHY declares
+        # exactly these six.
+      - key: DESC
+        description: >-
+          Description
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: INPUT_METHOD
+        description: >-
+          Input Method · 0=사용자 입력, 1=참조 DB
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: COMPANY
+        description: >-
+          Company
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: stated elsewhere in the same section - the section's own
+        # Request Example omits COMPANY while /db/SDVI's table marks it
+        # Required, so the two halves of the cross-reference disagree. The
+        # table is what this contract records; safeToOmit stays unverified
+        # because an example is not a measurement. GET /info declares the
+        # property on both products.
+      - key: PRODUCT_NAME
+        description: >-
+          Product Name
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: TYPE_NUMBER
+        description: >-
+          Type Number
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+  - key: SDHY_HYS_MODEL
+    description: >-
+      Hysteresis Model · "DegradingBiLinear" 등
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: MSS
+    description: >-
+      Number of Shear Springs (MSS 전단 스프링 수)
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: K0
+    description: >-
+      K0 Initial Stiffness
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: P1
+    description: >-
+      P1 Yield Strength
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: P2
+    description: >-
+      P2 Yield Strength
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: ALPHA1
+    description: >-
+      Alpha1 Stiffness Factor
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: ALPHA2
+    description: >-
+      Alpha2 Stiffness Factor
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: BETA
+    description: >-
+      Beta(Exponent in Unloading Stiffness Calculation)
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: Phi
+    description: >-
+      Phi
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: LAMBDA
+    description: >-
+      Lambda
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+
+manualDefects:
+  - describes: field_name
+    manualSays: >-
+      Row 1 of the Specifications table is `Common Data`, an Object marked
+      Required, and the table gives it no members.
+    actual: >-
+      The section's own Request Example sends the object with `NAME`,
+      `DESC`, `INPUT_METHOD`, `PRODUCT_NAME` and `TYPE_NUMBER`; the full
+      list with types and requiredness is /db/SDVI's table in section 16,
+      which /db/SDVE's matching row names as the shared structure. `GET
+      /info/db/SDHY` declares all six, `COMPANY` included. The extractor
+      cannot follow a cross-reference, which is why the object was
+      published with no members at all until 2026-09-04.
+      src/midas_nx/db/boundary.py has had them the whole time, as
+      `SeismicDeviceCommon`; this is a contract that was behind its own
+      SDK.
+    evidence: >-
+      Found by scripts/info_baseline.py --against-contracts on 2026-09-04,
+      sweeping the 2026-09-03 /info capture against every contract. The
+      manual was then searched in full for the name, not just this
+      section. docs/manual/05_DB_Boundary.md sections 16, 17 and 19.
+      Registered as MD-41.
+
+sdkRules:
+  - id: db-sdhy-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-sdhy-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 05_DB_Boundary.md line 1608
+  table: 요청 파라미터
+  missingColumns:
+    - heading: 요청 파라미터
+      line: 1608
+      columns: [Default]

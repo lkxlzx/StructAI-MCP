@@ -1,0 +1,124 @@
+# /DESIGN/STEEL/KDS-41-30-2022/SRDF
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: design-steel-kds-41-30-2022-srdf
+endpoint: /DESIGN/STEEL/KDS-41-30-2022/SRDF
+name: Strength Reduction Factors
+surface:
+  className: StrengthReductionFactors
+  exportName: strengthReductionFactors
+  modulePath: [design, steelKds]
+  payloadTypeName: StrengthReductionFactorsPayload
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 25_Design_Steel_KDS41302022.md
+    section: "5. `DESIGN/STEEL/KDS-41-30-2022/SRDF` — Strength Reduction Factors (강도감소계수 φ)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-07-26
+    - product: gen
+      ref: db-read-sweep-2026-07-26
+
+operations:
+  - method: DELETE
+    risk: destructive
+    mitigation: none
+    request:
+      wrapper: none
+    response:
+      wrapper: unknown
+    notes: >-
+      The manual shows a bodyless DELETE at this endpoint, but does not
+      state the deletion scope or response shape.
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: Assign
+    description: >-
+      Assign 래퍼 (ID 1개만 허용, maxProperties=1)
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: PHI_T1
+    description: >-
+      총단면 항복 (φ_t1)
+    type: number
+    requirement: optional
+    documentedDefault: 0.9
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: PHI_T2
+    description: >-
+      순단면 파단 (φ_t2) — 0.75 고정 read-only
+    type: number
+    const: 0.75
+    requirement: optional
+    documentedDefault: 0.75
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: PHI_C
+    description: >-
+      압축부재 (φ_c)
+    type: number
+    requirement: optional
+    documentedDefault: 0.9
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: PHI_B
+    description: >-
+      휨부재 (φ_b)
+    type: number
+    requirement: optional
+    documentedDefault: 0.9
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: PHI_V
+    description: >-
+      전단 (φ_v)
+    type: number
+    requirement: optional
+    documentedDefault: 0.9
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+
+extraction:
+  source: 25_Design_Steel_KDS41302022.md line 1115
+  table: 파라미터

@@ -1,0 +1,64 @@
+# Element Weight Table on the shared /post/TABLE route.
+# Source: 18_POST_PreProcess.md section 1. No SDK source was used to write
+# this contract; both SDKs are checked as subjects by validate_contracts.py.
+contractVersion: 1
+id: post-element-weight
+endpoint: /post/TABLE
+name: Element Weight Table
+summary: Element unit and total weights, optionally scoped to selected elements.
+
+products: [gen, civil]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 18_POST_PreProcess.md
+    section: "1. Element Weight Table"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: manual_only
+
+risk: read_only
+
+surface:
+  exportName: getElementWeightTable
+  modulePath: [preProcess]
+  tableType: ELEMENTWEIGHT
+  factory: fixed
+  optionNames: [nodeElements, tableName]
+  documentation: |-
+    docs/manual/18_POST_PreProcess.md #1 — Element Weight Table.
+
+    node_elems: target scope (exactly one of KEYS/TO/STRUCTURE_GROUP_NAME);
+    omit for all elements.
+tableTypes:
+  - value: ELEMENTWEIGHT
+    description: Element Weight Table
+    head:
+      - Index
+      - "No"
+      - Type
+      - "No"
+      - Name
+      - "No"
+      - Name
+      - "No"
+      - Name
+      - Type
+      - Value
+      - UnitWeight
+      - TotalWeight
+    provenance: manual
+
+requestFields:
+  additional:
+    - key: NODE_ELEMS
+      description: >-
+        Optional element selection object. The manual allows one of KEYS, TO,
+        or STRUCTURE_GROUP_NAME, or omitting the object for all elements.
+      type: object
+      requirement: optional
+      provenance: manual

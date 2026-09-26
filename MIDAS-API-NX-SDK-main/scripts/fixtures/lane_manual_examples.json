@@ -1,0 +1,174 @@
+{
+  "source": "08_DB_Moving_Loads.md, sections 3-9, first JSON Request Body",
+  "sha256": "e09314b3ed83ddd6474a44412ec35e35110dfec70fd5b938816666d2dedad273",
+  "examples": {
+    "/db/LLANch": {
+      "COMMON": {
+        "LL_NAME": "LL_01",
+        "LOAD_DIST": "LANE",
+        "GROUP_NAME": "",
+        "SKEW_START": 0,
+        "SKEW_END": 0,
+        "MOVING": "BOTH",
+        "WHEEL_SPACE": 1.8,
+        "WIDTH": 3,
+        "OPT_AUTO_LANE": true,
+        "ALLOW_WIDTH": 3
+      },
+      "LANE_ITEMS": [
+        {
+          "ELEM": 1,
+          "ECC": -1.5,
+          "SPAN": 12,
+          "SPAN_START": true,
+          "SCALE_FACTOR": 1.1
+        }
+      ]
+    },
+    "/db/LLANid": {
+      "COMMON": {
+        "LL_NAME": "LL_01",
+        "LOAD_DIST": "LANE",
+        "GROUP_NAME": "",
+        "SKEW_START": 0,
+        "SKEW_END": 0,
+        "MOVING": "BOTH",
+        "WHEEL_SPACE": 1.8,
+        "WIDTH": 0,
+        "OPT_AUTO_LANE": false,
+        "ALLOW_WIDTH": 0
+      },
+      "LANE_ITEMS": [
+        {
+          "ELEM": 1,
+          "ECC": -1.5,
+          "SPAN": 12,
+          "IMPACT_SPAN": 1,
+          "IMPACT_FACTOR": 0
+        }
+      ]
+    },
+    "/db/LLANtr": {
+      "LL_NAME": "LL_01",
+      "LANE_ITEMS": [
+        {
+          "ELEM": 1,
+          "FACTOR": 1.1
+        },
+        {
+          "ELEM": 2,
+          "FACTOR": 1.1
+        },
+        {
+          "ELEM": 3,
+          "FACTOR": 1.1
+        }
+      ]
+    },
+    "/db/LLANop": {
+      "LL_NAME": "LL_01",
+      "LOAD_DIST": "LANE",
+      "GROUP_NAME": "",
+      "SKEW_START": 0,
+      "SKEW_END": 0,
+      "MOVING": "BOTH",
+      "OPTIM_WIDTH": 5,
+      "LANE_WIDTH": 3,
+      "OFFSET_TYPE": 0,
+      "DIVIDE_NUM": 2,
+      "ANAL_LANE_OFFSET": 1,
+      "WHEEL_SPACE": 1.8288,
+      "MARGIN": 0.1,
+      "LANE_ITEMS": [
+        {
+          "ELEM": 1,
+          "ECC": -1.5,
+          "FACT": 1.25,
+          "SPAN_START": true
+        },
+        {
+          "ELEM": 2,
+          "ECC": -1.5,
+          "FACT": 1.25,
+          "SPAN_START": false
+        }
+      ]
+    },
+    "/db/SLAN": {
+      "NAME": "LL_01",
+      "WIDTH": 3,
+      "WHEEL_SPACE": 1.8,
+      "SKEW_START": 10,
+      "SKEW_END": 15,
+      "bOPTIMIZE": true,
+      "ALLOW_WIDTH": 3,
+      "MV_DIR": "BOTH",
+      "LANE_ITEMS": [
+        {
+          "NODE": 1,
+          "OFFSET": -1.5
+        },
+        {
+          "NODE": 2,
+          "OFFSET": -1.5
+        },
+        {
+          "NODE": 3,
+          "OFFSET": -1.5
+        },
+        {
+          "NODE": 4,
+          "OFFSET": -1.5
+        }
+      ]
+    },
+    "/db/SLANch": {
+      "NAME": "LL_01",
+      "WIDTH": 3,
+      "WHEEL_SPACE": 1.8,
+      "SKEW_START": 10,
+      "SKEW_END": 15,
+      "bOPTIMIZE": true,
+      "ALLOW_WIDTH": 3,
+      "MV_DIR": "BOTH",
+      "LANE_ITEMS": [
+        {
+          "NODE": 1,
+          "OFFSET": -1.5,
+          "SPAN_LENGTH": 12
+        },
+        {
+          "NODE": 2,
+          "OFFSET": -1.5,
+          "SPAN_LENGTH": 12
+        }
+      ]
+    },
+    "/db/SLANop": {
+      "LANE_NAME": "LL_01",
+      "SKEW_START": 10,
+      "SKEW_END": 15,
+      "MOVING": "BOTH",
+      "OPTIMIZE_WIDTH": 4,
+      "LANE_WIDTH": 3,
+      "WHEEL_SPACE": 1.8288,
+      "MARGIN": 0.1,
+      "OFFSET_TYPE": 0,
+      "DIVIDE_NUM": 2,
+      "ITEMS": [
+        {
+          "NODE_KEY": 1,
+          "OFFSET": -1.5,
+          "FACTOR": 1.25,
+          "SPAN_START": true
+        },
+        {
+          "NODE_KEY": 2,
+          "OFFSET": -1.5,
+          "FACTOR": 1.25,
+          "SPAN_START": false
+        }
+      ]
+    }
+  }
+}

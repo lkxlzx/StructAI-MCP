@@ -1,0 +1,781 @@
+# Live verification records for MIDAS Civil NX.
+#
+# One entry per observed session finding. Endpoint contracts reference these by
+# id through `verification.records[].ref`. Prose narrative stays in
+# docs/live_verification_notes.md; this file carries only what a machine needs
+# to check that a claim has a dated, product-specific, build-specific source.
+schemaVersion: 1
+product: civil
+
+records:
+  - id: db-node-crud-2026-07-29
+    endpoints: ["/db/NODE"]
+    date: "2026-07-29"
+    nxVersion: MIDAS Civil NX 2026 (v2.2), build 06/18/2026
+    level: write
+    outcome: success
+    method: Full CRUD round trip against a scratch document.
+    finding: >-
+      POST, GET, PUT and per-id DELETE all behaved as contracted.
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: db-delete-body-empties-table-2026-07-26
+    endpoints: ["/db/NODE", "/db/STLD", "/db/LDGR", "/db/MATL"]
+    date: "2026-07-26"
+    nxVersion: MIDAS Civil NX 2026 (v2.1)
+    level: write
+    outcome: destructive_surprise
+    method: >-
+      Issued the manual's documented DELETE body form naming a single id, then
+      read the table back.
+    finding: >-
+      Both documented body forms - id mapped to null and id mapped to {} -
+      emptied the entire table and ignored the ids. For /db/NODE the elements
+      attached to those nodes went with them. DELETE {endpoint}/{id}, which the
+      manual does not document, removed exactly the named record and returned
+      it; deleting an absent id was a no-op.
+    riskRef: db-delete-body-empties-table
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: db-nmas-crash-rootcause-2026-07-29
+    endpoints: ["/db/NMAS"]
+    date: "2026-07-29"
+    nxVersion: MIDAS Civil NX 2026 (v2.2)
+    level: write
+    outcome: product_crash
+    method: >-
+      Paired calls in one session - one POST with all six fields explicit,
+      followed immediately by a POST on a different node with rmX/rmY/rmZ
+      omitted.
+    finding: >-
+      Same result as Gen NX on the same day: full-fields call survives,
+      omitted-fields call kills the session. The symmetry across two products
+      is what made an uninitialized server-side read the only remaining
+      explanation.
+    riskRef: db-nmas-omitted-rotational-mass
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: db-nmas-raw-retrigger-2026-08-13
+    endpoints: ["/db/NMAS"]
+    date: "2026-08-13"
+    nxVersion: MIDAS Civil NX 2026 (v2.2), build 08/12/2026
+    level: write
+    outcome: success
+    method: >-
+      Deliberate raw re-trigger bypassing the SDK normalization entirely, on a
+      blank connected document, with the user's explicit go-ahead and accepting
+      the session-death risk. Control call with all six fields, then the exact
+      historical trigger payload with rmX/rmY/rmZ omitted.
+    finding: >-
+      Control call succeeded in 0.2s. The trigger call succeeded in 0.1s and
+      GET read the record back with rmX/rmY/rmZ all 0 - the server now applies
+      the documented default rather than reading an uninitialized value. Session
+      responsive throughout and afterwards. Materially stronger than the
+      2026-07-29 retest, which only established "does not crash". One build on
+      one account, so the SDK normalization stays in place.
+    riskRef: db-nmas-omitted-rotational-mass
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: db-crud-batch-2026-07-29
+    endpoints: ["/db/GRUP", "/db/RIGD", "/db/OFFS"]
+    date: "2026-07-29"
+    nxVersion: MIDAS Civil NX 2026 (v2.2), build 06/18/2026
+    level: write
+    outcome: success_empty
+    method: scripts/live_crud_check.py - full create-read-update-delete round trip.
+    finding: >-
+      Each endpoint accepted its create payload, echoed it back on read, took an
+      update, and removed exactly the requested record on a per-id delete. The
+      payloads omitted most documented-optional fields and the calls still
+      succeeded, which is what the contracts cite under omissionEvidence -
+      evidence the call is accepted, not that the resulting model is what an
+      engineer wanted. Recorded as success_empty: the round trip passed against
+      a scratch document with no pre-existing data of its own.
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: db-co-m-crud-2026-08-16
+    endpoints: ["/db/CO_M"]
+    date: "2026-08-16"
+    nxVersion: MIDAS Civil NX 2026 (v2.2), build 08/14/2026
+    level: write
+    outcome: success
+    method: Live write round trip against a document with real material colours set.
+    finding: >-
+      GET and PUT both behaved as contracted. The endpoint serves no POST or
+      DELETE, which the manual states in its contents table - the same place
+      /db/GRUP's method list lives, and the reason the extractor now reads that
+      table.
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: post-table-response-key-2026-07-26
+    endpoints: ["/post/TABLE"]
+    date: "2026-07-26"
+    nxVersion: MIDAS Civil NX 2026 (v2.1)
+    level: read
+    outcome: success
+    method: >-
+      Repeated /post/TABLE requests while varying TABLE_NAME, including leaving
+      it blank.
+    finding: >-
+      The response's top-level key varied - the requested TABLE_NAME, "Result
+      Table", and "empty" - and a blank TABLE_NAME produced "empty" carrying a
+      full table. Locating the payload by its HEAD/DATA shape works in every
+      case; indexing by key name does not.
+    riskRef: post-table-unstable-response-key
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: db-read-sweep-2026-07-26
+    endpoints: []
+    date: "2026-07-26"
+    nxVersion: MIDAS Civil NX 2026 (v2.2), build 08/06/2026
+    level: read
+    outcome: success_empty
+    method: >-
+      scripts/live_readonly_sweep.py (read-only GET) Re-swept 2026-08-07 via scripts/live_readonly_sweep.py --product civil (full DbResource GET breadth pass, same patch build) -- answered ok, route+shape confirmed on Civil NX too.
+    finding: >-
+      A shared record for every endpoint checked in this pass. Endpoint-specific
+      findings stay in docs/live_verification_notes.md; this entry exists so a
+      contract's verification claim points at a dated, build-specific source
+      rather than at nothing.
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: db-read-sweep-2026-08-16
+    endpoints: []
+    date: "2026-08-16"
+    nxVersion: MIDAS Civil NX 2026 (v2.2), build 08/06/2026
+    level: read
+    outcome: success_empty
+    method: >-
+      scripts/live_readonly_sweep.py (read-only GET) Re-swept 2026-08-07 via scripts/live_readonly_sweep.py --product civil (full DbResource GET breadth pass, same patch build) -- answered ok, route+shape confirmed on Civil NX too. Write round trip attempted 2026-08-16 (Gen NX v2.1 / Civil NX v2.2, build 08/14/2026) via scripts/live_crud_check.py --tier extras3: POST with the manual's own canonical exam
+    finding: >-
+      A shared record for every endpoint checked in this pass. Endpoint-specific
+      findings stay in docs/live_verification_notes.md; this entry exists so a
+      contract's verification claim points at a dated, build-specific source
+      rather than at nothing.
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: db-write-sweep-2026-07-22
+    endpoints: []
+    date: "2026-07-22"
+    nxVersion: MIDAS Civil NX 2026 (v2.1), build 06/05/2026
+    level: write
+    outcome: success_populated
+    method: >-
+      scripts/live_smoke.py
+    finding: >-
+      A shared record for every endpoint checked in this pass. Endpoint-specific
+      findings stay in docs/live_verification_notes.md; this entry exists so a
+      contract's verification claim points at a dated, build-specific source
+      rather than at nothing.
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: db-write-sweep-2026-07-29
+    endpoints: []
+    date: "2026-07-29"
+    nxVersion: MIDAS Civil NX 2026 (v2.2), build 06/18/2026
+    level: write
+    outcome: success_empty
+    method: >-
+      scripts/live_crud_check.py (full CRUD round trip)
+    finding: >-
+      A shared record for every endpoint checked in this pass. Endpoint-specific
+      findings stay in docs/live_verification_notes.md; this entry exists so a
+      contract's verification claim points at a dated, build-specific source
+      rather than at nothing.
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: db-write-sweep-2026-08-16
+    endpoints: []
+    date: "2026-08-16"
+    nxVersion: MIDAS Civil NX 2026 (v2.2), build 08/14/2026
+    level: write
+    outcome: success
+    method: >-
+      scripts/live_readonly_sweep.py (read-only GET) Re-swept 2026-08-07 via scripts/live_readonly_sweep.py --product civil (full DbResource GET breadth pass, same patch build) -- answered ok, route+shape confirmed on Civil NX too. Write round trip confirmed 2026-08-16 (Gen NX v2.1 / Civil NX v2.2, build 08/14/2026) via scripts/live_crud_check.py --tier extras3: create->GET->update->GET->delete all succ
+    finding: >-
+      A shared record for every endpoint checked in this pass. Endpoint-specific
+      findings stay in docs/live_verification_notes.md; this entry exists so a
+      contract's verification claim points at a dated, build-specific source
+      rather than at nothing.
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: db-write-sweep-2026-08-17
+    endpoints: []
+    date: "2026-08-17"
+    nxVersion: MIDAS Civil NX 2026 (v2.2), build 08/14/2026
+    level: write
+    outcome: success_empty
+    method: >-
+      2026-08-17: write-round-trip confirmed live (batch 12), both products. TYPE="REAC" keyed by a real base-model node id. POINT is documented as "required if TYPE=BEAM" but is actually required unconditionally live -- omitting it on a TYPE="REAC" payload answers "Wrong Field"; send 0 for non-BEAM types. src/midas_nx/db/bridge.py's POINT field comment corrected to document this.
+    finding: >-
+      A shared record for every endpoint checked in this pass. Endpoint-specific
+      findings stay in docs/live_verification_notes.md; this entry exists so a
+      contract's verification claim points at a dated, build-specific source
+      rather than at nothing.
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: db-write-sweep-2026-08-24
+    endpoints: []
+    date: "2026-08-24"
+    nxVersion: MIDAS Civil NX 2026 (v2.2), build 08/24/2026
+    level: write
+    outcome: success_empty
+    method: >-
+      2026-08-24 (batch 13): write-round-trip confirmed live on Civil NX (create->read->update->read->delete->read). Clean write round trip, no findings. Gen NX session was disconnected this session -- not yet run there; do not treat as Gen-confirmed.
+    finding: >-
+      A shared record for every endpoint checked in this pass. Endpoint-specific
+      findings stay in docs/live_verification_notes.md; this entry exists so a
+      contract's verification claim points at a dated, build-specific source
+      rather than at nothing.
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: db-read-sweep-2026-07-30
+    endpoints: []
+    date: "2026-07-30"
+    nxVersion: MIDAS Civil NX 2026 (v2.2), build 07/29/2026
+    level: read
+    outcome: success
+    method: >-
+      manual POST probe via midas_nx.view.set_angle Re-checked on Civil NX 2026-07-30 -- worked identically.
+    finding: >-
+      A shared record for every endpoint checked in this pass. Endpoint-specific
+      findings stay in docs/live_verification_notes.md; this entry exists so a
+      contract's verification claim points at a dated, build-specific source
+      rather than at nothing.
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: db-read-sweep-2026-08-10
+    endpoints: []
+    date: "2026-08-10"
+    nxVersion: MIDAS Civil NX 2026 (v2.2), build 07/29/2026
+    level: read
+    outcome: success
+    method: >-
+      manual POST probe on Civil NX against the real production model, using a user-provided path on the NX host machine. precapture() with VIEW_TYPE='FIBR' and a guessed OPTION.ID answered a clean 'second query is wrong' error -- this model has no fiber-modeled sections defined, so the argument shape is confirmed but never got real data. Re-tested 2026-08-10 on Gen NX 2026 (v2.2), build 08/06/2026, aga
+    finding: >-
+      A shared record for every endpoint checked in this pass. Endpoint-specific
+      findings stay in docs/live_verification_notes.md; this entry exists so a
+      contract's verification claim points at a dated, build-specific source
+      rather than at nothing.
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: db-write-sweep-2026-08-11
+    endpoints: []
+    date: "2026-08-11"
+    nxVersion: MIDAS Civil NX 2026 (v2.2), build 07/29/2026
+    level: write
+    outcome: success
+    method: >-
+      manual POST probe on Civil NX against the real production model, using a user-provided path on the NX host machine. PUT with DGNCODE='AIK-SRC2K' succeeded (echoed back cleanly), then reverted with DELETE (also succeeded, echoing the deleted record) -- full round trip on the real model, no lasting mutation left behind. Re-tested 2026-08-11 on Gen NX (v2.1, build 08/11/2026), blank /doc/NEW document
+    finding: >-
+      A shared record for every endpoint checked in this pass. Endpoint-specific
+      findings stay in docs/live_verification_notes.md; this entry exists so a
+      contract's verification claim points at a dated, build-specific source
+      rather than at nothing.
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: db-write-sweep-2026-07-26
+    endpoints: []
+    date: "2026-07-26"
+    nxVersion: MIDAS Civil NX 2026 (v2.2), build 06/18/2026
+    level: write
+    outcome: success_empty
+    method: >-
+      scripts/live_crud_check.py (full CRUD round trip) Re-swept 2026-08-10 via scripts/live_readonly_sweep.py --product gen (full DbResource GET breadth pass) -- answered ok, route+shape confirmed on Gen NX too.
+    finding: >-
+      A shared record for every endpoint checked in this pass. Endpoint-specific
+      findings stay in docs/live_verification_notes.md; this entry exists so a
+      contract's verification claim points at a dated, build-specific source
+      rather than at nothing.
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: db-write-sweep-2026-08-25
+    endpoints: []
+    date: "2026-08-25"
+    nxVersion: MIDAS Civil NX 2026 (v2.2), build 08/24/2026
+    level: write
+    outcome: success
+    method: >-
+      Live-confirmed 2026-08-25: requires /db/MVCD.CODE=EUROCODE first, and is keyed by a real element id (not a serial number, per the manual's own note) -- documented conditional field requiredness works as written here, unlike its sibling /db/DYFG. Write-round-trip confirmed live on Civil NX v2.2, build 08/24/2026, via scripts/live_crud_check.py --tier core,extras14 (create->read->update->read->delet
+    finding: >-
+      A shared record for every endpoint checked in this pass. Endpoint-specific
+      findings stay in docs/live_verification_notes.md; this entry exists so a
+      contract's verification claim points at a dated, build-specific source
+      rather than at nothing.
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: db-gstp-crud-2026-07-26
+    endpoints: ["/db/GSTP"]
+    date: "2026-07-26"
+    nxVersion: MIDAS Civil NX 2026 (v2.1; build not recorded in the live notes)
+    level: write
+    outcome: success
+    method: Full create-read-update-read-delete-read round trip against a scratch document.
+    finding: >-
+      /db/GSTP was one of the nine boundary endpoints that completed the first
+      live CRUD pass on Civil NX.
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: db-mvldch-product-support-2026-07-29
+    endpoints: ["/db/MVLDch"]
+    date: "2026-07-29"
+    nxVersion: MIDAS Civil NX 2026 (build not recorded in the live notes)
+    level: read
+    outcome: success
+    method: >-
+      GET probe during a cross-product sweep of every non-Hyper-S endpoint
+      previously marked Civil-only.
+    finding: /db/MVLDch answered on Civil NX during the paired product sweep.
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: db-read-sweep-2026-08-07
+    endpoints: []
+    date: "2026-08-07"
+    nxVersion: MIDAS Civil NX 2026 (v2.2), build 07/29/2026
+    level: read
+    outcome: success_empty
+    method: >-
+      scripts/live_readonly_sweep.py (read-only GET)
+    finding: >-
+      A shared record for every endpoint checked in this pass. Endpoint-specific
+      findings stay in docs/live_verification_notes.md; this entry exists so a
+      contract's verification claim points at a dated, build-specific source
+      rather than at nothing.
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: db-read-sweep-2026-08-11
+    endpoints: []
+    date: "2026-08-11"
+    nxVersion: MIDAS Civil NX 2026 (v2.2), build 07/29/2026
+    level: read
+    outcome: success
+    method: >-
+      manual GET-shaped POST probe on Civil NX against a real production model (a few hundred nodes/elements) that has no analysis run and no design/rebar data yet -- confirmed the route + argument shape are correct and error handling is clean (no hang, no crash): answered with an informative 'Please perform analysis'/'there was an error creating utbl' error rather than real design-result rows. Not a fu
+    finding: >-
+      A shared record for every endpoint checked in this pass. Endpoint-specific
+      findings stay in docs/live_verification_notes.md; this entry exists so a
+      contract's verification claim points at a dated, build-specific source
+      rather than at nothing.
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: db-read-sweep-2026-08-17
+    endpoints: []
+    date: "2026-08-17"
+    nxVersion: MIDAS Civil NX 2026 (v2.2), build 08/06/2026
+    level: read
+    outcome: success_empty
+    method: >-
+      2026-08-17: write-round-trip attempted (batch 10) -- fails on both products with "Wrong Key" specifically on the ITEMS field (every other field succeeds individually, each answering the normal "Wrong Field" for an incomplete payload). Tried real frame node ids, real plate node ids, and a single node -- all still "Wrong Key". Live /info's own schema says ITEMS is a plain integer array matching what
+    finding: >-
+      A shared record for every endpoint checked in this pass. Endpoint-specific
+      findings stay in docs/live_verification_notes.md; this entry exists so a
+      contract's verification claim points at a dated, build-specific source
+      rather than at nothing.
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: db-write-sweep-2026-07-30
+    endpoints: []
+    date: "2026-07-30"
+    nxVersion: MIDAS Civil NX 2026 (v2.2), build 07/29/2026
+    level: write
+    outcome: success
+    method: >-
+      manual POST probe via midas_nx.ope.convert_surface_spring; CONVERT_TO=POINT_SPRING, ELEMENT.TYPE=FRAME on two real BEAM elements, matching the manual's worked example -- generated real /db/NSPR point-spring records Re-checked on Civil NX 2026-07-30 with the same shape (CONVERT_TO=POINT_SPRING, ELEMENT.TYPE=FRAME on two BEAM elements) -- generated real /db/NSPR records, same as Gen.
+    finding: >-
+      A shared record for every endpoint checked in this pass. Endpoint-specific
+      findings stay in docs/live_verification_notes.md; this entry exists so a
+      contract's verification claim points at a dated, build-specific source
+      rather than at nothing.
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: db-write-sweep-2026-08-07
+    endpoints: []
+    date: "2026-08-07"
+    nxVersion: MIDAS Civil NX 2026 (v2.2), build 08/06/2026
+    level: write
+    outcome: success
+    method: >-
+      manual POST probe on a disposable minimal model (Node/Material/Section/Element), reproducing MAPI-2425's original crash payload (AUTO=true, TYPE=NSM, no PARAMETER) after the 08/06/2026 patch
+    finding: >-
+      A shared record for every endpoint checked in this pass. Endpoint-specific
+      findings stay in docs/live_verification_notes.md; this entry exists so a
+      contract's verification claim points at a dated, build-specific source
+      rather than at nothing.
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: db-read-sweep-2026-08-13
+    endpoints: []
+    date: "2026-08-13"
+    nxVersion: MIDAS Civil NX 2026 (v2.2), build 08/12/2026
+    level: read
+    outcome: success
+    method: >-
+      Still blocked, not confirmed working on either product -- tracked here as 'attempted, not yet unblocked' rather than a success. 2026-07-31 on a real FCM bridge (Civil): BRDG_GROUP confirmed to be a plain /db/GRUP (StructureGroup) name -- creating one with the girder's element ids clears the 'group not found' error. Before that, every call failed 'post mode is required', which set_result_graphic()
+    finding: >-
+      A shared record for every endpoint checked in this pass. Endpoint-specific
+      findings stay in docs/live_verification_notes.md; this entry exists so a
+      contract's verification claim points at a dated, build-specific source
+      rather than at nothing.
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: db-read-sweep-2026-08-31
+    endpoints: []
+    date: "2026-08-31"
+    nxVersion: MIDAS Civil NX 2026 (v2.2), build 08/26/2026
+    level: read
+    outcome: success_empty
+    method: >-
+      Gen route and /info are 404 in independent sessions. Civil re-tested on a fresh scratch model on 2026-08-31 with the official full request example, including the live-schema coefficient names DRAG_COEF_X/Y/Z and INER_COEF_X/Y/Z, and again with a bare NAME payload in the prior probe. Both return Wrong Field. This rules out the earlier CREST/UNIT correction and the coefficient-name mismatch as the c
+    finding: >-
+      A shared record for every endpoint checked in this pass. Endpoint-specific
+      findings stay in docs/live_verification_notes.md; this entry exists so a
+      contract's verification claim points at a dated, build-specific source
+      rather than at nothing.
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: db-write-sweep-2026-07-31
+    endpoints: []
+    date: "2026-07-31"
+    nxVersion: MIDAS Civil NX 2026 (v2.2), build 07/29/2026
+    level: write
+    outcome: success
+    method: >-
+      manual POST probe on Civil NX against the real production model, using a user-provided path on the NX host machine. First 2 tries failed ('Please check the file name or extension' with a .mcbx path, then 'Please specify the correct stage name' with the post/TABLE-style qualified stage_step like 'CS7:001(last)') before succeeding with the plain stage NAME ('CS7', matching /db/STAG's own NAME field)
+    finding: >-
+      A shared record for every endpoint checked in this pass. Endpoint-specific
+      findings stay in docs/live_verification_notes.md; this entry exists so a
+      contract's verification claim points at a dated, build-specific source
+      rather than at nothing.
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: db-write-sweep-2026-08-31
+    endpoints: []
+    date: "2026-08-31"
+    nxVersion: MIDAS Civil NX 2026 (v2.2), build 08/26/2026
+    level: write
+    outcome: success
+    method: >-
+      Fresh scratch-model verification on 2026-08-31 passed POST -> GET -> PUT -> GET -> individual-id DELETE -> GET on both Civil NX and Gen NX with iCODETYPE=0 and FREQ. The manual request example omits iSLCM and iBC although its table marks them required; sending iSLCM=0 and iBC=0 is accepted, but GET normalizes iSLCM away. USER_F=0 is rejected on both products with the explicit product error 'f > 0'
+    finding: >-
+      A shared record for every endpoint checked in this pass. Endpoint-specific
+      findings stay in docs/live_verification_notes.md; this entry exists so a
+      contract's verification claim points at a dated, build-specific source
+      rather than at nothing.
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: db-write-sweep-2026-08-13
+    endpoints: []
+    date: "2026-08-13"
+    nxVersion: MIDAS Civil NX 2026 (v2.2), build 07/29/2026
+    level: write
+    outcome: success
+    method: >-
+      manual POST probe on Civil NX against the real production model, using a user-provided path on the NX host machine. save_as() to a new .mcbx file succeeded; verified for real (not just a trusted response) by immediately open_project()-ing that same path and confirming all nodes came back. First tested on Gen NX 2026-08-13 (v2.1, build 08/12/2026): save_as() to a .mgbx path (built from verify_conne
+    finding: >-
+      A shared record for every endpoint checked in this pass. Endpoint-specific
+      findings stay in docs/live_verification_notes.md; this entry exists so a
+      contract's verification claim points at a dated, build-specific source
+      rather than at nothing.
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: db-write-sweep-2026-08-27
+    endpoints: []
+    date: "2026-08-27"
+    nxVersion: MIDAS Civil NX 2026
+    level: write
+    outcome: success_empty
+    method: >-
+      scripts/live_crud_check.py (full CRUD round trip) Re-verified 2026-08-27: the previous COMP/TENS/MULTI shape (DIR 1-4, DV, a fictional SK field) answered "[Error] Point Spring value has(have) been incorrectly entered." live on Gen NX. The corrected shape (STIFF single number for COMP/TENS, FUNCTION for MULTI, DIR 0-6 including Vector, DV only meaningful for DIR=6) round-trips cleanly -- confirmed
+    finding: >-
+      A shared record for every endpoint checked in this pass. Endpoint-specific
+      findings stay in docs/live_verification_notes.md; this entry exists so a
+      contract's verification claim points at a dated, build-specific source
+      rather than at nothing.
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: db-write-sweep-2026-09-01
+    endpoints: []
+    date: "2026-09-01"
+    nxVersion: MIDAS Civil NX 2026 (v2.2), build 08/26/2026
+    level: write
+    outcome: success_empty
+    method: >-
+      scripts/live_readonly_sweep.py (read-only GET) Re-swept 2026-08-07 via scripts/live_readonly_sweep.py --product civil (full DbResource GET breadth pass, same patch build) -- answered ok, route+shape confirmed on Civil NX too. Civil NX completed create->GET->update->GET->delete again on 2026-09-01, build 08/26/2026. Gen NX continues to answer "Unknown Error" on create with the identical payload; it
+    finding: >-
+      A shared record for every endpoint checked in this pass. Endpoint-specific
+      findings stay in docs/live_verification_notes.md; this entry exists so a
+      contract's verification claim points at a dated, build-specific source
+      rather than at nothing.
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: tdme-codename-branches-2026-09-03
+    endpoints: ["/db/TDME"]
+    date: "2026-09-03"
+    nxVersion: >-
+      unknown - MIDAS Civil NX 2026 (v2.2), build string not readable through the
+      API, and this session predates the 09/02/2026 patch installed on
+      2026-09-03. /mapikey/verify returns only the program name and no /doc
+      route serves a version, so the build is left unstated rather than
+      guessed - including backwards from the About dialog of a build that was
+      not yet installed when this ran.
+    level: write
+    outcome: success
+    method: >-
+      Against a document confirmed empty first (GET /db/NODE, /db/ELEM,
+      /db/MATL and /db/TDME all answered {"message": ""}), so no /doc/NEW was
+      needed or called; every record deleted by the id a GET reported, not the
+      id posted, because the server renumbers. The manual splits this endpoint
+      into eight branch tables by CODENAME group and states no wire
+      discriminator in any heading, so each group was POSTed with the four
+      common fields alone and then with its documented extras. Payloads come
+      from the section's own tables; the KDS-2016 case is its Request Example
+      verbatim.
+    finding: >-
+      CODENAME is the discriminator and the branch tables are real, but the
+      manual's uniform Required is not the product's behaviour: "ACI",
+      "Russian" and "KDS-2016" refuse a base-only record while "CEB-FIP(2010)"
+      and "European" store one and the server fills iCTYPE itself. Separately,
+      "Japan(hydration)" and "Japan(elastic)" answer Wrong Field in all seven
+      spellings tried - correctly, because those two codes are iGen's and this
+      API is not talking to iGen (MD-14). Identical on both products, checked
+      case for case.
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: mvhl-load-num-branches-2026-09-03
+    endpoints: ["/db/MVHL"]
+    date: "2026-09-03"
+    nxVersion: >-
+      unknown - MIDAS Civil NX 2026 (v2.2), build string not readable through the
+      API, and this session predates the 09/02/2026 patch installed on
+      2026-09-03. /mapikey/verify returns only the program name and no /doc
+      route serves a version, so the build is left unstated rather than
+      guessed - including backwards from the About dialog of a build that was
+      not yet installed when this ran.
+    level: write
+    outcome: success
+    method: >-
+      Against a document confirmed empty first, seeded only with
+      /db/MVCD CODE "AASHTO LRFD" and cleaned up by id afterwards; no /doc/NEW.
+      The standard payload is live_crud_check.py's confirmed HL-93TRK fixture;
+      the user-defined one follows the chapter's own User Defined example moved
+      onto AASHTO-LRFD's VEH_DEFAULT/LOAD_ITEMS pair. VEHICLE_LOAD_NUM was
+      varied across 1, 2, 3 and omission, then each branch's companion fields
+      were omitted one shape at a time.
+    finding: >-
+      VEHICLE_LOAD_NUM is the branch discriminator: 1 selects a standard DB
+      vehicle and 2 a user-defined one; 3 and omission both answer Wrong Field.
+      Branch 2 sent properly keeps every field, all three axle loads included,
+      so the 2026-07-26 "silent downgrade" was branch 2 ignoring branch 1's
+      fields - the documented contract, not a defect, and that reading is
+      retracted. VEHICLE_TYPE_NAME is required only under branch 1 and is not
+      validated at all ("NOT-A-VEHICLE" stored verbatim); STANDARD_CODE is
+      required under neither, is enum-checked ("NOT-A-CODE" answers Wrong
+      Field) but not cross-checked against the vehicle ("KS-RB" stored on an
+      AASHTO LRFD HL-93TRK); USER_LOAD_TYPE is ignored on input under
+      MVLD_CODE 2. The server also renumbers a POSTed record. Registered as
+      MD-16.
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: readonly-sweep-2026-09-03-patch
+    endpoints: []
+    date: "2026-09-03"
+    nxVersion: MIDAS Civil NX 2026 (v2.2), build 09/02/2026
+    level: read
+    outcome: success
+    method: >-
+      GET-only sweep of every resource this SDK declares for Civil NX, run
+      immediately after the 09/02/2026 patch was installed, and deliberately
+      run from the Python SDK via scripts/live_readonly_sweep.py so the sweep exercises the surface it is checking.
+      282 GET-capable civil resources were swept.
+    finding: >-
+      282 of 282 answered, 0 failed. No route moved, disappeared or changed shape across the patch.
+      The build string is still not readable through the API - /mapikey/verify
+      returns only the program name, and /doc/VERSION, /doc/INFO, /version and
+      /doc/ABOUT all 404 on both products - so it is transcribed from the
+      product's About dialog, which is why records that predate a patch cannot
+      be back-stamped.
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: info-schema-sweep-2026-09-01
+    endpoints: []
+    date: "2026-09-01"
+    nxVersion: >-
+      MIDAS Civil NX 2026 (v2.2), build 08/26/2026
+    level: read
+    outcome: success
+    method: >-
+      GET /info/{endpoint} swept from both SDKs across every declared
+      resource-product pair, and the answers captured verbatim into
+      schema/info-schemas.json. Read-only: /info returns a request schema and
+      touches no model data.
+    finding: >-
+      /info is served for /db/* only. It answered for 399 of 402 /db/*
+      resource-product pairs and for none of the 147 /DESIGN/* pairs, even
+      though those design endpoints answer a plain GET - an API fact, not a URL
+      bug in either SDK. The three /db/* exceptions are the Civil Hyper-S trio
+      /db/IEHG-GL-M1, /db/IEHG-PSS-M1 and /db/IEHG-TRUSS-M1, which 404 and are
+      therefore left with no permitted contract source at all. This is the
+      capture that /db/FIMP, /db/REBB, /db/REBC and /db/REBW's field trees rest
+      on; for /db/FIMP the Civil and Gen schemas are identical.
+    evidence:
+      - docs/live_verification_notes.md
+      - schema/info-schemas.json
+
+  - id: tdme-japan-codenames-2026-09-03-patched
+    endpoints: ["/db/TDME"]
+    date: "2026-09-03"
+    nxVersion: MIDAS Civil NX 2026 (v2.2), build 09/02/2026
+    level: write
+    outcome: success
+    method: >-
+      A re-measurement of the narrow claim in MD-14, on a build that is on the
+      record - the earlier pass predates the 09/02/2026 patch and its build was
+      never captured. Against a document confirmed empty first (GET /db/NODE,
+      /db/ELEM, /db/MATL and /db/TDME all answered {"message": ""}), so no
+      /doc/NEW was needed or called. The payload is live_crud_check.py's
+      confirmed /db/TDME case with CODENAME varied and nothing else, plus each
+      Japan branch's own documented companion fields in a second pass. Every
+      record deleted by the id a GET reported, and the table read back empty.
+    finding: >-
+      Japan(hydration) and Japan(elastic) still answer Wrong Field, with and
+      without their branch fields. The CEB-FIP(2010) control stored in the same
+      session, so the write path was working and the refusal is about the
+      value. New relative to the earlier pass, which varied only spelling:
+      supplying TENS_STRN_FACTOR/bUSE/A/B/D and iECTYPE does not change the
+      answer to "[Error] ... input data contain errors", which is the message a
+      recognised code name with wrong companions produces. That rules out the
+      reading in which the name is known and only its extra fields were
+      missing. Why the value is unknown - that these two codes are iGen's - is
+      not something a live call can establish, and this record does not claim
+      it does.
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: hyper-s-info-404-recheck-2026-09-03
+    endpoints: ["/db/IEHG-GL-M1", "/db/IEHG-PSS-M1", "/db/IEHG-TRUSS-M1"]
+    date: "2026-09-03"
+    nxVersion: MIDAS Civil NX 2026 (v2.2), build 09/02/2026
+    level: read
+    outcome: success
+    method: >-
+      GET only, on the patched build, with controls in the same session. The
+      previous capture of these 404s is dated 2026-09-02 and predates the
+      patch, and "uncontractable in principle" is too strong a claim to leave
+      resting on a build nobody recorded. /info was requested for the three
+      targets and for two siblings whose /info is known to answer,
+      /db/IEHG-BEAM-M1 and /db/MATL-M1, plus a plain GET on each route.
+    finding: >-
+      Unchanged. The three still 404 on /info while both controls return a
+      schema in the same session, so the 404 belongs to those three endpoints
+      and not to the session, the key or the build. Their plain routes answer
+      {"message": ""}, so they are served endpoints with no schema route rather
+      than absent ones - already recorded, and re-confirmed. They therefore
+      still have no permitted contract source: the manual states a URL and a
+      methods line and nothing else, /info states nothing, and neither SDK may
+      be read as a source.
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: standing-write-failures-recheck-2026-09-03
+    endpoints: ["/db/NLLP", "/db/WVLD", "/db/GRDP", "/db/TDMF", "/db/RPSC", "/db/STRPSSM"]
+    date: "2026-09-03"
+    nxVersion: MIDAS Civil NX 2026 (v2.2), build 09/02/2026
+    level: write
+    outcome: success
+    method: >-
+      The Civil half of the same pass. Payloads from schema/live-cases.json;
+      none declares a needs seed. No /doc/NEW - tables checked empty first.
+    finding: >-
+      Nothing was fixed by the patch. /db/NLLP answers Unknown Error;
+      /db/WVLD, /db/GRDP, /db/TDMF, /db/RPSC and /db/STRPSSM answer Wrong
+      Field. Only /db/NLLP is root-caused among these - bisected 2026-08-31 to
+      a single field across four APPLICATION_TYPE combinations, all answering
+      identically. The other five are confirmed=False cases whose cause has
+      never been isolated; their symptom surviving the patch is what this
+      records, not a product defect.
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: db-read-sweep-2026-08-25
+    endpoints: []
+    date: "2026-08-25"
+    nxVersion: MIDAS Civil NX 2026 (v2.2), build 08/06/2026
+    level: read
+    outcome: success_empty
+    method: >-
+      manual GET-shaped POST probe on Civil NX against a real production model (a few hundred nodes/elements) that has no analysis run and no design/rebar data yet -- confirmed the route + argument shape are correct and error handling is clean (no hang, no crash): answered with an informative 'Please perform analysis'/'there was an error creating utbl' error rather than real design-result rows. Not a fu
+    finding: >-
+      A shared record for every endpoint checked in this pass. Endpoint-specific
+      findings stay in docs/live_verification_notes.md; this entry exists so a
+      contract's verification claim points at a dated, build-specific source
+      rather than at nothing.
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: db-read-sweep-2026-09-16
+    endpoints: []
+    date: "2026-09-16"
+    nxVersion: MIDAS Civil NX 2026 (v2.2), build 09/15/2026
+    level: read
+    outcome: success_empty
+    method: >-
+      scripts/live_readonly_sweep.py (read-only GET), run against the published PyPI 2.8.2 and repeated through the published npm 2.8.2
+    finding: >-
+      A shared record for every endpoint checked in this pass. Endpoint-specific
+      findings stay in docs/live_verification_notes.md; this entry exists so a
+      contract's verification claim points at a dated, build-specific source
+      rather than at nothing.
+    evidence:
+      - docs/live_verification_notes.md
+
+  - id: db-read-sweep-2026-07-31
+    endpoints: []
+    date: "2026-07-31"
+    nxVersion: MIDAS Civil NX 2026 (v2.2), build 07/29/2026
+    level: read
+    outcome: success
+    method: >-
+      manual GET-shaped POST probe on Civil NX against a real production model (a few hundred nodes/elements) that has no analysis run and no design/rebar data yet -- confirmed the route + argument shape are correct and error handling is clean (no hang, no crash): answered with an informative 'Please perform analysis'/'there was an error creating utbl' error rather than real design-result rows. Not a fu
+    finding: >-
+      A shared record for every endpoint checked in this pass. Endpoint-specific
+      findings stay in docs/live_verification_notes.md; this entry exists so a
+      contract's verification claim points at a dated, build-specific source
+      rather than at nothing.
+    evidence:
+      - docs/live_verification_notes.md

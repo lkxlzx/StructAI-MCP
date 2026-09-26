@@ -1,0 +1,407 @@
+# /db/POLC
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products, verification status and the DELETE
+# shape come from docs/coverage.json's live record and the measured /db/* DELETE
+# behaviour, not from the manual's framing. safeToOmit is answered `true` only
+# where a confirmed live payload actually omitted the field.
+contractVersion: 1
+id: db-polc
+endpoint: /db/POLC
+name: Pushover Load Cases
+surface:
+  className: PushoverLoadCase
+  exportName: pushoverLoadCase
+  modulePath: [db, pushover]
+  payloadTypeName: PushoverLoadCasePayload
+  nestedTypes:
+    - {path: LOADPATTERN, name: PushoverLoadPatternItem, namespace: DbPushoverTypes}
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 14_DB_Pushover.md
+    section: "5. `/db/POLC` — Pushover Load Cases"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-07-26
+    - product: gen
+      ref: db-read-sweep-2026-07-26
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/POLC/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: LCNAME
+    description: >-
+      하중케이스 이름
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: DESC
+    description: >-
+      설명
+    type: string
+    requirement: optional
+    documentedDefault: ""
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: INCRE_STEP
+    description: >-
+      증분 스텝 수
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: bCONS_PDELTA
+    description: >-
+      P-Delta 효과 고려
+    type: boolean
+    requirement: required
+    documentedDefault: false
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: bUSEINITIAL
+    description: >-
+      초기하중 사용 여부
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bREACOUTPUT
+    description: >-
+      초기하중에 의한 누적 반력/층전단력 출력
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: INCRE_METHOD
+    description: >-
+      증분 방법 · 하중제어: "LOAD" / 변위제어: "DISP"
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: STEPCTRLOPTION
+    description: >-
+      스테핑 제어 옵션(INCRE_METHOD="LOAD"일 때) · 자동: "AUTO" / 등분할(1/nstep): "EQUAL" /
+      증분제어함수: "INC_FUNC"
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: INCFUNC_KEY
+    description: >-
+      증분제어함수 키 (STEPCTRLOPTION="INC_FUNC"일 때)
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: STIFF_RATIO
+    description: >-
+      현재 강성비(Cs) (INCRE_METHOD="LOAD"일 때)
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: DISPCTRLOPTION
+    description: >-
+      변위 제어 옵션(INCRE_METHOD="DISP"일 때) · 전체: "GLOBAL" / 마스터 노드: "NODE"
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: GLOBAL_MAX_DISP
+    description: >-
+      최대 병진 변위(DISPCTRLOPTION="GLOBAL")
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: MASTERNODE
+    description: >-
+      마스터 노드 ID(DISPCTRLOPTION="NODE")
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: MASTERDIRECTION
+    description: >-
+      마스터 노드 방향 · "DX" / "DY" / "DZ"
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: MASTERMAXDISP
+    description: >-
+      마스터 노드 최대 변위
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: bLIMITDEFORMANGLE
+    description: >-
+      층간변형각 제한 사용
+    products: [gen]
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: LIMITDEFORMANGLE
+    description: >-
+      층간변형각 제한값 (1/[rad])
+    products: [gen]
+    # NOTE: /info evidence, not the manual's. GET /info/db/POLC declares this
+    # on gen and not on the other product, captured 2026-09-03. The section
+    # says nothing about either product, so this tag records a measurement
+    # rather than a documentation claim. See MD-46.
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: bDRIFTMAX
+    description: >-
+      모든 수직요소의 최대 층간변위
+    products: [gen]
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bDRIFTCENTER
+    description: >-
+      바닥 다이아프램 중심 층간변위
+    products: [gen]
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bDRIFTAVER
+    description: >-
+      층 평균변위로 계산된 층간변위
+    products: [gen]
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: LOADPATTERNTYPE
+    description: >-
+      하중 패턴 타입 · 정적하중: "LOAD" / 균등가속도: "ACC" / 모드형상: "MODE" / 정규화모드형상×질량:
+      "NOR_MODE"
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: LOADPATTERN
+    description: >-
+      하중 패턴 목록
+    type: array
+    items:
+      type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+
+    properties:
+      - key: LCNAME
+        description: >-
+          하중케이스명
+        type: string
+        requirement: conditional
+        condition: 'LOADPATTERNTYPE="LOAD"'
+        appliesWhen:
+          - path: LOADPATTERNTYPE
+            equals: "LOAD"
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'LOADPATTERN' in a second
+        # table headed "LOADPATTERN 배열 항목 - LOADPATTERNTYPE 별 필드", whose
+        # first column is the value of LOADPATTERNTYPE. That value is a root
+        # field of this same record, so the condition can be structured here,
+        # unlike /db/SLAN's design-code table. GET /info/db/POLC repeats each
+        # branch in the field's own description - "(if Used Load Pattern=ACC)"
+        # and so on. See MD-44.
+      - key: DIR
+        description: >-
+          방향 ("DX"/"DY"/"DZ")
+        type: string
+        requirement: conditional
+        condition: 'LOADPATTERNTYPE="ACC"'
+        appliesWhen:
+          - path: LOADPATTERNTYPE
+            equals: "ACC"
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: MODE
+        description: >-
+          모드 번호
+        type: integer
+        requirement: conditional
+        condition: 'LOADPATTERNTYPE="MODE" 또는 "NOR_MODE"'
+        appliesWhen:
+          - path: LOADPATTERNTYPE
+            in: ["MODE", "NOR_MODE"]
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: SF
+        description: >-
+          축척계수
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'LOADPATTERN' by naming it in
+        # every one of the second table's three branches, so unlike its
+        # siblings it carries no condition. /info gives it no description at
+        # all, which is consistent with a field that applies throughout.
+manualDefects:
+  - describes: field_name
+    manualSays: >-
+      `LOADPATTERN` is row 22, `Array [Object]`, Required, and a second table
+      gives its members per `LOADPATTERNTYPE`: `LCNAME`/`SF` for `"LOAD"`,
+      `DIR`/`SF` for `"ACC"`, `MODE`/`SF` for `"MODE"` and `"NOR_MODE"`.
+    actual: >-
+      Those four are the members, and `GET /info/db/POLC` declares exactly
+      them, repeating each branch in the property's own description. This
+      contract published the array with no members until 2026-09-04. As with
+      /db/SLAN, the manual is not wrong - the branch table is a reasonable way
+      to state it, and the extractor could not attach it.
+    evidence: >-
+      GET /info/db/POLC on Civil NX, captured 2026-09-03, against
+      docs/manual/14_DB_Pushover.md lines 1556-1572. Registered as MD-44.
+
+sdkRules:
+  - id: db-polc-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-polc-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 14_DB_Pushover.md line 1533
+  table: Parameters

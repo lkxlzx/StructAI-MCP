@@ -1,0 +1,311 @@
+# /post/TABLE — the shared result-table route
+#
+# Chapters 18-23 of the manual document 89 tables behind this one endpoint. The
+# request shape is contracted here once; each table contributes only what is its
+# own - the TABLE_TYPE values that select it, its response columns, and which of
+# these shared fields it ignores - under contracts/tables/.
+#
+# Sources: docs/manual/18_POST_PreProcess.md and 19_POST_AnalysisResult_1.md
+# common sections in Dennis5882/MIDAS-API, plus the response-key finding in
+# docs/live_verification_notes.md. No SDK source was consulted.
+contractVersion: 1
+id: post-table
+endpoint: /post/TABLE
+name: Result Table
+summary: >-
+  Extracts one result or pre-processing table. Which table is returned is
+  selected by the TABLE_TYPE string, not by the route.
+
+products: [gen, civil]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 19_POST_AnalysisResult_1.md
+    section: "공통 사항 — Input URI / 공통 Request 구조 및 파라미터"
+    url: https://support.midasuser.com/hc/en-us/articles/33016922742937
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: gen
+      ref: post-table-response-key-2026-07-26
+    - product: civil
+      ref: post-table-response-key-2026-07-26
+
+operations:
+  - method: POST
+    risk: read_only
+    summary: Request one table.
+    surface:
+      # No exportName: npm's post.getTable is written by hand, not generated.
+      # This records only the request objects the package publishes as types.
+      nestedTypes:
+        - {path: UNIT, name: TableUnit, namespace: PostBaseTypes}
+        - {path: STYLES, name: TableStyles, namespace: PostBaseTypes}
+    request:
+      wrapper: argument
+      itemSchema: fields
+      description: >-
+        Wrapped in "Argument", not the id-keyed "Assign" that /db/* uses.
+    response:
+      wrapper: table
+      keyStability: unstable
+      keyNote: >-
+        The top-level key is not dependable. It has been observed as the
+        TABLE_NAME that was requested, as "Result Table", and as "empty" - and
+        "empty" is simply the default key for a blank TABLE_NAME, so it can
+        carry a full table and must never be read as "no data". An SDK must find
+        the object carrying HEAD and DATA by shape, never by indexing a key
+        name.
+      errorShapes:
+        - httpStatus: [200, 201]
+          shape: '{"error": {...}}'
+          meaning: A failure returned under a success status line.
+        - shape: '{"message": "there was an error creating utbl (ex PostMode ...)"}'
+          meaning: >-
+            The product is not in a state where the table can be produced -
+            typically no analysis results, or Post mode not active. A clean
+            refusal, not a crash.
+    notes: >-
+      POST-shaped, but for most tables it is a read: it extracts data rather
+      than changing the model. It becomes a write when EXPORT_PATH is set, since
+      that writes a file on the NX host. Individual tables raise the risk
+      further; several design-forces tables have ended a live Gen NX session.
+
+fields:
+  - key: TABLE_NAME
+    description: Response table title. Also the key the response is returned under - usually.
+    type: string
+    requirement: optional
+    documentedDefault: ""
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      Omitted routinely across scripts/live_readonly_sweep.py's /post/TABLE
+      calls, which answered normally. Omitting it is what produces the "empty"
+      response key - the table still arrives, under that name.
+    provenance: live_verified
+
+  - key: TABLE_TYPE
+    description: Which table to return. Values are per table; see contracts/tables/.
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: false
+    omissionEffect: >-
+      Nothing selects a table. The manual marks it Required and a conforming SDK
+      never sends the request without it.
+    provenance: manual
+
+  - key: EXPORT_PATH
+    description: Where to save the table as JSON, on the machine running NX.
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      Omitted by every read-only sweep call; the table comes back in the
+      response body instead of being written to disk.
+    provenance: live_verified
+    provenanceNote: >-
+      Setting it resolves on the NX host, not the caller's machine, and a path
+      that does not exist there raises a modal dialog on that machine while the
+      HTTP call still answers successfully. See client rule
+      paths-resolve-on-the-nx-host.
+
+  - key: UNIT
+    description: Response unit overrides.
+    type: object
+    requirement: optional
+    documentedDefault: System
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: FORCE
+        description: Force unit
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: DIST
+        description: Length unit
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: HEAT
+        description: Heat unit
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: TEMP
+        description: Temperature unit
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+
+  - key: STYLES
+    description: Response number formatting.
+    type: object
+    requirement: optional
+    documentedDefault: System
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: FORMAT
+        description: Number format
+        type: string
+        enum: ["Default", "Fixed", "Scientific", "General"]
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: PLACE
+        description: Decimal places, 0 to 15
+        type: integer
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+
+  - key: COMPONENTS
+    description: Which result columns to return. All of them by default.
+    type: array
+    items:
+      type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+
+  - key: NODE_ELEMS
+    description: >-
+      Which nodes or elements to report on. The manual gives three alternative
+      ways to say it and does not state what happens if more than one is set.
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: KEYS
+        description: Explicit ids, e.g. [101, 102, 103]
+        type: array
+        items:
+          type: integer
+        requirement: conditional
+        condition: one of KEYS, TO or STRUCTURE_GROUP_NAME selects the scope
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: TO
+        description: An id range, e.g. "101 to 105"
+        type: string
+        requirement: conditional
+        condition: one of KEYS, TO or STRUCTURE_GROUP_NAME selects the scope
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: STRUCTURE_GROUP_NAME
+        description: A structure group name, e.g. "SG1"
+        type: string
+        requirement: conditional
+        condition: one of KEYS, TO or STRUCTURE_GROUP_NAME selects the scope
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+
+  - key: LOAD_CASE_NAMES
+    description: >-
+      Load cases to report, each with a type suffix - NAME(ST) static,
+      NAME(CB)/(CB:all)/(CB:max)/(CB:min) combination, NAME(CS) construction
+      stage, NAME(RS) response spectrum, NAME(MV:all|max|min) moving load,
+      NAME(SM:all|max|min) settlement.
+    type: array
+    items:
+      type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+
+  - key: OPT_CS
+    description: >-
+      Construction-stage view selector with three states. true switches to
+      Construction Stage (first stage) and returns CS results; false switches to
+      PostCS (final stage) and returns Post results; omitted keeps the current
+      view mode. The manual's Default column still reads false, which its own
+      behaviour description contradicts, so no default is recorded here - an
+      SDK that filled in false would change the caller's view as a side effect.
+    type: boolean
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+
+  - key: STAGE_STEP
+    description: Construction-stage step names, e.g. "CS1:001(first)", "CS1:002(last)".
+    type: array
+    items:
+      type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+
+sdkRules:
+  - id: post-table-unwrap-by-shape
+    kind: unwrap_table_by_shape
+    appliesTo: [POST]
+    responseCases: [table_name, result_table, empty_with_table, no_table]
+    reason: >-
+      The response's top-level key is unstable - TABLE_NAME, "Result Table" and
+      "empty" have all been observed - so an SDK must locate the payload by
+      finding the object carrying HEAD and DATA, never by indexing the key it
+      asked for. Reading "empty" as "no data" is the specific mistake: it is the
+      default key for a blank TABLE_NAME and can carry a full table.
+    riskRef: post-table-unstable-response-key
+
+manualDefects:
+  - describes: behaviour
+    manualSays: >-
+      The response is returned under "<TABLE_NAME>", the name given in the
+      request.
+    actual: >-
+      The top-level key has also been observed as "Result Table" and as
+      "empty". "empty" is the default key when TABLE_NAME is blank and carries a
+      full table.
+    evidence: >-
+      Observed across /post/TABLE calls; confirmed 2026-07-26.
+      docs/live_verification_notes.md.
+
+knownDefects:
+  - ref: post-table-unstable-response-key

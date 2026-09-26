@@ -1,0 +1,234 @@
+# /ope/SSPS
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: ope-ssps
+endpoint: /ope/SSPS
+name: Surface Spring
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 15_OPE.md
+    section: "7. `/ope/SSPS` — Surface Spring"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-write-sweep-2026-07-30
+    - product: gen
+      ref: db-write-sweep-2026-07-30
+
+operations:
+  - method: POST
+    surface:
+      exportName: convertSurfaceSpring
+      modulePath: [ope]
+      argumentTypeName: SurfaceSpringArgument
+      documentation: |-
+        docs/manual/15_OPE.md #7 — /ope/SSPS — Surface Spring.
+      nestedTypes:
+        - {path: BOUNDARY, name: SurfaceSpringBoundary, namespace: OpeTypes}
+        - {path: ELEMENT, name: SurfaceSpringElement, namespace: OpeTypes}
+        - {path: NODE_ELEMS, name: TargetKeys, namespace: OpeTypes}
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: CONVERT_TO
+    description: >-
+      변환 방식 · 점스프링: "POINT_SPRING" / 탄성링크: "ELASTIC_LINK"
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: GROUP_NAME
+    description: >-
+      경계 그룹 이름
+    type: string
+    requirement: optional
+    documentedDefault: ""
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: NODE_ELEMS
+    description: >-
+      대상 노드/요소 번호 목록
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: KEYS
+        description: >-
+          번호 배열
+        type: array
+        items:
+          type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+  - key: ELEMENT
+    description: >-
+      요소 타입 정보
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: TYPE
+        description: >-
+          타입 · 프레임: "FRAME" / 평면: "PLANAR" / 솔리드(면): "SOLID_FACE" / 솔리드(절점):
+          "SOLID_NODE"
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: WIDTH
+        description: >-
+          폭 (FRAME 전용)
+        type: number
+        requirement: conditional
+        condition: FRAME일 때
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: FACE
+        description: >-
+          면 번호 1~6 (SOLID_FACE 전용)
+        type: integer
+        requirement: conditional
+        condition: SOLID_FACE일 때
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+  - key: BOUNDARY
+    description: >-
+      경계 정보
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: TYPE
+        description: >-
+          경계 타입 · 선형: "LINEAR" / 압축전담: "COMP" / 인장전담: "TENS" / 다선형: "MULTI"
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: STIFF
+        description: >-
+          강성 [Kx,Ky,Kz] (CONVERT_TO="POINT_SPRING"의 LINEAR/MULTI)
+        type: array
+        items:
+          type: number
+        minItems: 3
+        maxItems: 3
+        requirement: conditional
+        condition: 해당 타입
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: bDAMP
+        description: >-
+          감쇠 고려 여부 (CONVERT_TO="POINT_SPRING"의 LINEAR/MULTI)
+        type: boolean
+        requirement: conditional
+        condition: 해당 타입
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: DAMP
+        description: >-
+          감쇠상수 [Cx,Cy,Cz] (CONVERT_TO="POINT_SPRING"의 LINEAR/MULTI)
+        type: array
+        items:
+          type: number
+        minItems: 3
+        maxItems: 3
+        requirement: conditional
+        condition: 해당 타입
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: DIR
+        description: >-
+          경계 방향(COMP/TENS/점스프링 외 모든 경우) · Normal(+): 0 / Normal(-): 1 / UCS-x(+): 2
+          / UCS-x(-): 3 / UCS-y(+): 4 / UCS-y(-): 5 / UCS-z(+): 6 / UCS-z(-): 7
+        type: integer
+        requirement: conditional
+        condition: 해당 타입
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: SUBGRADE
+        description: >-
+          지반반력계수 (COMP/TENS/탄성링크 전체)
+        type: number
+        requirement: conditional
+        condition: 해당 타입
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: PHU
+        description: >-
+          한계강도 (MULTI/탄성링크 MULTI)
+        type: number
+        requirement: conditional
+        condition: 해당 타입
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: LENGTH
+        description: >-
+          탄성링크 길이 (CONVERT_TO="ELASTIC_LINK" 전체 타입)
+        type: number
+        requirement: conditional
+        condition: 탄성링크
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+
+extraction:
+  source: 15_OPE.md line 1168
+  table: Parameters

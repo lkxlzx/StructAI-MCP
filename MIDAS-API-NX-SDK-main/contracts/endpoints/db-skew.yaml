@@ -1,0 +1,450 @@
+# /db/SKEW
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-skew
+endpoint: /db/SKEW
+name: Node Local Axis
+surface:
+  className: Skew
+  exportName: skew
+  modulePath: [db, nodeElement]
+  payloadTypeName: SkewPayload
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 03_DB_Node_Element.md
+    section: "3. `/db/SKEW`"
+    url: https://support.midasuser.com/hc/en-us/articles/35807178748569
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-write-sweep-2026-07-29
+    - product: gen
+      ref: db-write-sweep-2026-07-29
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/SKEW/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: iMETHOD
+    description: >-
+      Input Method • Angle: 1
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: ANGLE_X
+    description: >-
+      About x
+    type: number
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: ANGLE_Y
+    description: >-
+      About y
+    type: number
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: ANGLE_Z
+    description: >-
+      About z
+    type: number
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+
+variants:
+  - when:
+      - path: iMETHOD
+        equals: 2
+    source:
+      table: iMETHOD = 2 (3 Points)
+      line: 623
+    fields:
+      - key: iMETHOD
+        description: >-
+          Input Method • 3 Points: 2
+        type: integer
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: P0X
+        description: >-
+          P0 Coordinate (x, y, z)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: P0Y
+        description: >-
+          P0 Coordinate (x, y, z)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: P0Z
+        description: >-
+          P0 Coordinate (x, y, z)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: P1X
+        description: >-
+          P1 Coordinate (x, y, z)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: P1Y
+        description: >-
+          P1 Coordinate (x, y, z)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: P1Z
+        description: >-
+          P1 Coordinate (x, y, z)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: P2X
+        description: >-
+          P2 Coordinate (x, y, z)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: P2Y
+        description: >-
+          P2 Coordinate (x, y, z)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: P2Z
+        description: >-
+          P2 Coordinate (x, y, z)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+  - when:
+      - path: iMETHOD
+        equals: 3
+    source:
+      table: iMETHOD = 3 (Vector)
+      line: 632
+    fields:
+      - key: iMETHOD
+        description: >-
+          Input Method • Vector: 3
+        type: integer
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: V1X
+        description: >-
+          Direction Vector V1 (x, y, z)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: V1Y
+        description: >-
+          Direction Vector V1 (x, y, z)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: V1Z
+        description: >-
+          Direction Vector V1 (x, y, z)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: V2X
+        description: >-
+          Direction Vector V2 (x, y, z)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: V2Y
+        description: >-
+          Direction Vector V2 (x, y, z)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: V2Z
+        description: >-
+          Direction Vector V2 (x, y, z)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+  - when:
+      - path: iMETHOD
+        equals: 4
+    source:
+      table: iMETHOD = 4 (Line Vector)
+      line: 640
+    fields:
+      - key: iMETHOD
+        description: >-
+          Input Method • Line Vector: 4
+        type: integer
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: LV0X
+        description: >-
+          Direction Vector V0 (x, y, z)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: LV0Y
+        description: >-
+          Direction Vector V0 (x, y, z)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: LV0Z
+        description: >-
+          Direction Vector V0 (x, y, z)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: LV1X
+        description: >-
+          Direction Vector V1 (x, y, z)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: LV1Y
+        description: >-
+          Direction Vector V1 (x, y, z)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: LV1Z
+        description: >-
+          Direction Vector V1 (x, y, z)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: LV2X
+        description: >-
+          Direction Vector V2 (x, y, z)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: LV2Y
+        description: >-
+          Direction Vector V2 (x, y, z)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: LV2Z
+        description: >-
+          Direction Vector V2 (x, y, z)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: REFTYPE
+        description: >-
+          Reference Type • Ref. Point: 1 (P0, P1 required) • Global Direction: 2 (P0
+          required)
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: G_DIR
+        description: >-
+          Global Direction • Global X: 0 • Global Y: 1 • Global Z: 2
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: L_DIR
+        description: >-
+          Local Direction • Local x: 0 • Local y: 1 • Local z: 2
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+
+sdkRules:
+  - id: db-skew-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-skew-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 03_DB_Node_Element.md line 614
+  table: iMETHOD = 1 (Angle)

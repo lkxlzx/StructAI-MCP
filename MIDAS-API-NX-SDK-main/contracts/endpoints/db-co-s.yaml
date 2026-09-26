@@ -1,0 +1,158 @@
+# /db/CO_S
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-co-s
+endpoint: /db/CO_S
+name: Section Color
+surface:
+  className: SectionColor
+  exportName: sectionColor
+  modulePath: [db, project]
+  payloadTypeName: SectionColorPayload
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 02_DB_Project_Structure.md
+    section: "11. `/db/CO_S` — Section Color"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-write-sweep-2026-08-16
+    - product: gen
+      ref: db-write-sweep-2026-08-16
+
+operations:
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: W_R
+    description: >-
+      Wire Frame / Hidden Fill / Hidden Edge RGB (0–255)
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: W_G
+    description: >-
+      Wire Frame / Hidden Fill / Hidden Edge RGB (0–255)
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: W_B
+    description: >-
+      Wire Frame / Hidden Fill / Hidden Edge RGB (0–255)
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: HF_R
+    description: >-
+      Wire Frame / Hidden Fill / Hidden Edge RGB (0–255)
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: HF_G
+    description: >-
+      Wire Frame / Hidden Fill / Hidden Edge RGB (0–255)
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: HF_B
+    description: >-
+      Wire Frame / Hidden Fill / Hidden Edge RGB (0–255)
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: HE_R
+    description: >-
+      Wire Frame / Hidden Fill / Hidden Edge RGB (0–255)
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: HE_G
+    description: >-
+      Wire Frame / Hidden Fill / Hidden Edge RGB (0–255)
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: HE_B
+    description: >-
+      Wire Frame / Hidden Fill / Hidden Edge RGB (0–255)
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bBLEMD
+    description: >-
+      Opacity Boolean
+    type: boolean
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: FACT
+    description: >-
+      Opacity Value (0.0–1.0)
+    type: number
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+
+extraction:
+  source: 02_DB_Project_Structure.md line 1088
+  table: Specifications

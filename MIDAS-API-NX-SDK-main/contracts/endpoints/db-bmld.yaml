@@ -1,0 +1,406 @@
+# /db/BMLD
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-bmld
+endpoint: /db/BMLD
+name: Beam Loads
+surface:
+  className: BeamLoad
+  exportName: beamLoad
+  modulePath: [db, staticLoads]
+  payloadTypeName: BeamLoadPayload
+  nestedTypes:
+    - {path: ITEMS, name: BeamLoadItem, namespace: DbStaticLoadsTypes}
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 06_DB_Static_Loads.md
+    section: 4. /db/BMLD — Beam Loads
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-write-sweep-2026-07-29
+    - product: gen
+      ref: db-write-sweep-2026-07-29
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/BMLD/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: ITEMS
+    description: >-
+      Beam Load items
+    type: array
+    items:
+      type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: ID
+        description: >-
+          Serial Number
+        type: integer
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(1)', not by
+        # naming a path
+      - key: LCNAME
+        description: >-
+          Load Case Name
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(2)', not by
+        # naming a path
+      - key: GROUP_NAME
+        description: >-
+          Load Group Name
+        type: string
+        requirement: optional
+        documentedDefault: ""
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(3)', not by
+        # naming a path
+      - key: CMD
+        description: >-
+          Load Classification ("BEAM" / "LINE" / "TYPICAL")
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(4)', not by
+        # naming a path
+      - key: TYPE
+        description: >-
+          Load Type ("CONLOAD" / "CONMOMENT" / "UNILOAD" / "UNIMOMENT" / "PRESSURE")
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(5)', not by
+        # naming a path
+      - key: DIRECTION
+        description: >-
+          Direction ("LX" / "LY" / "LZ" / "GX" / "GY" / "GZ")
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(6)', not by
+        # naming a path
+      - key: USE_PROJECTION
+        description: >-
+          Projection
+        type: boolean
+        requirement: optional
+        documentedDefault: false
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(7)', not by
+        # naming a path
+      - key: D
+        description: >-
+          Distance [x1, x2, x3, x4]
+        type: array
+        items:
+          type: number
+        minItems: 4
+        maxItems: 4
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(8)', not by
+        # naming a path
+      - key: P
+        description: >-
+          Load [v1, v2, v3, v4]
+        type: array
+        items:
+          type: number
+        minItems: 4
+        maxItems: 4
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(9)', not by
+        # naming a path
+      - key: USE_ECCEN
+        description: >-
+          Eccentricity
+        type: boolean
+        requirement: optional
+        documentedDefault: false
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(10)', not by
+        # naming a path
+      - key: ECCEN_TYPE
+        description: >-
+          Eccentricity Type (0=Centroid, 1=Offset)
+        type: integer
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(11)', not by
+        # naming a path
+      - key: ECCEN_DIR
+        description: >-
+          Eccentricity Direction ("LY" / "LZ" / "GX" / "GY" / "GZ")
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(12)', not by
+        # naming a path
+      - key: I_END
+        description: >-
+          Distance I-End
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(13)', not by
+        # naming a path
+      - key: USE_J_END
+        description: >-
+          J-End Option
+        type: boolean
+        requirement: optional
+        documentedDefault: false
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(14)', not by
+        # naming a path
+      - key: J_END
+        description: >-
+          Distance J-End
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(15)', not by
+        # naming a path
+      - key: USE_ADDITIONAL
+        description: >-
+          Additional H from Top Option
+        type: boolean
+        requirement: optional
+        documentedDefault: false
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(16)', not by
+        # naming a path
+      - key: ADDITIONAL_I_END
+        description: >-
+          Distance I-End (additional)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(17)', not by
+        # naming a path
+      - key: USE_ADDITIONAL_J_END
+        description: >-
+          J-End Option (additional)
+        type: boolean
+        requirement: optional
+        documentedDefault: false
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(18)', not by
+        # naming a path
+      - key: ADDITIONAL_J_END
+        description: >-
+          Distance J-End (additional)
+        type: number
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(19)', not by
+        # naming a path
+      - key: VX
+        description: >-
+          Vector X
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+        # RESOLVED: declared by /info and absent from the manual - the whole
+        # manual was searched for the name, not just this section.
+        # One of three vector components the server declares on a beam load
+        # item. The section documents nineteen members and a DIRECTION enum of
+        # six axis names, with nothing that takes a vector.
+      - key: VY
+        description: >-
+          Vector Y
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+        # RESOLVED: declared by /info and absent from the manual - the whole
+        # manual was searched for the name, not just this section.
+      - key: VZ
+        description: >-
+          Vector Z
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+        # RESOLVED: declared by /info and absent from the manual - the whole
+        # manual was searched for the name, not just this section.
+
+manualDefects:
+  - describes: field_name
+    manualSays: >-
+      The /db/BMLD `ITEMS` entry has nineteen members, listed (1) to (19),
+      and a `DIRECTION` enum of six axis names.
+    actual: >-
+      `GET /info/db/BMLD` declares three more on the same entry: `VX`,
+      `VY` and `VZ`, numbers described "Vector X/Y/Z". Nothing in the
+      section takes a vector. This contract records the three fields and
+      no rule about when they apply: an /info schema states no branch, and
+      whether they pair with some `DIRECTION` value the manual does not
+      document is not something a schema can say.
+    evidence: >-
+      Found by scripts/info_baseline.py --against-contracts on 2026-09-04,
+      sweeping the 2026-09-03 /info capture against every contract. The
+      manual was then searched in full for the name, not just this
+      section. The only VX in the manual belongs to a different endpoint's
+      USERGRID/TRAJ grid points in 11_DB_Settlement_Misc_Loads.md, where
+      it means a wave velocity. Registered as MD-41.
+
+sdkRules:
+  - id: db-bmld-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-bmld-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 06_DB_Static_Loads.md line 351
+  table: 파라미터

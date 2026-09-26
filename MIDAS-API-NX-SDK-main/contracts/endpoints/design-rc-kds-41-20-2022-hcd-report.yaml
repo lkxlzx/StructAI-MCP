@@ -1,0 +1,101 @@
+# /DESIGN/RC/KDS-41-20-2022/HCD-REPORT
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: design-rc-kds-41-20-2022-hcd-report
+endpoint: /DESIGN/RC/KDS-41-20-2022/HCD-REPORT
+name: RC Haunched Beam Design Report
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 26_Design_RC_KDS41202022.md
+    section: "53. `DESIGN/RC/KDS-41-20-2022/HCD-REPORT` — RC Haunched Beam Design Report (RC 헌치보 설계 리포트)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-08-10
+    - product: gen
+      ref: db-read-sweep-2026-08-10
+
+operations:
+  - method: POST
+    surface:
+      exportName: exportHaunchedBeamDesignReport
+      modulePath: [design, rcKds, designForces]
+      argumentTypeName: RcHaunchedBeamDesignReportArgument
+      documentation: |-
+        docs/manual/26_Design_RC_KDS41202022.md #53 — HCD-REPORT — RC
+        Haunched Beam Design Report. Response: ``{"SUCCESS": bool, "FILE_PATH":
+        str, "MESSAGE": str}``.
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: Argument
+    description: >-
+      Argument 래퍼
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: CURRENT_MODE
+    description: >-
+      출력 모드 ("Graphic"=JPG 이미지)
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    enum: [Graphic]
+    safeToOmit: unverified
+    provenance: manual
+  - key: ELEMS
+    description: >-
+      헌치보 요소 지정 — KEYS/TO/STRUCTURE_GROUP_NAME 중 하나
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: EXPORT_PATH
+    description: >-
+      저장 디렉터리 경로
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: OUTPUT_NAME
+    description: >-
+      출력 파일 기본 이름
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+
+extraction:
+  source: 26_Design_RC_KDS41202022.md line 9256
+  table: 파라미터

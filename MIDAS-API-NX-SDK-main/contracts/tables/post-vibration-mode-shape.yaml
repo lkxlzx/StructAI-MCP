@@ -1,0 +1,40 @@
+# Source: 20_POST_AnalysisResult_2.md section 28. No SDK source was used.
+contractVersion: 1
+id: post-vibration-mode-shape
+endpoint: /post/TABLE
+name: Vibration Mode Shape
+summary: Eigenvalue or participation-vector mode shapes with modal summary tables.
+products: [gen, civil]
+source: {manual: {status: documented, repo: Dennis5882/MIDAS-API, chapterFile: 20_POST_AnalysisResult_2.md, section: "28. Vibration Mode Shape"}}
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getVibrationModeShapeTable
+  modulePath: [result1]
+  tableType: EIGENVALUEMODE
+  factory: variable
+  optionNames: [components, nodeElements, styles, tableName, unit]
+  documentation: |-
+    docs/manual/20_POST_AnalysisResult_2.md #28 — Vibration Mode Shape.
+
+    table_type: TABLE_TYPE_EIGENVALUE_MODE (default) or
+    TABLE_TYPE_PARTICIPATION_VECTOR_MODE. Mode shapes are not load-case scoped,
+    so LOAD_CASE_NAMES/OPT_CS/STAGE_STEP are not exposed here.
+tableTypes:
+  - value: EIGENVALUEMODE
+    description: Eigenvalue vibration mode shape
+    head: [Index, Node, Mode, UX, UY, UZ, RX, RY, RZ]
+    subTables:
+      - {name: EIGENVALUEANALYSIS, head: [ModeNo, Frequency(rad/sec), Frequency(cycle/sec), Period(sec), Tolerance]}
+      - {name: MODALPARTICIPATIONMASSESPRINTOUT(1), head: [ModeNo, TRAN-XMASS(%), TRAN-XSUM(%), TRAN-YMASS(%), TRAN-YSUM(%), TRAN-ZMASS(%), TRAN-ZSUM(%), ROTN-XMASS(%), ROTN-XSUM(%), ROTN-YMASS(%), ROTN-YSUM(%), ROTN-ZMASS(%), ROTN-ZSUM(%)]}
+      - {name: MODALPARTICIPATIONMASSESPRINTOUT(2), head: [ModeNo, TRAN-XMASS, TRAN-XSUM, TRAN-YMASS, TRAN-YSUM, TRAN-ZMASS, TRAN-ZSUM, ROTN-XMASS, ROTN-XSUM, ROTN-YMASS, ROTN-YSUM, ROTN-ZMASS, ROTN-ZSUM]}
+      - {name: "MODALPARTICIPATIONFACTORPRINTOUT(kN,m)", head: [ModeNo, TRAN-XValue, TRAN-YValue, TRAN-ZValue, ROTN-XValue, ROTN-YValue, ROTN-ZValue]}
+      - {name: MODALDIRECTIONFACTORPRINTOUT, head: [ModeNo, TRAN-XValue, TRAN-YValue, TRAN-ZValue, ROTN-XValue, ROTN-YValue, ROTN-ZValue]}
+    provenance: manual
+  - value: PARTICIPATIONVECTORMODE
+    description: Participation-vector mode shape
+    head: [Index, Node, Mode, UX, UY, UZ, RX, RY, RZ]
+    provenance: manual
+requestFields:
+  additional:
+    - {key: MODES, description: Optional mode-name list such as Mode1., type: array, requirement: optional, provenance: manual}

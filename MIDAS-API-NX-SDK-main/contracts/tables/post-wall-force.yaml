@@ -1,0 +1,38 @@
+contractVersion: 1
+id: post-wall-force
+endpoint: /post/TABLE
+name: Wall Force
+summary: Wall force and moment at top and bottom positions.
+products: [gen, civil]
+source: {manual: {status: documented, repo: Dennis5882/MIDAS-API, chapterFile: 20_POST_AnalysisResult_2.md, section: "39. Wall Force"}}
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getWallForceTable
+  modulePath: [result1]
+  tableType: WALL_FORCE_MOMENT
+  factory: fixed
+  optionNames: [components, constructionStage, loadCaseNames, nodeElements, stageSteps, storyNames, styles, tableName, unit]
+  documentation: |-
+    docs/manual/20_POST_AnalysisResult_2.md #39 — Wall Force.
+
+    Unlike plain Plate Force, results are per-story/per-level with top ("top")
+    and bottom ("bot") values reported side by side.
+
+    ⚠️ HEAD repeats its Part/Axial/Shear-y/Shear-z/Torsion/Moment-y/Moment-z
+    columns twice — once for top, once for bot — so the usual
+    ``dict(zip(head, row))`` idiom silently drops the top values (the later
+    bot columns overwrite them). Slice by position instead: ``row[5:12]`` is
+    the top group and ``row[12:19]`` the bot group, each in HEAD's order.
+
+    story_names restricts to specific stories (default: all).
+
+    ⚠️ 2026-07-30: this table type does NOT accept ``sect_position``/``parts``
+    (removed from the function signature). An earlier version of this
+    docstring inferred both as accepted from their appearance in the
+    official article's JSON Schema alone; MIDASIT confirmed 2026-07-30
+    this table never supported them and removed both from the official
+    article too. If you need a specific top/bot part, slice HEAD/DATA
+    yourself per the note above rather than requesting it server-side.
+tableTypes:
+  - {value: WALL_FORCE_MOMENT, description: Wall force and moment, head: [Index, Story, Level, Wall, Load, Part, Axial, Shear-y, Shear-z, Torsion, Moment-y, Moment-z, Part, Axial, Shear-y, Shear-z, Torsion, Moment-y, Moment-z], provenance: manual}

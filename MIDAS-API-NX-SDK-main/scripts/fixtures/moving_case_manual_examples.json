@@ -1,0 +1,98 @@
+{
+  "source": "08_DB_Moving_Loads.md, sections 13-17, first JSON Request Body at vendored commit 7920759",
+  "sha256": "e09314b3ed83ddd6474a44412ec35e35110dfec70fd5b938816666d2dedad273",
+  "examples": {
+    "/db/MVLDch": {
+      "1": {
+        "LCNAME": "MV_Case1",
+        "DESC": "",
+        "OPT_AUTO_OPTIMIZE": false,
+        "BRIDGE_TYPE": 2,
+        "SCALE_FACTOR_O": [1, 1, 0.8, 0.67, 0.6, 0.55, 0.55, 0.55],
+        "SCALE_FACTOR_N": [1, 1, 0.78, 0.67, 0.6, 0.55, 0.52, 0.5],
+        "SCALE_FACTOR_JTG": [1.2, 1, 0.78, 0.67, 0.6, 0.55, 0.52, 0.5],
+        "LOADING_EFFECT": 1,
+        "SUB_LOAD_ITEMS": [{
+          "VEHICLE_CLASS": "CH(CJJ11)_C-CD(A/B)",
+          "VEHICLE_TYPE": "VL",
+          "SCALE_FACTOR": 1,
+          "MIN_NUM_LOADED_LANES": 1,
+          "MAX_NUM_LOADED_LANES": 2,
+          "SELECTED_LANES": ["LL_01", "LL_02"]
+        }]
+      }
+    },
+    "/db/MVLDid": {
+      "1": {
+        "LCNAME": "MV_India_1",
+        "DESC": "",
+        "SCALE_FACTOR": [1, 0.9, 0.8, 0.8],
+        "NUM_LOADED_LANES": 2,
+        "SUB_LOAD_ITEMS": [{
+          "VEHICLE_CLASS_1": "IN(IRC)_(25t1)_BroadGauge-1676mm",
+          "SCALE_FACTOR": 1,
+          "MIN_NUM_LOADED_LANES": 1,
+          "MAX_NUM_LOADED_LANES": 2,
+          "SELECTED_LANES": ["LL_01", "LL_02"]
+        }]
+      }
+    },
+    "/db/MVLDbs": {
+      "1": {
+        "LCNAME": "MV_BS_1",
+        "DESC": "",
+        "bAUTOOPTIMIZE": false,
+        "LOADMODEL": "STANDER",
+        "bAUTOLIVELOADCOMB": true,
+        "DGNCOMBFACTORTYPE": "ULTIMATE",
+        "COMBMETHOD": "COMB_1",
+        "LCDATA_STANDARD": {
+          "LOADINGEFFECT": "INDEPEND",
+          "SUBLOADDATA": [{
+            "SCALEFACTOR": 1,
+            "NUMLOADEDLANE": 4,
+            "VEHICLE_NAME": "BS_(BD21)_HA&HB(Auto)",
+            "SELECTEDLANES": ["LL_01", "LL_02", "LL_03", "LL_04"],
+            "STRAD_LANE": [{
+              "STARDD_LANE_1": "LL_03",
+              "STARDD_LANE_2": "LL_04"
+            }]
+          }]
+        }
+      }
+    },
+    "/db/MVLDeu": {
+      "1": {
+        "LCNAME": "MV_Case1",
+        "OPT_AUTO_OPTIMIZE": false,
+        "TYPE_LOADMODEL": 1,
+        "DESC": "",
+        "VHLNAME1": "EU_(R)_LoadModel1",
+        "VHLNAME2": "EU_(FF)_Uniformload(Road)",
+        "OPT_LEADING": false,
+        "SLN_LIST": ["LL_01", "LL_02"],
+        "SRA_LIST": ["LL_04"],
+        "FLN_LIST": ["LL_03"]
+      }
+    },
+    "/db/MVLDpl": {
+      "1": {
+        "LCNAME": "MV1",
+        "DESC": "",
+        "LOAD_MODEL": 1,
+        "bAUTO_OPTIMIZE": false,
+        "bPERMIT_LOAD": false,
+        "DEFAULT": {
+          "COMB_OPTION": "INDEPENDENT",
+          "SUB_LOAD_DATAS": [{
+            "VEHICLE_NAME": "VehicleS",
+            "SCALE_FACTOR": 1,
+            "MIN_LOADED_LANE": 1,
+            "MAX_LOADED_LANE": 2,
+            "LANE_NAMES": ["L1", "L2"]
+          }]
+        }
+      }
+    }
+  }
+}

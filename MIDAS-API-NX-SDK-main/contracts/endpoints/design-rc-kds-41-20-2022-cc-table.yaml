@@ -1,0 +1,205 @@
+# /DESIGN/RC/KDS-41-20-2022/CC-TABLE
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: design-rc-kds-41-20-2022-cc-table
+endpoint: /DESIGN/RC/KDS-41-20-2022/CC-TABLE
+name: RC Column Check Table
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 26_Design_RC_KDS41202022.md
+    section: "58. `DESIGN/RC/KDS-41-20-2022/CC-TABLE` — RC Column Check Table (RC 기둥 검토 테이블)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-08-10
+    - product: gen
+      ref: db-read-sweep-2026-08-10
+
+operations:
+  - method: POST
+    surface:
+      exportName: getColumnCheckTable
+      modulePath: [design, rcKds, checks]
+      argumentTypeName: RcMemberCheckTableArgument
+      documentation: |-
+        docs/manual/26_Design_RC_KDS41202022.md #58 — CC-TABLE — RC Column
+        Check Table. Response: ``{table_name_or_"RC Column Checking Result":
+        {"FORCE": ..., "DIST": ..., "HEAD": [...], "DATA": [[...], ...]}}``.
+        HEAD includes P-M interaction ratios, end/mid shear, and main-rebar/hoop
+        rebar-detail checks.
+
+        ⚠️ Live-tested workaround: if ``perform_column_check`` (CC-ANAL) times
+        out against a live session, call this afterward before assuming the
+        check failed — it returned full real results immediately after a
+        "hung" CC-ANAL call in testing. See docs/live_verification_notes.md.
+
+        This also reads results the user already computed in Gen NX's own GUI,
+        so it is the zero-risk way to get a verdict with no perform call at all.
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: Argument
+    description: >-
+      Argument 래퍼
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: PRI_SORT
+    description: >-
+      정렬 기준 (0=SECT, 1=MEMB)
+    type: integer
+    requirement: optional
+    documentedDefault: 1
+    documentedOptional: true
+    enum: [0, 1]
+    safeToOmit: unverified
+    provenance: manual
+  - key: RESULT
+    description: >-
+      결과 필터 (0=All, 1=OK, 2=NG)
+    type: integer
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    enum: [0, 1, 2]
+    safeToOmit: unverified
+    provenance: manual
+  - key: TABLE_NAME
+    description: >-
+      응답 테이블 제목
+    type: string
+    requirement: optional
+    documentedDefault: RC Column Checking Result
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: TABLE_TYPE
+    description: >-
+      결과 테이블 타입 ("MEMB" 또는 "PROP")
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    enum: [MEMB, PROP]
+    safeToOmit: unverified
+    provenance: manual
+  - key: ELEMS
+    description: >-
+      대상 요소 (ELEMS / SECTIONS 중 하나)
+    type: object
+    requirement: conditional
+    condition: "oneOf: exactly one of \"ELEMS\", \"SECTIONS\" is required"
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: KEYS
+        description: >-
+          개별 ID / ID 범위 / 구조그룹
+        type: array
+        items:
+          type: integer
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: TO
+        description: >-
+          개별 ID / ID 범위 / 구조그룹
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: STRUCTURE_GROUP_NAME
+        description: >-
+          개별 ID / ID 범위 / 구조그룹
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+  - key: SECTIONS
+    description: >-
+      대상 요소 (ELEMS / SECTIONS 중 하나)
+    type: array
+    items:
+      type: integer
+    requirement: conditional
+    condition: "oneOf: exactly one of \"ELEMS\", \"SECTIONS\" is required"
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: EXPORT_PATH
+    description: >-
+      결과 저장 경로
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: UNIT
+    description: >-
+      단위 설정 (FORCE,DIST,HEAT,TEMP)
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedDefaultNote: System
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: STYLES
+    description: >-
+      숫자 형식 (FORMAT,PLACE)
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedDefaultNote: System
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: COMPONENTS
+    description: >-
+      출력 컬럼 목록
+    type: array
+    items:
+      type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+
+extraction:
+  source: 26_Design_RC_KDS41202022.md line 10351
+  table: 파라미터

@@ -1,0 +1,56 @@
+contractVersion: 1
+id: post-stiffness-irregularity
+endpoint: /post/TABLE
+name: Stiffness Irregularity Check
+products: [gen, civil]
+source:
+  manual: {status: documented, repo: Dennis5882/MIDAS-API, chapterFile: 21_POST_StoryTables.md, section: "13. Stiffness Irregularity Check (Soft Story)"}
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getStiffnessIrregularityTable
+  modulePath: [story]
+  tableType: STIFFNESS_IRREGULARITY_X
+  factory: variable
+  optionNames: [additional, components, constructionStage, loadCaseNames, nodeElements, stageSteps, styles, tableName, unit]
+  documentation: |-
+    docs/manual/21_POST_StoryTables.md #13 — Stiffness Irregularity Check (Soft Story).
+
+    table_type: TABLE_TYPE_STIFFNESS_IRREGULARITY_X or _Y.
+    additional: SET_CALCULATION_METHOD — Required; story-drift and
+    story-stiffness calculation basis, see StiffnessCalculationMethod.
+  nestedTypes:
+    - {path: ADDITIONAL, name: StiffnessIrregularityAdditional, namespace: PostStoryTypes}
+    - {path: ADDITIONAL.SET_CALCULATION_METHOD, name: StiffnessCalculationMethod, namespace: PostStoryTypes}
+tableTypes: [{value: STIFFNESS_IRREGULARITY_X, provenance: manual}, {value: STIFFNESS_IRREGULARITY_Y, provenance: manual}]
+requestFields:
+  # 21_POST_StoryTables.md #13, "`ADDITIONAL` - 층강성 산정방식 설정", rows 1 to 1-1-2.
+  # Both defaults read "System" (the document's current setting), corrected in
+  # the manual on 2026-08-26 against the official article.
+  additional:
+    - key: ADDITIONAL
+      description: 세부 설정 객체
+      type: object
+      requirement: optional
+      provenance: manual
+      properties:
+        - key: SET_CALCULATION_METHOD
+          description: 산정방식 설정
+          type: object
+          requirement: required
+          provenance: manual
+          properties:
+            - key: STORY_DRIFT_METHOD
+              description: 층간변위 산정방식
+              type: string
+              enum: ["Drift at the Center of Mass", "Max. Drift of Outer Extreme Points", "Max. Drift of All Vertical Elements"]
+              requirement: optional
+              documentedDefaultNote: System
+              provenance: manual
+            - key: STORY_STIFFNESS_METHOD
+              description: 층강성 산정방식
+              type: string
+              enum: ["1 / Story Drift Ratio", "Story Shear / Story Drift"]
+              requirement: optional
+              documentedDefaultNote: System
+              provenance: manual

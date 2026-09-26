@@ -1,0 +1,115 @@
+contractVersion: 1
+id: post-story-stability-coefficient
+endpoint: /post/TABLE
+name: Story Stability Coefficient
+products: [gen, civil]
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 21_POST_StoryTables.md
+    section: "10. Story Stability Coefficient"
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getStoryStabilityCoefficientTable
+  modulePath: [story]
+  tableType: STORY_STABILITY_COEFFICIENT_X
+  factory: variable
+  optionNames: [additional, components, constructionStage, loadCaseNames, nodeElements, stageSteps, styles, tableName, unit]
+  documentation: |-
+    docs/manual/21_POST_StoryTables.md #10 — Story Stability Coefficient.
+
+    table_type: TABLE_TYPE_STORY_STABILITY_COEFFICIENT_X or _Y.
+    additional: stability-coefficient (θ) parameters and story-drift
+    calculation basis — both optional, see StoryStabilityCoefficientAdditional.
+  nestedTypes:
+    - {path: ADDITIONAL, name: StoryStabilityCoefficientAdditional, namespace: PostStoryTypes}
+    - {path: ADDITIONAL.SET_STABILITY_COEFFICIENT_PARAMS, name: StoryStabilityCoefficientParams, namespace: PostStoryTypes}
+    - {path: ADDITIONAL.SET_STABILITY_COEFFICIENT_PARAMS.LCOMS, name: StoryDriftLcomEntry, namespace: PostStoryTypes}
+    - {path: ADDITIONAL.SET_STABILITY_COEFFICIENT_PARAMS.BETA, name: StoryStabilityBeta, namespace: PostStoryTypes}
+    - {path: ADDITIONAL.SET_CALCULATION_METHOD, name: StoryStabilityCalculationMethod, namespace: PostStoryTypes}
+tableTypes:
+  - {value: STORY_STABILITY_COEFFICIENT_X, provenance: manual}
+  - {value: STORY_STABILITY_COEFFICIENT_Y, provenance: manual}
+requestFields:
+  # 21_POST_StoryTables.md #10, "`ADDITIONAL` - 안정계수 산정 파라미터", rows 1 to 1-2-1.
+  # "System" in the Default column is not a value: it means the document's
+  # own current setting.
+  additional:
+    - key: ADDITIONAL
+      description: 세부 설정 객체
+      type: object
+      requirement: optional
+      provenance: manual
+      properties:
+        - key: SET_STABILITY_COEFFICIENT_PARAMS
+          description: 안정계수 산정 파라미터
+          type: object
+          requirement: optional
+          provenance: manual
+          properties:
+            - {key: DEFLECTION_AMPL_FACTOR_VALUE, description: 변위증폭계수(Cd), type: number, requirement: optional, documentedDefaultNote: System, provenance: manual}
+            - {key: IMPORTANCE_FACTOR_VALUE, description: 중요도계수, type: integer, requirement: optional, documentedDefaultNote: System, provenance: manual}
+            - {key: SCALE_FACTOR_VALUE, description: 스케일 계수, type: integer, requirement: optional, documentedDefaultNote: System, provenance: manual}
+            - key: LCOMS
+              description: P-Delta 검토용 수직하중 조합 목록
+              type: array
+              items: {type: object}
+              requirement: optional
+              documentedDefaultNote: System
+              provenance: manual
+              # Row 1-1-4-1 names `LCOMS[].NAME` / `LCOMS[].FACTOR` in one row.
+              properties:
+                - {key: NAME, description: 하중케이스명, type: string, requirement: optional, provenance: manual}
+                - {key: FACTOR, description: 계수, type: number, requirement: optional, provenance: manual}
+            - key: BETA
+              description: Beta 값 설정
+              type: object
+              requirement: optional
+              provenance: manual
+              properties:
+                - key: FIX_USER_CHECK
+                  description: '방식: "FIXED"(1.0 고정) / "USER"(층별 직접 입력)'
+                  type: string
+                  enum: [FIXED, USER]
+                  requirement: optional
+                  documentedDefaultNote: System
+                  provenance: manual
+                - key: NAME_FROM
+                  description: 적용 시작 층
+                  type: string
+                  requirement: optional
+                  condition: 'FIX_USER_CHECK: "USER"일 때만'
+                  appliesWhen:
+                    - {path: ADDITIONAL.SET_STABILITY_COEFFICIENT_PARAMS.BETA.FIX_USER_CHECK, equals: USER}
+                  provenance: manual
+                - key: NAME_TO
+                  description: 적용 종료 층
+                  type: string
+                  requirement: optional
+                  condition: 'FIX_USER_CHECK: "USER"일 때만'
+                  appliesWhen:
+                    - {path: ADDITIONAL.SET_STABILITY_COEFFICIENT_PARAMS.BETA.FIX_USER_CHECK, equals: USER}
+                  provenance: manual
+                - key: VALUE
+                  description: 사용자 지정 Beta 값
+                  type: number
+                  requirement: optional
+                  condition: 'FIX_USER_CHECK: "USER"일 때만'
+                  appliesWhen:
+                    - {path: ADDITIONAL.SET_STABILITY_COEFFICIENT_PARAMS.BETA.FIX_USER_CHECK, equals: USER}
+                  provenance: manual
+        - key: SET_CALCULATION_METHOD
+          description: 층간변위 산정 방식 선택
+          type: object
+          requirement: optional
+          provenance: manual
+          properties:
+            - key: STORY_DRIFT_METHOD
+              description: 층간변위 산정 방식
+              type: string
+              enum: ["Drift at the Center of Mass", "Max. Drift of Outer Extreme Points", "Max. Drift of All Vertical Elements"]
+              requirement: optional
+              provenance: manual
+              provenanceNote: The first value was "Drift on the Center of Mass" until the official article was updated on 2026-08-20; it now matches #13 and #17.

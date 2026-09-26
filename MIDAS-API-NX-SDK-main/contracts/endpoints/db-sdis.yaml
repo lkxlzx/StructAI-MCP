@@ -1,0 +1,546 @@
+# /db/SDIS
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-sdis
+endpoint: /db/SDIS
+name: Seismic Device – Isolator (MSS)
+surface:
+  className: SeismicDeviceIsolator
+  exportName: seismicDeviceIsolator
+  modulePath: [db, boundary]
+  payloadTypeName: SeismicDeviceIsolatorPayload
+  nestedTypes:
+    - {path: LRB, name: SeismicDeviceIsolatorLRB, namespace: DbBoundaryTypes}
+    - {path: NRB, name: SeismicDeviceIsolatorNRB, namespace: DbBoundaryTypes}
+    - {path: SB, name: SeismicDeviceIsolatorSB, namespace: DbBoundaryTypes}
+    - {path: LRB.DX, name: SeismicDeviceIsolatorVerticalDX, namespace: DbBoundaryTypes}
+    - {path: NRB.DX, name: SeismicDeviceIsolatorVerticalDX, namespace: DbBoundaryTypes}
+
+products: [gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 05_DB_Boundary.md
+    section: "20. `/db/SDIS` — Seismic Device – Isolator (MSS)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_gen
+  records:
+    - product: gen
+      ref: db-write-sweep-2026-08-31
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/SDIS/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: COMMON
+    description: >-
+      Common Data
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: NAME
+        description: >-
+          Name
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: stated in these sibling sections: section 16,
+        # `/db/SDVI`, whose 요청 파라미터 table gives COMMON's six members as
+        # rows (1) to (6) - this section's own row says "Common Data" and
+        # stops there. This section's Request Example sends five of the
+        # six, omitting COMPANY, and GET /info/db/SDIS declares all six
+        # with the same names and types. Until 2026-09-04 COMMON was an
+        # object with nothing in it, so the npm payload type offered a
+        # bare object where the server requires a name.
+      - key: DESC
+        description: >-
+          Description
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: INPUT_METHOD
+        description: >-
+          Input Method · 0=사용자 입력, 1=참조 DB
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: COMPANY
+        description: >-
+          Company
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: PRODUCT_NAME
+        description: >-
+          Product Name
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: TYPE_NUMBER
+        description: >-
+          Type Number
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+  - key: SDIS_DEV_TYPE
+    description: >-
+      Device Type · "LRB" / "NRB" / "SLD"(데이터는 "SB" 객체에 담김)
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: MSS
+    description: >-
+      Number of Shear Springs
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: TAU_K
+    description: >-
+      Adjustment Parameter τk
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: TAU_Q
+    description: >-
+      Adjustment Parameter τq
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: KV
+    description: >-
+      Vertical Stiffness Kv
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: LRB
+    description: >-
+      LRB Data (SDIS_DEV_TYPE="LRB"일 때)
+    type: object
+    requirement: required
+    appliesWhen:
+      - path: SDIS_DEV_TYPE
+        equals: LRB
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: SDIS_HYS_MODEL
+        description: >-
+          Hysteresis Model
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: KE
+        description: >-
+          Initial Stiffness Ke
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: AR
+        description: >-
+          Rubber Cross Section Area AR
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: TR
+        description: >-
+          Total Thickness of Rubber TR
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: K0
+        description: >-
+          Initial Stiffness K0(KE와 별개 필드)
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: K2
+        description: >-
+          2nd Stiffness K2
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: QD
+        description: >-
+          Characteristic Strength QD
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: DX
+        description: >-
+          Vertical Direction Properties
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: OPT_CONS_NONL
+            description: >-
+              Use Consider Vertical Direction Nonlinearity
+            type: boolean
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: BETA
+            description: >-
+              Tensile Stiffness Reduction Factor β
+            type: number
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: ALPHA
+            description: >-
+              Tensile Stiffness Reduction Ratio α
+            type: number
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: SIGMA_V
+            description: >-
+              Tensile Limit Strength
+            type: number
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+  - key: NRB
+    description: >-
+      NRB Data (SDIS_DEV_TYPE="NRB"일 때)
+    type: object
+    requirement: required
+    appliesWhen:
+      - path: SDIS_DEV_TYPE
+        equals: NRB
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: AR
+        description: >-
+          Rubber Cross Section Area AR
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: TR
+        description: >-
+          Total Thickness of Rubber TR
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: KH
+        description: >-
+          Horizontal Stiffness KH
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: DX
+        description: >-
+          Vertical Direction Properties(DX, LRB와 동일 구조)
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: OPT_CONS_NONL
+            description: >-
+              Use Consider Vertical Direction Nonlinearity
+            type: boolean
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: BETA
+            description: >-
+              Tensile Stiffness Reduction Factor β
+            type: number
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: ALPHA
+            description: >-
+              Tensile Stiffness Reduction Ratio α
+            type: number
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: SIGMA_V
+            description: >-
+              Tensile Limit Strength
+            type: number
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+        # The row says DX has the same structure as LRB's; its members are
+        # LRB's (8)-i to (8)-iv.
+  - key: SB
+    description: >-
+      SB Data (SDIS_DEV_TYPE="SLD"일 때)
+    type: object
+    requirement: required
+    appliesWhen:
+      - path: SDIS_DEV_TYPE
+        equals: SLD
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: AS
+        description: >-
+          Area of Sliding Head AS
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: K0
+        description: >-
+          Initial Stiffness K0
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: QD
+        description: >-
+          Index Qd
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: Pi_VALUE
+        description: >-
+          Pi
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: MU0
+        description: >-
+          Frictional Factor μ0
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+
+sdkRules:
+  - id: db-sdis-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-sdis-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 05_DB_Boundary.md line 1700
+  table: 요청 파라미터
+  missingColumns:
+    - heading: 요청 파라미터
+      line: 1700
+      columns: [Default]
+    - heading: LRB 객체
+      line: 1714
+      columns: [Default]
+    - heading: NRB 객체
+      line: 1731
+      columns: [Default]
+    - heading: NRB 객체
+      line: 1740
+      columns: [Default]
+  structuralTables:
+    - heading: LRB 객체
+      line: 1714
+      paths: [LRB]
+    - heading: NRB 객체
+      line: 1731
+      paths: [NRB]
+    - heading: SB 객체
+      line: 1740
+      paths: [SB]
+      note: >-
+        The extractor reads this heading as a second "NRB 객체" - it is written
+        **`SB` 객체**(SDIS_DEV_TYPE=`"SLD"`) - but its rows are the SB object's,
+        AS/K0/QD/Pi_VALUE/MU0, and the main table's row 9 names SB.
+  prose:
+    - line: 1737
+      quote: >-
+        | (4) | Vertical Direction Properties(`DX`, LRB와 동일 구조) | `"DX"` | Object | Optional |
+      paths: [NRB.DX.OPT_CONS_NONL, NRB.DX.BETA, NRB.DX.ALPHA, NRB.DX.SIGMA_V]
+    - line: 1291
+      quote: >-
+        | (1) | Name | `"NAME"` | String | Required | ... | (6) | Type Number |
+        `"TYPE_NUMBER"` | String | Required |  (section 16, /db/SDVI)
+      paths: [COMMON.NAME, COMMON.DESC, COMMON.INPUT_METHOD, COMMON.COMPANY,
+              COMMON.PRODUCT_NAME, COMMON.TYPE_NUMBER]

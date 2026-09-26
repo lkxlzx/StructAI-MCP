@@ -1,0 +1,57 @@
+# Source: 20_POST_AnalysisResult_2.md section 3. No SDK source was used.
+contractVersion: 1
+id: post-plate-force-unit-length
+endpoint: /post/TABLE
+name: Plate Force Unit Length
+summary: Plate forces per unit length in local, global, maximum-value, or wall-axis forms.
+products: [gen, civil]
+source:
+  manual: {status: documented, repo: Dennis5882/MIDAS-API, chapterFile: 20_POST_AnalysisResult_2.md, section: "3. Plate Force (Unit Length)"}
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getPlateForceUnitLengthTable
+  modulePath: [result1]
+  tableType: PLATEFORCEUL
+  factory: variable
+  optionNames: [components, constructionStage, loadCaseNames, nodeElements, stageSteps, styles, tableName, unit]
+  documentation: |-
+    docs/manual/20_POST_AnalysisResult_2.md #3 — Plate Force (Unit Length).
+
+    table_type: one of TABLE_TYPE_PLATE_FORCE_UNIT_LENGTH_LOCAL (default),
+    _GLOBAL, _LOCAL_BY_MAX, _GLOBAL_BY_MAX, or _WOOD_ARMER (design moment).
+  nestedTypes:
+    - {path: NODE_FLAG, name: NodeFlag, namespace: PostBaseTypes}
+tableTypes:
+  - value: PLATEFORCEUL
+    description: Local plate force per unit length
+    head: [Index, Elem, Load, Node, Fxx, Fyy, Fxy, Fmax, Fmin, Angle, Mxx, Myy, Mxy, Mmax, Mmin, Angle, Vxx, Vyy]
+    provenance: manual
+  - value: PLATEFORCEUG
+    description: Global plate force per unit length
+    head: [Index, Elem, Load, Node, Fxx, Fyy, Fxy, Fmax, Fmin, Angle, Mxx, Myy, Mxy, Mmax, Mmin, Angle, Vxx, Vyy]
+    provenance: manual
+  - value: PLATEFORCEULVBM
+    description: Local plate force per unit length by maximum value
+    head: [Index, Elem, Load, Node, Component, Fxx, Fyy, Fxy, Mxx, Myy, Mxy, Vxx, Vyy]
+    provenance: manual
+  - value: PLATEFORCEUGVBM
+    description: Global plate force per unit length by maximum value
+    head: [Index, Elem, Load, Node, Component, Fxx, Fyy, Fxy, Mxx, Myy, Mxy, Vxx, Vyy]
+    provenance: manual
+  - value: PLATEFORCEWA
+    description: Plate force in wall axis
+    head: [Index, Elem, Load, Node, Ma, Mb, Mab, W-AMomentTopDir.1, Ma, Mb, Mab, W-AMomentTopDir.2, Ma, Mb, Mab, W-AMomentBotDir.1, Ma, Mb, Mab, W-AMomentBotDir.2]
+    provenance: manual
+requestFields:
+  # 20_POST_AnalysisResult_2.md, common section: NODE_FLAG applies to sections
+  # 3, 4, 5, 6, 7, 10, 11, 14, 15, 18, 19, 22, 23, 24 and 25, this one among them.
+  additional:
+    - key: NODE_FLAG
+      description: 요소 중심(Cent)/절점(Node)별 출력 여부
+      type: object
+      requirement: optional
+      provenance: manual
+      properties:
+        - {key: CENTER, description: 요소 중심(Cent) 출력 여부, type: boolean, requirement: optional, documentedDefault: false, provenance: manual}
+        - {key: NODES, description: 절점(Node)별 출력 여부, type: boolean, requirement: optional, documentedDefault: false, provenance: manual}

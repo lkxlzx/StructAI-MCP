@@ -1,0 +1,1476 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Dennis5882/MIDAS-API-NX-SDK/contracts/schema/endpoint-contract.schema.json",
+  "title": "MIDAS NX Open API endpoint contract",
+  "description": "Language-neutral description of one MIDAS NX Open API endpoint. The only permitted sources are the official manual (Dennis5882/MIDAS-API), live verification records, and live /info schema introspection. Neither SDK implementation may be used as a source; see contracts/README.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractVersion",
+    "id",
+    "endpoint",
+    "name",
+    "products",
+    "source",
+    "verification",
+    "operations"
+  ],
+  "properties": {
+    "contractVersion": {
+      "const": 1,
+      "description": "Format version of this contract file. Bumped only when the schema changes incompatibly."
+    },
+    "draft": {
+      "const": false,
+      "description": "Machine-drafted files under contracts/drafts/ carry `draft: true` and are not contracts. Reviewing a draft is what removes this marker; until then the file cannot validate, which is what stops an unreviewed transcription being moved into contracts/endpoints/ and treated as fact."
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "Stable slug; must match the file name without its .yaml suffix."
+    },
+    "endpoint": {
+      "type": "string",
+      "pattern": "^/",
+      "description": "Path appended to the product base URL, e.g. /db/NODE."
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable endpoint name as the manual titles it."
+    },
+    "surface": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "What the published SDKs call this endpoint. Everything else in this file records what the product and the manual say; this records what the packages named it, so a name stops being an accident of a Python module's location and becomes a contract fact the generator checks. Seeded from the committed generator output, so adding it renamed nothing. Optional: an endpoint with no contracted surface stays on the reviewed Python fallback, which is the same arrangement `name` and `products` already have.",
+      "properties": {
+        "className": {
+          "type": "string",
+          "minLength": 1,
+          "description": "npm resource class name, e.g. `AssignBoundaryCombinationHyperS`. A public API anchor on both registries; changing one is a breaking change."
+        },
+        "exportName": {
+          "type": "string",
+          "minLength": 1,
+          "description": "npm accessor name on its module object, e.g. `assignBoundaryCombinationHyperS`."
+        },
+        "modulePath": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Where the accessor sits in the npm tree, e.g. `[\"db\", \"analysisControl\"]`. Currently mirrors the Python module path; recording it here is what lets the two diverge later without either becoming wrong."
+        },
+        "payloadTypeName": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Generated payload type name, e.g. `NodePayload`. Absent where the resource has no payload type of its own - `/db/DRLS` is typed `JsonObject`, and having no name is a fact rather than a gap."
+        },
+        "nestedTypes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "name",
+              "namespace"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Dotted field path inside this contract's `fields`, e.g. `ITEMS` or `BAR_SECTOR_I.TOP`. For an array field the type is its element."
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Published npm type name, e.g. `BeamEndOffsetItem`."
+              },
+              "namespace": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Published npm namespace the name sits in, e.g. `DbBoundaryTypes`. Part of the public name: the package re-exports every namespace at its root."
+              },
+              "branch": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "$ref": "#/$defs/condition"
+                },
+                "description": "Which variant's version of the object this name is, when branches give the path different shapes: /db/MCON's ITEMS.SLAVES is {NODE_KEY, COEFF, DOF} under TYPE \"EX\" and {NODE_KEY, WEIGHT} under \"WD\", each published under its own name. Must equal one variant's `when` exactly."
+              }
+            }
+          },
+          "description": "Names the package already publishes for objects nested inside this payload. Until 2026-09-21 each such object was published twice - inline in the contract-generated root, and again as a named interface read out of the Python TypedDicts with Python's field list and requiredness. Recording the published name here lets the generator build the named type from this contract instead. Seeded from the committed output, so adding an entry renames nothing. A type declared by several contracts must have the same shape in each once descriptions are set aside, or generation fails."
+        }
+      }
+    },
+    "summary": {
+      "type": "string",
+      "description": "One or two sentences on what the endpoint does."
+    },
+    "products": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "gen",
+          "civil"
+        ]
+      },
+      "description": "Products that actually serve this route. Product support is an observed fact, not a manual claim: the manual's Civil-only framing was wrong for 32 of 47 endpoints (see contracts/README.md)."
+    },
+    "productsEvidence": {
+      "type": "string",
+      "description": "Why `products` reads the way it does when it departs from the manual's framing."
+    },
+    "recordKey": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "For ID-keyed endpoints, what the Assign map's keys mean.",
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "record_id",
+            "node_id",
+            "element_id",
+            "index",
+            "singleton"
+          ],
+          "description": "singleton = the endpoint holds one settings record, not a table."
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "manual"
+      ],
+      "properties": {
+        "manual": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "documented",
+                "absent",
+                "contradicted"
+              ],
+              "description": "documented = the manual describes this endpoint and live behaviour matches. absent = no manual section exists (justification required). contradicted = a manual section exists but live behaviour disproves it (justification required); the contract records live behaviour and `manualDefects` records what the manual gets wrong."
+            },
+            "repo": {
+              "type": "string",
+              "description": "Manual repository, normally Dennis5882/MIDAS-API."
+            },
+            "chapterFile": {
+              "type": "string",
+              "pattern": "\\.md$",
+              "description": "Chapter file under docs/manual/, e.g. 03_DB_Node_Element.md."
+            },
+            "section": {
+              "type": "string",
+              "description": "Section identifier within the chapter, e.g. \"1. /db/NODE\"."
+            },
+            "url": {
+              "type": "string",
+              "format": "uri",
+              "description": "Official MIDAS API Online Manual article URL for this endpoint."
+            },
+            "justification": {
+              "type": "string",
+              "description": "Required when status is absent or contradicted: why this contract exists without (or against) a manual section, and what evidence replaces it."
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "const": "documented"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "chapterFile",
+                  "section"
+                ]
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "absent",
+                      "contradicted"
+                    ]
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "justification"
+                ]
+              }
+            }
+          ]
+        },
+        "liveSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "GET /info{endpoint} schema introspection, when it was used as a source.",
+          "properties": {
+            "checked": {
+              "type": "string",
+              "format": "date"
+            },
+            "products": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "gen",
+                  "civil"
+                ]
+              }
+            },
+            "note": {
+              "type": "string"
+            }
+          }
+        },
+        "liveNotes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Repository-relative paths to prose evidence, normally docs/live_verification_notes.md."
+        }
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "manual_only",
+            "verified_gen",
+            "verified_civil",
+            "verified_both"
+          ],
+          "description": "How far this contract has been checked against a running product. manual_only means transcribed but never called."
+        },
+        "records": {
+          "type": "array",
+          "description": "References into contracts/verification/{gen,civil}-nx.yaml.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "product",
+              "ref"
+            ],
+            "properties": {
+              "product": {
+                "enum": [
+                  "gen",
+                  "civil"
+                ]
+              },
+              "ref": {
+                "type": "string",
+                "description": "`id` of an entry in that product's verification file."
+              }
+            }
+          }
+        }
+      }
+    },
+    "operations": {
+      "type": "array",
+      "minItems": 1,
+      "description": "One entry per HTTP method the endpoint serves.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "method",
+          "risk",
+          "request",
+          "response"
+        ],
+        "properties": {
+          "method": {
+            "enum": [
+              "GET",
+              "POST",
+              "PUT",
+              "DELETE"
+            ]
+          },
+          "variant": {
+            "type": "string",
+            "description": "Distinguishes two operations sharing a method, e.g. DELETE per-id versus DELETE whole-table."
+          },
+          "summary": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string",
+            "description": "Overrides `endpoint` when the operation uses a different path, e.g. /db/NODE/{id}."
+          },
+          "risk": {
+            "enum": [
+              "read_only",
+              "write",
+              "destructive",
+              "product_crash_risk"
+            ],
+            "description": "read_only = cannot change model data. write = mutates model data or writes a file on the NX host. destructive = removes data that cannot be recovered through the API. product_crash_risk = has been observed ending or hanging a live NX session."
+          },
+          "mitigation": {
+            "enum": [
+              "none",
+              "normalized",
+              "confirmation_required",
+              "opt_in_required",
+              "warn_only"
+            ],
+            "description": "What the SDKs do about `risk`. Deliberately separate from `risk`: /db/NMAS stays product_crash_risk because the server defect is real, while its mitigation is `normalized` because the SDKs make the crashing payload unreachable. Downgrading `risk` would lose the reason the rule exists."
+          },
+          "request": {
+            "$ref": "#/$defs/message",
+            "description": "Request body shape. Use wrapper `none` for bodiless requests."
+          },
+          "response": {
+            "$ref": "#/$defs/message"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "surface": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "What the published SDKs call this one operation. The top-level `surface` records a /db/* resource's npm identity, where one export carries every method; a function endpoint is the other shape - one export per method, so its names belong to the operation rather than the endpoint. /ope/STORY_PARAM is why: it publishes a GET export and a POST export with different names and different arguments. Seeded from the committed generator output on 2026-09-17, so adding it renamed nothing. Optional: an operation with no contracted surface stays on the reviewed Python fallback.",
+            "properties": {
+              "exportName": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The npm export, e.g. `getSelection`. A published API anchor: changing it is a breaking change on the npm registry."
+              },
+              "modulePath": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": "Where the export is nested under `operations`, e.g. [design, rcKds, checks]. The generated payload-type namespace is derived from it, so it is not free-form."
+              },
+              "argumentTypeName": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  {
+                    "type": "array",
+                    "minItems": 2,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                ],
+                "description": "The argument's generated TypeScript type name, unqualified - the namespace comes from modulePath. A list means a union, which two /ope load-combination operations publish. Omit it when the operation takes an argument the SDKs do not type, which renders as JsonObject."
+              },
+              "argumentParts": {
+                "type": "array",
+                "minItems": 1,
+                "description": "For a union `argumentTypeName`: which parts this contract's field list builds, each named with the discriminator value that selects it. A part with `when` keeps the fields whose own `DGNCODE`-style condition admits that value, drops the rest, and narrows the discriminator to it; a part without `when` is the whole field list. A part left out stays on its Python TypedDict - /ope/LCOM-GEN and /ope/LCOM-SRC share LoadCombinationAikSrc2kArgument while the manual makes RS_SCALE_FACTOR required for one and optional for the other, so neither contract can own it.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["name"],
+                  "properties": {
+                    "name": {"type": "string", "minLength": 1},
+                    "when": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["path", "equals"],
+                      "properties": {
+                        "path": {"type": "string", "minLength": 1},
+                        "equals": {"type": ["string", "integer", "number", "boolean"]}
+                      }
+                    }
+                  }
+                }
+              },
+              "takesArgument": {
+                "type": "boolean",
+                "description": "False for a POST that sends no body at all, which generates a different npm operation kind from one whose body is untyped. Defaults to true; only the `false` case is worth writing down."
+              },
+              "documentation": {
+                "type": "string",
+                "description": "The JSDoc npm publishes on this export. Seeded on 2026-09-21 from the text the generator already rendered, which was the Python function's docstring, so the published text did not change; from then on the npm text is owned here and the Python docstring is the Python package's own. It is package prose, not a product fact, which is why it lives in `surface`."
+              },
+              "nestedTypes": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "path",
+                    "name",
+                    "namespace"
+                  ],
+                  "properties": {
+                    "path": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Dotted field path inside this contract's `fields`, e.g. `ITEMS` or `BAR_SECTOR_I.TOP`. For an array field the type is its element."
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Published npm type name, e.g. `BeamEndOffsetItem`."
+                    },
+                    "namespace": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Published npm namespace the name sits in, e.g. `DbBoundaryTypes`. Part of the public name: the package re-exports every namespace at its root."
+                    },
+                    "branch": {
+                      "type": "array",
+                      "minItems": 1,
+                      "items": {
+                        "$ref": "#/$defs/condition"
+                      },
+                      "description": "Which variant's version of the object this name is, when branches give the path different shapes: /db/MCON's ITEMS.SLAVES is {NODE_KEY, COEFF, DOF} under TYPE \"EX\" and {NODE_KEY, WEIGHT} under \"WD\", each published under its own name. Must equal one variant's `when` exactly."
+                    }
+                  }
+                },
+                "description": "The same record as the top-level `surface.nestedTypes`, for an operation's argument: `path` is inside this contract's `fields` with the `\"Argument\"` wrapper row removed, the way the argument type itself is built."
+              }
+            }
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "risk": {
+                  "enum": [
+                    "destructive",
+                    "product_crash_risk"
+                  ]
+                }
+              },
+              "required": [
+                "risk"
+              ]
+            },
+            "then": {
+              "required": [
+                "mitigation"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "fields": {
+      "type": "array",
+      "description": "Per-field contract for the record payload (the value side of an ID-keyed Assign map, or the request Argument object).",
+      "items": {
+        "$ref": "#/$defs/field"
+      }
+    },
+    "variants": {
+      "type": "array",
+      "description": "Mutually exclusive manual field tables selected by one explicit discriminator. A table whose condition is not stated stays under extraction.unmergedTables instead of being guessed into this structure.",
+      "items": {
+        "$ref": "#/$defs/variant"
+      }
+    },
+    "sdkRules": {
+      "type": "array",
+      "description": "Behaviour every SDK implementation must apply before the request reaches the product. These are the contract's teeth: an implementation that omits one is non-conforming, however well it types the payload.",
+      "items": {
+        "$ref": "#/$defs/sdkRule"
+      }
+    },
+    "manualDefects": {
+      "type": "array",
+      "description": "Places the official manual is wrong about this endpoint, kept separate from the contract itself so a manual re-sync cannot silently reintroduce them.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "describes",
+          "manualSays",
+          "actual",
+          "evidence"
+        ],
+        "properties": {
+          "describes": {
+            "enum": [
+              "field_name",
+              "field_value",
+              "default",
+              "requiredness",
+              "enum",
+              "method",
+              "products",
+              "behaviour"
+            ]
+          },
+          "manualSays": {
+            "type": "string"
+          },
+          "actual": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "reportedToVendor": {
+            "type": "string",
+            "description": "Vendor-report item identifier, e.g. \"A-1\". No internal tracker IDs here; this file is public."
+          }
+        }
+      }
+    },
+    "extraction": {
+      "type": "object",
+      "description": "Provenance left by scripts/extract_contracts.py when this contract was drafted from a manual chapter. Kept after promotion: knowing which table a field list came from is what lets --check tell drift from a deliberate correction.",
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "type": "string",
+          "description": "Chapter file and line the field table was read from."
+        },
+        "table": {
+          "type": "string",
+          "description": "Heading of the table that produced `fields`."
+        },
+        "mergedSections": {
+          "type": "array",
+          "description": "Manual sections folded into this one contract because they document one route. The RC and SRC design chapters describe /DESIGN/.../TABLE once per result table and state that only Argument.TABLE_TYPE tells them apart; listing each section keeps that fold reviewable instead of leaving one section silently standing for the rest.",
+          "minItems": 2,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "heading",
+              "line"
+            ],
+            "properties": {
+              "heading": {
+                "type": "string"
+              },
+              "line": {
+                "type": "integer"
+              }
+            }
+          }
+        },
+        "missingColumns": {
+          "type": "array",
+          "description": "Columns absent from an entire manual table. This is complete provenance, not a per-field uncertainty: `documentedDefault: null` records a missing Default column honestly.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "heading",
+              "line",
+              "columns"
+            ],
+            "properties": {
+              "heading": {
+                "type": "string"
+              },
+              "line": {
+                "type": "integer"
+              },
+              "columns": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "unmergedTables": {
+          "type": "array",
+          "description": "Parameter tables in the same section that were NOT merged, usually conditional variants selected by a type or code field. Listed rather than merged or dropped: a partial field list presented as complete is its own kind of wrong answer. A contract may carry these and still be promoted, but every entry needs a `resolution` saying what review decided - and while any are present the npm generator does not take this contract's field list as the published payload type, because narrowing a shipped type on an admittedly incomplete field list is exactly the wrong answer.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "heading",
+              "line",
+              "resolution"
+            ],
+            "properties": {
+              "heading": {
+                "type": "string"
+              },
+              "fields": {
+                "type": "integer"
+              },
+              "fieldNames": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string"
+                },
+                "description": "The wire names this unmerged table holds, in table order, nested rows included. `fields` counts them; this says which they are, and that is the difference between a declared gap and an unmeasurable one. Before it existed, validate_contracts.py's field-parity check skipped a contract with any unmergedTables entry outright, on the reasoning that it had admitted its list was incomplete - so 214 wire names the SDKs ship went unchecked, and no gate could tell a name this table accounts for from a name nobody has looked at. With the names recorded the waiver is itemised: a name here is a declared gap, and a name that is in neither the contract nor any of these lists is a defect the check reports. scripts/extract_contracts.py emits it and --check verifies it still matches the table, so it cannot drift into fiction."
+              },
+              "line": {
+                "type": "integer"
+              },
+              "resolution": {
+                "type": "string",
+                "description": "What review decided about this table: merged into fields, modelled as nested properties, split into its own contract, or deliberately out of scope because the manual names no wire discriminator. Required on a promoted contract: an unexplained gap is indistinguishable from an overlooked one."
+              },
+              "excluded": {
+                "type": "boolean",
+                "description": "True where review decided, with evidence recorded in `resolution`, that this table is not part of this API's request at all - /db/TDME's two Japan code tables belong to iGen and their codes answer Wrong Field on both NX products. The contract's field list is then complete for this API and becomes the published payload type; an entry without this flag still means the list is incomplete."
+              }
+            }
+          }
+        },
+        "prose": {
+          "type": "array",
+          "description": "Fields the manual states somewhere other than a row of a parameter table - in a sentence, or inside another table's cell. scripts/extract_contracts.py reads rows, so it cannot see these, and its drift check would otherwise report every one as a field the contract invented. This is not a manualDefect: the manual documents them, it just did not write a row, and recording it that way keeps the whole-contract `field_name` waiver for cases where the manual is actually wrong. /db/GRDP is the worked example for a sentence - one names the fifteen members of GROUP_DAMPING_ITEMS by saying they are the `_DEFAULT` fields without the suffix. /db/ELNK is the worked example for a cell: a second table lists each `LINK` type's extra keys in its 추가 키 column, which is where all eight of the record's conditional fields are stated and the reason `quote` may hold a table row verbatim.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "line",
+              "quote",
+              "paths"
+            ],
+            "properties": {
+              "line": {
+                "type": "integer",
+                "description": "Line in the chapter file where the sentence begins."
+              },
+              "quote": {
+                "type": "string",
+                "description": "The sentence itself, verbatim, so the claim can be checked without opening the chapter."
+              },
+              "paths": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string"
+                },
+                "description": "Dotted contract paths the sentence documents."
+              }
+            }
+          }
+        },
+        "structuralTables": {
+          "type": "array",
+          "description": "Supplementary manual tables whose named object or array destination was transcribed by the extractor. This is evidence of a structural merge, not a waiver for conditional variants.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "heading",
+              "line",
+              "paths"
+            ],
+            "properties": {
+              "heading": {
+                "type": "string"
+              },
+              "line": {
+                "type": "integer"
+              },
+              "paths": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string"
+                }
+              },
+              "note": {
+                "type": "string",
+                "description": "Why this placement is the one the contract keeps, where the heading could reasonably have been read another way. A heading that states a condition and a parent object at once is the case that needs it: the table can be merged into the parent or kept as a variant, and only one of those puts the fields where the server looks."
+              }
+            }
+          }
+        },
+        "note": {
+          "type": "string",
+          "description": "Why this contract's fields come from where they do, when that is not the manual table `source` names. Needed for the case where the manual section is the thing that is wrong: /db/REBW's extracted draft was discarded rather than reviewed, because promoting any part of it would have put a schema the server does not implement into the source of truth."
+        }
+      }
+    },
+    "infoOnly": {
+      "type": "array",
+      "description": "Properties GET /info{endpoint} declares that this contract deliberately does not publish as fields, each with the reason. It is a waiver for scripts/info_baseline.py --against-contracts, not for anything else: without it the sweep reports the same property forever and the next person re-investigates it. Use it only where publishing the property would mislead a caller - /db/DRLS's DUMMY is the case it exists for, a placeholder the server declares because its record is documented as an empty object and a JSON Schema cannot have no properties. A property that is real but read-only is a field with requirement read_only or unstated, not an entry here.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "reason"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Dotted property path as /info declares it, array steps elided."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why no caller should send this and no payload type should offer it."
+          }
+        }
+      }
+    },
+    "sdkOnly": {
+      "type": "array",
+      "description": "Wire names the Python SDK publishes that this contract deliberately does not, each with the reason. It is a waiver for validate_contracts.py's field-parity check and for nothing else. The check exists because check_parity compares routes, verbs, products and rules and never a field name, which let /db/ELNK publish four fields beside a twelve-key TypedDict; an entry here is how a difference stops being reported forever without anyone deciding it. Use it only where the SDK's name is not a name the server takes - a grouping key a TypedDict invented to organise its own documentation is the case. A name the server does take is a missing field, and the fix is to source it from the manual, a live record or /info. The TypedDict itself is never the source: it is the subject the check measures.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "reason"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The key as the Python payload TypedDict spells it."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why this contract records no field of that name, and what evidence settled it."
+          }
+        }
+      }
+    },
+    "knownDefects": {
+      "type": "array",
+      "description": "Product defects affecting this endpoint. References contracts/safety/known-product-risks.yaml.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "ref"
+        ],
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "`id` of a risk in contracts/safety/known-product-risks.yaml."
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "message": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "wrapper"
+      ],
+      "properties": {
+        "wrapper": {
+          "enum": [
+            "none",
+            "assign",
+            "argument",
+            "table",
+            "message",
+            "raw",
+            "unknown"
+          ],
+          "description": "assign = {\"Assign\": {id: payload}}. argument = {\"Argument\": payload}. table = a single object carrying HEAD/DATA or the record map. message = {\"message\": ...}. raw = the payload itself. none = no body. unknown = the permitted sources establish neither a response body nor its shape."
+        },
+        "keyStability": {
+          "enum": [
+            "stable",
+            "unstable"
+          ],
+          "description": "unstable means the top-level key varies across calls and must be matched by shape, never by name. Observed on /post/TABLE responses (\"Result Table\", \"empty\", or the requested TABLE_NAME)."
+        },
+        "keyNote": {
+          "type": "string"
+        },
+        "itemSchema": {
+          "enum": [
+            "fields",
+            "none",
+            "scalar",
+            "empty"
+          ],
+          "description": "fields = each record follows this contract's `fields` list. scalar = the whole argument is one primitive, not an object with fields (`/doc/OPEN` sends a bare path string); name its type in `scalarType`. empty = the argument is an object the manual documents as carrying nothing. Neither `scalar` nor `empty` is shorthand for an undocumented payload - use `none` for a body the sources do not describe."
+        },
+        "description": {
+          "type": "string"
+        },
+        "errorShapes": {
+          "type": "array",
+          "description": "Failure bodies this operation is known to return. A 200 or 201 does not mean success on this API.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "shape"
+            ],
+            "properties": {
+              "httpStatus": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                }
+              },
+              "shape": {
+                "type": "string"
+              },
+              "meaning": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "scalarType": {
+          "enum": [
+            "string",
+            "number",
+            "integer",
+            "boolean"
+          ],
+          "description": "The primitive the manual documents for a `scalar` argument. Required when itemSchema is `scalar` and meaningless otherwise."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "itemSchema": {
+                "const": "scalar"
+              }
+            },
+            "required": [
+              "itemSchema"
+            ]
+          },
+          "then": {
+            "required": [
+              "scalarType"
+            ]
+          },
+          "else": {
+            "not": {
+              "required": [
+                "scalarType"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "field": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "type",
+        "requirement",
+        "documentedOptional",
+        "safeToOmit",
+        "provenance"
+      ],
+      "properties": {
+        "key": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_]+$",
+          "description": "One literal wire-property name. A manual row that names multiple keys must be split or kept unpromoted."
+        },
+        "description": {
+          "type": "string"
+        },
+        "products": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "gen",
+              "civil"
+            ]
+          },
+          "description": "Products to which this field applies when the manual explicitly labels a field group as product-specific. It never narrows the endpoint-level products list."
+        },
+        "type": {
+          "enum": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "array",
+            "object",
+            "unstated"
+          ],
+          "description": "The manual's Value Type, normalized. unstated means the manual did not give a type; it is not an inferred string or unknown JSON shape."
+        },
+        "items": {
+          "$ref": "#/$defs/valueType",
+          "description": "Element type when `type` is array."
+        },
+        "properties": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/field"
+          },
+          "description": "Nested fields when `type` is object, or when array elements are objects."
+        },
+        "requirement": {
+          "enum": [
+            "required",
+            "optional",
+            "conditional",
+            "read_only",
+            "create_only",
+            "unstated"
+          ],
+          "description": "The manual's Required column, normalized. read_only = the server returns it and ignores it on write. create_only = the manual says the server honours it on create and ignores it on modify; like every value here it records the documentation, and 2026-09-03 measured one of the manual's two uses of it to be false, so a contract that carries it should say whether anyone has checked. unstated means the manual gives no requiredness claim."
+        },
+        "condition": {
+          "type": "string",
+          "description": "Required when `requirement` is conditional: the manual's condition text retained verbatim. This is the source statement; `appliesWhen` is its separately maintained structured translation."
+        },
+        "appliesWhen": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Structured translation of the manual condition for generation and caller documentation. Every entry must name an existing contract field path; entries are combined with logical AND. It does not replace `condition`, which retains the manual's original wording.",
+          "items": {
+            "$ref": "#/$defs/condition"
+          }
+        },
+        "documentedDefault": {
+          "description": "Value the manual says the server applies when the field is absent. Null means the manual gives none."
+        },
+        "documentedDefaultNote": {
+          "type": "string",
+          "description": "Exact Default-cell text where the manual describes a default but does not state a literal wire value. In this case documentedDefault is null. This records documentation, not observed product behaviour and makes no safeToOmit claim."
+        },
+        "documentedOptional": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Whether the official manual marks this field optional. Null is permitted only when requirement is unstated, so no documentation claim is invented. This is a statement about the documentation, never about observed behaviour."
+        },
+        "safeToOmit": {
+          "enum": [
+            true,
+            false,
+            "unverified"
+          ],
+          "description": "Whether omitting the field is actually safe against a live product. Modelled separately from `documentedOptional` on purpose: /db/NMAS's rmX/rmY/rmZ are documentedOptional true and safeToOmit false, because omitting them crashes the product that documented them as optional. `unverified` is the honest answer for most fields and is not a lesser state - it says nobody has omitted this against a running product. `true` is a claim about the product and needs `omissionEvidence`; `false` needs `omissionEffect`, and if the field is also documentedOptional it must be covered by an sdkRule."
+        },
+        "omissionEffect": {
+          "type": "string",
+          "description": "Required when safeToOmit is false: what actually happens on omission."
+        },
+        "omissionEvidence": {
+          "type": "string",
+          "description": "Required when safeToOmit is true: what live call omitted this field and succeeded. Normally a scripts/live_crud_check.py case name or a contracts/verification/ record id. \"The manual says Optional\" is not evidence - that is what documentedOptional already records."
+        },
+        "enum": {
+          "type": "array",
+          "description": "Permitted values. Where the manual contradicts itself, list every candidate and use `enumNote` to say which to try first.",
+          "items": {
+            "type": [
+              "string",
+              "number",
+              "boolean"
+            ]
+          }
+        },
+        "enumNote": {
+          "type": "string"
+        },
+        "minimum": {
+          "type": "number",
+          "description": "Inclusive lower bound stated by the manual."
+        },
+        "exclusiveMinimum": {
+          "type": "number",
+          "description": "Exclusive lower bound stated by the manual."
+        },
+        "maximum": {
+          "type": "number",
+          "description": "Inclusive upper bound stated by the manual."
+        },
+        "exclusiveMaximum": {
+          "type": "number",
+          "description": "Exclusive upper bound stated by the manual."
+        },
+        "notEqual": {
+          "type": [
+            "string",
+            "number",
+            "boolean"
+          ],
+          "description": "A value the manual explicitly forbids."
+        },
+        "const": {
+          "type": [
+            "string",
+            "number",
+            "boolean"
+          ],
+          "description": "The only value the manual permits."
+        },
+        "minItems": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Inclusive array length lower bound stated by the manual."
+        },
+        "maxItems": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Inclusive array length upper bound stated by the manual."
+        },
+        "minLength": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Inclusive string length lower bound stated by the manual."
+        },
+        "maxLength": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Inclusive string length upper bound stated by the manual."
+        },
+        "unit": {
+          "type": "string"
+        },
+        "provenance": {
+          "enum": [
+            "manual",
+            "live_verified",
+            "live_corrected",
+            "info_schema"
+          ],
+          "description": "Where this field's contract came from. manual = transcribed from the manual chapter. live_verified = manual matched a live check. live_corrected = the manual was wrong and a live check replaced it (record the mismatch under manualDefects). info_schema = taken from GET /info{endpoint}. No value here means an SDK implementation, which is never a permitted source."
+        },
+        "provenanceNote": {
+          "type": "string"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "safeToOmit": {
+                "const": false
+              }
+            },
+            "required": [
+              "safeToOmit"
+            ]
+          },
+          "then": {
+            "required": [
+              "omissionEffect"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "safeToOmit": {
+                "const": true
+              }
+            },
+            "required": [
+              "safeToOmit"
+            ]
+          },
+          "then": {
+            "required": [
+              "omissionEvidence"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "requirement": {
+                "const": "conditional"
+              }
+            },
+            "required": [
+              "requirement"
+            ]
+          },
+          "then": {
+            "required": [
+              "condition"
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "documentedDefaultNote"
+            ]
+          },
+          "then": {
+            "properties": {
+              "documentedDefault": {
+                "const": null
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "requirement": {
+                "const": "unstated"
+              }
+            },
+            "required": [
+              "requirement"
+            ]
+          },
+          "then": {
+            "properties": {
+              "documentedOptional": {
+                "const": null
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "documentedOptional": {
+                "const": null
+              }
+            },
+            "required": [
+              "documentedOptional"
+            ]
+          },
+          "then": {
+            "properties": {
+              "requirement": {
+                "const": "unstated"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "valueType": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "array",
+            "object"
+          ]
+        },
+        "enum": {
+          "type": "array",
+          "description": "Permitted primitive values for an array item when its manual type is an enum.",
+          "items": {
+            "type": [
+              "string",
+              "number",
+              "boolean"
+            ]
+          }
+        },
+        "items": {
+          "$ref": "#/$defs/valueType",
+          "description": "Element type when this item is itself an array. The manual's own notation nests (`Array [Array [String]]`), so this does too. Omit it where no permitted source states the inner element type - an omitted `items` says nobody has said, which is not the same as a row of unknown JSON."
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+    "variant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "when",
+        "source",
+        "fields"
+      ],
+      "properties": {
+        "when": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Conditions selecting this variant, combined with logical AND. Same shape as a field's `appliesWhen`, so a nested discriminator (`STR.SPEC_CODE`), a multi-value table (`FLOOR_DIST_TYPE = 1 or 2`) and a two-level selector (`TYPE` then `STYPE`) are all expressible without a second construct.",
+          "items": {
+            "$ref": "#/$defs/condition"
+          }
+        },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "table",
+            "line"
+          ],
+          "properties": {
+            "table": {
+              "type": "string"
+            },
+            "line": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/field"
+          }
+        }
+      }
+    },
+    "sdkRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "appliesTo",
+        "reason"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+        },
+        "kind": {
+          "enum": [
+            "normalize_defaults",
+            "require_confirmation",
+            "reject_request",
+            "per_id_request",
+            "unwrap_table_by_shape",
+            "warn"
+          ],
+          "description": "normalize_defaults = fill the listed fields with `values` before sending. require_confirmation = refuse unless the caller passes an explicit confirmation flag. reject_request = raise a validation error instead of sending. per_id_request = issue one request per id, sequentially, stopping at the first failure. unwrap_table_by_shape = locate an unstable result-table payload by its HEAD/DATA object shape, never by a top-level response key. warn = document loudly; no behaviour change."
+        },
+        "appliesTo": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "enum": [
+              "GET",
+              "POST",
+              "PUT",
+              "DELETE"
+            ]
+          }
+        },
+        "variant": {
+          "type": "string"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Payload fields the rule covers, for normalize_defaults and reject_request."
+        },
+        "rejects": {
+          "enum": [
+            "empty_value",
+            "omission",
+            "forbidden_combination"
+          ],
+          "description": "What a reject_request rule refuses about the fields it lists. empty_value = the field is present but carries a value the server accepts and discards, such as /db/MVHL's empty VEH_DEFAULT. omission = the field is absent, so the server applies a documented default that it then refuses, such as /db/PRES's DIRECTION. forbidden_combination = the fields are individually valid and may not be sent together, such as /ope/GSBG's batch and single-group sets. The three need different checks and the kind alone does not say which, so it is stated rather than inferred from the rule's prose."
+        },
+        "values": {
+          "type": "object",
+          "description": "Field to value map for normalize_defaults. Values must match the documented default; the rule exists to make the default explicit on the wire, not to invent one."
+        },
+        "responseCases": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "table_name",
+              "result_table",
+              "empty_with_table",
+              "no_table"
+            ]
+          },
+          "description": "Observed result-table response shapes for unwrap_table_by_shape. table_name = the requested TABLE_NAME key, result_table = the live 'Result Table' key, empty_with_table = the live 'empty' key carrying a real table, no_table = no table-shaped value."
+        },
+        "reason": {
+          "type": "string",
+          "description": "Why the rule exists, in enough detail that a future maintainer cannot mistake it for ceremony and delete it."
+        },
+        "riskRef": {
+          "type": "string",
+          "description": "`id` of a risk in contracts/safety/known-product-risks.yaml."
+        },
+        "alternative": {
+          "type": "string",
+          "description": "For require_confirmation and reject_request: what the caller should do instead."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "normalize_defaults"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "required": [
+              "fields",
+              "values"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "unwrap_table_by_shape"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "required": [
+              "responseCases"
+            ],
+            "properties": {
+              "responseCases": {
+                "minItems": 4,
+                "maxItems": 4
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "reject_request"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "required": [
+              "fields",
+              "rejects"
+            ]
+          }
+        }
+      ]
+    },
+    "condition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ],
+      "oneOf": [
+        {
+          "required": [
+            "equals"
+          ]
+        },
+        {
+          "required": [
+            "in"
+          ]
+        }
+      ],
+      "description": "One documented condition on an existing field path. `equals` and `in` are mutually exclusive: use `in` only where the manual states that one table applies to several values of the same field, such as `FLOOR_DIST_TYPE = 1 or 2`.",
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)*$",
+          "description": "Existing field path in dot notation, including nested object or array-item properties."
+        },
+        "equals": {
+          "type": [
+            "string",
+            "number",
+            "boolean"
+          ],
+          "description": "The single literal value the manual documents."
+        },
+        "in": {
+          "type": "array",
+          "minItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "type": [
+              "string",
+              "number",
+              "boolean"
+            ]
+          },
+          "description": "Two or more literal values the manual documents for the same table. Never a guess at a value list the manual does not state."
+        }
+      }
+    }
+  }
+}

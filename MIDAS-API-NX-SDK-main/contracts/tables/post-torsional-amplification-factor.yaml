@@ -1,0 +1,54 @@
+contractVersion: 1
+id: post-torsional-amplification-factor
+endpoint: /post/TABLE
+name: Torsional Amplification Factor
+products: [gen, civil]
+source:
+  manual: {status: documented, repo: Dennis5882/MIDAS-API, chapterFile: 21_POST_StoryTables.md, section: "12. Torsional Amplification Factor"}
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getTorsionalAmplificationFactorTable
+  modulePath: [story]
+  tableType: TORSIONAL_AMPLIFICATION_FACTOR_X
+  factory: variable
+  optionNames: [additional, components, constructionStage, loadCaseNames, nodeElements, stageSteps, styles, tableName, unit]
+  documentation: |-
+    docs/manual/21_POST_StoryTables.md #12 — Torsional Amplification Factor.
+
+    table_type: TABLE_TYPE_TORSIONAL_AMPLIFICATION_FACTOR_X or _Y.
+    additional: SELECT_IRREGULAR_ENDS — Required; extreme-point node
+    selection (auto-calculated unless USER_DEFINE=true).
+  nestedTypes:
+    - {path: ADDITIONAL, name: IrregularEndsAdditional, namespace: PostStoryTypes}
+    - {path: ADDITIONAL.SELECT_IRREGULAR_ENDS, name: SelectIrregularEnds, namespace: PostStoryTypes}
+tableTypes: [{value: TORSIONAL_AMPLIFICATION_FACTOR_X, provenance: manual}, {value: TORSIONAL_AMPLIFICATION_FACTOR_Y, provenance: manual}]
+requestFields:
+  # 21_POST_StoryTables.md #12, "`ADDITIONAL` - 비틀림 증폭계수 산정 대상 극단부 절점 선택", rows 1 to 1-1-2.
+  additional:
+    - key: ADDITIONAL
+      description: 세부 설정 객체
+      type: object
+      requirement: optional
+      provenance: manual
+      properties:
+        - key: SELECT_IRREGULAR_ENDS
+          description: 극단부 절점 선택
+          type: object
+          requirement: required
+          provenance: manual
+          properties:
+            - key: USER_DEFINE
+              description: "절점 선택 방식: false=자동 계산 / true=사용자 지정"
+              type: boolean
+              requirement: required
+              provenance: manual
+            - key: SELECT_NODES
+              description: 극단부 절점 번호 2개 지정
+              type: array
+              items: {type: integer}
+              requirement: required
+              condition: "USER_DEFINE: true일 때만"
+              appliesWhen:
+                - {path: ADDITIONAL.SELECT_IRREGULAR_ENDS.USER_DEFINE, equals: true}
+              provenance: manual

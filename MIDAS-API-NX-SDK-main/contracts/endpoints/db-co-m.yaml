@@ -1,0 +1,157 @@
+# /db/CO_M
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then
+# reviewed: products, methods, operation risk and verification status were
+# each checked against docs/coverage.json's live record rather than accepted
+# from the manual's framing. safeToOmit is answered `true` only where a
+# confirmed live payload actually omitted the field.
+contractVersion: 1
+id: db-co-m
+endpoint: /db/CO_M
+name: Material Color
+surface:
+  className: MaterialColor
+  exportName: materialColor
+  modulePath: [db, project]
+  payloadTypeName: MaterialColorPayload
+
+products: [gen, civil]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 02_DB_Project_Structure.md
+    section: "10. `/db/CO_M` — Material Color"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: gen
+      ref: db-co-m-crud-2026-08-16
+    - product: civil
+      ref: db-co-m-crud-2026-08-16
+
+operations:
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: W_R
+    description: >-
+      Wire Frame Red (0–255)
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: W_G
+    description: >-
+      Wire Frame Green (0–255)
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: W_B
+    description: >-
+      Wire Frame Blue (0–255)
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: HF_R
+    description: >-
+      Hidden Fill Red (0–255)
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: HF_G
+    description: >-
+      Hidden Fill Green (0–255)
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: HF_B
+    description: >-
+      Hidden Fill Blue (0–255)
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: HE_R
+    description: >-
+      Hidden Edge Red (0–255)
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: HE_G
+    description: >-
+      Hidden Edge Green (0–255)
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: HE_B
+    description: >-
+      Hidden Edge Blue (0–255)
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bBLEMD
+    description: >-
+      Opacity Boolean
+    type: boolean
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: FACT
+    description: >-
+      Opacity Value (0.0–1.0)
+    type: number
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+
+extraction:
+  source: 02_DB_Project_Structure.md line 861
+  table: Specifications

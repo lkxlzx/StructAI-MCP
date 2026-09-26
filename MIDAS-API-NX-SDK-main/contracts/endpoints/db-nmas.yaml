@@ -1,0 +1,258 @@
+# /db/NMAS — Nodal Masses
+#
+# Sources: docs/manual/06_DB_Static_Loads.md #6 in Dennis5882/MIDAS-API for the
+# field table, and docs/live_verification_notes.md for the omitted-rotational-mass
+# crash, its root cause, and the 2026-08-13 evidence that the server side of it
+# has since been fixed on at least one build. No SDK source was consulted to
+# author this contract; see contracts/README.md.
+contractVersion: 1
+id: db-nmas
+endpoint: /db/NMAS
+name: Nodal Masses
+surface:
+  className: NodalMass
+  exportName: nodalMass
+  modulePath: [db, staticLoads]
+  payloadTypeName: NodalMassPayload
+summary: >-
+  Defines lumped masses on nodes. The Assign map is keyed by node number, not by
+  a record id of its own.
+
+products: [gen, civil]
+
+recordKey:
+  kind: node_id
+  description: >-
+    Node number the mass is attached to. The node must already exist.
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 06_DB_Static_Loads.md
+    section: 6. /db/NMAS — Nodal Masses
+    url: https://support.midasuser.com/hc/en-us/articles/33016922742937
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: gen
+      ref: db-nmas-crash-rootcause-2026-07-29
+    - product: civil
+      ref: db-nmas-crash-rootcause-2026-07-29
+    - product: civil
+      ref: db-nmas-raw-retrigger-2026-08-13
+
+operations:
+  - method: GET
+    risk: read_only
+    summary: Return every nodal mass record in the model.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+      itemSchema: fields
+    notes: >-
+      GET and /info/db/NMAS were never affected by the write-side crash below.
+
+  - method: POST
+    risk: product_crash_risk
+    mitigation: normalized
+    summary: Create nodal masses on the given nodes.
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+      itemSchema: fields
+      errorShapes:
+        - shape: no response; the call hangs for 15-60 seconds and the session dies
+          meaning: >-
+            The historical omitted-rotational-mass crash. Every following /db/*
+            call times out too and the product raises its "Failed to disconnect
+            the work session" licence dialog, which holds the licence until the
+            process is restarted properly. Not an error body - there is nothing
+            to parse.
+    notes: >-
+      risk stays product_crash_risk and mitigation is normalized: the server
+      defect is real and is present on shipped builds, while the SDK rule below
+      makes the crashing payload unreachable through a conforming SDK.
+
+  - method: PUT
+    risk: product_crash_risk
+    mitigation: normalized
+    summary: Update the nodal masses named by node id.
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+      itemSchema: fields
+
+  - method: DELETE
+    variant: per_id
+    path: /db/NMAS/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete the nodal mass on exactly the node named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire nodal-mass table.
+    request:
+      wrapper: assign
+      itemSchema: none
+    response:
+      wrapper: message
+
+fields:
+  - key: mX
+    description: Translational Mass - GCS X
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: false
+    omissionEffect: >-
+      The manual marks this field Required and gives it no default. Untested on
+      a live product, because a conforming SDK never sends the record without
+      it.
+    provenance: manual
+
+  - key: mY
+    description: Translational Mass - GCS Y
+    type: number
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+
+  - key: mZ
+    description: Translational Mass - GCS Z
+    type: number
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+
+  - key: rmX
+    description: Rotational Mass Moment of Inertia - X-axis
+    type: number
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: false
+    omissionEffect: >-
+      On the builds where the defect is present, omitting this field from a
+      POST or PUT hangs the call for 15-60 seconds and kills the NX session,
+      taking the licence with it. Sending it explicitly as its own documented
+      default of 0 does not. This is exactly the case documentedOptional and
+      safeToOmit exist to keep apart: the manual is right that the field is
+      optional, and following the manual crashes the product.
+    provenance: live_verified
+    provenanceNote: >-
+      Field name, type and default are the manual's; safeToOmit is the live
+      finding. See risk db-nmas-omitted-rotational-mass.
+
+  - key: rmY
+    description: Rotational Mass Moment of Inertia - Y-axis
+    type: number
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: false
+    omissionEffect: Same as rmX - the three fields crash as a set.
+    provenance: live_verified
+
+  - key: rmZ
+    description: Rotational Mass Moment of Inertia - Z-axis
+    type: number
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: false
+    omissionEffect: Same as rmX - the three fields crash as a set.
+    provenance: live_verified
+
+sdkRules:
+  - id: nmas-rotational-mass-defaults
+    kind: normalize_defaults
+    appliesTo: [POST, PUT]
+    fields: [rmX, rmY, rmZ]
+    values:
+      rmX: 0.0
+      rmY: 0.0
+      rmZ: 0.0
+    reason: >-
+      Omitting rmX/rmY/rmZ crashed both Gen NX and Civil NX across 15+
+      reproductions on multiple versions and builds, throwaway and real
+      production models, and both local and cross-machine callers. Sending them
+      explicitly - even as 0.0, their own documented default - does not crash.
+      The values written here are the manual's defaults, so this rule makes the
+      documented default explicit on the wire rather than inventing behaviour.
+      A caller must not have to know about a server defect to use the endpoint
+      safely. The rule is kept even though the 2026-08-13 Civil NX check
+      suggests the server bug is fixed on that build: it costs nothing, stays
+      correct whichever way the server behaves, and one build is not every
+      deployed installation.
+    riskRef: db-nmas-omitted-rotational-mass
+
+  - id: nmas-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      Same finding as /db/NODE: the manual's DELETE body form empties the whole
+      table regardless of the ids it names.
+    riskRef: db-delete-body-empties-table
+
+  - id: nmas-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+manualDefects:
+  - describes: behaviour
+    manualSays: >-
+      rmX, rmY and rmZ are optional with a default of 0, which reads as a
+      promise that omitting them is equivalent to sending 0.
+    actual: >-
+      On the affected builds the server did not apply that default. It read an
+      uninitialized value and the session died. The default is applied correctly
+      on Civil NX v2.2 build 08/12/2026.
+    evidence: >-
+      15+ reproductions across both products 2026-07-29, root-caused the same
+      day; raw re-trigger bypassing the SDK on Civil NX v2.2 build 08/12/2026
+      returned in 0.1s and read back rmX/rmY/rmZ as 0.
+      docs/live_verification_notes.md.
+    reportedToVendor: A-1
+
+  - describes: behaviour
+    manualSays: 'DELETE /db/NMAS with {"Assign": {"5": {}}} deletes the record on node 5.'
+    actual: The body form empties the whole table; DELETE /db/NMAS/{id} deletes one record.
+    evidence: >-
+      Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL 2026-07-26; the
+      body-form behaviour is a property of /db/* DELETE, not of one endpoint.
+
+knownDefects:
+  - ref: db-nmas-omitted-rotational-mass
+  - ref: db-delete-body-empties-table

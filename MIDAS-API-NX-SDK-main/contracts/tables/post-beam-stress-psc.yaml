@@ -1,0 +1,35 @@
+# Source: 19_POST_AnalysisResult_1.md section 12. No SDK source was used.
+contractVersion: 1
+id: post-beam-stress-psc
+endpoint: /post/TABLE
+name: Beam Stress PSC
+summary: PSC beam stresses, including the 7th-DOF form.
+products: [gen, civil]
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 19_POST_AnalysisResult_1.md
+    section: "12. Beam Stress (PSC)"
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getBeamStressPscTable
+  modulePath: [result1]
+  tableType: BEAMSTRESSPSC
+  factory: variable
+  optionNames: [components, constructionStage, loadCaseNames, nodeElements, stageSteps, styles, tableName, unit]
+  documentation: |-
+    docs/manual/19_POST_AnalysisResult_1.md #12 — Beam Stress (PSC).
+
+    table_type: TABLE_TYPE_BEAM_STRESS_PSC (default) or
+    TABLE_TYPE_BEAM_STRESS_7DOF_PSC (includes warping/7th-DOF components).
+tableTypes:
+  - value: BEAMSTRESSPSC
+    description: PSC beam stress
+    head: [Index, Elem, Load, Part, SectionPosition, Sig-xx(Axial), Sig-xx(Moment-y), Sig-xx(Moment-z), Sig-xx(Bar), Sig-xx(Summation), Sig-zz, Sig-xz(shear), Sig-xz(torsion), Sig-xz(bar), Sig-Is(shear), Sig-Is(shear+torsion), Sig-Ps(Max), Sig-Ps(Min)]
+    provenance: manual
+  - value: BEAMSTRESS7DOFPSC
+    description: PSC beam stress with 7th DOF
+    head: [Index, Elem, Load, Part, SectionPosition, Sax(Warping), Ssy(Mt), Ssy(Mw), Ssz(Mt), Ssz(Mw), Combined(Ssy), Combined(Ssz)]
+    provenance: manual

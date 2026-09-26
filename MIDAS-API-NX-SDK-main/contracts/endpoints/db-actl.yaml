@@ -1,0 +1,235 @@
+# /db/ACTL
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-actl
+endpoint: /db/ACTL
+name: Main Control Data
+surface:
+  className: MainControlData
+  exportName: mainControlData
+  modulePath: [db, analysisControl]
+  payloadTypeName: MainControlDataPayload
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 12_DB_Analysis_Control.md
+    section: 1. /db/ACTL — Main Control Data
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-08-16
+    - product: gen
+      ref: db-read-sweep-2026-08-16
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/ACTL/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: ARDC
+    description: >-
+      Auto Rotational DOF Constraint for Truss / Plane Stress / Solid Elements
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: ANRC
+    description: >-
+      Auto Normal Rotation Constraint for Plate Elements
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: CSECF
+    description: >-
+      Consider Section Stiffness Scale Factor for Stress Calculation
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: TRS
+    description: >-
+      Transfer Reactions of Slave Node to the Master Node
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: BMSTRESS
+    description: >-
+      Calculate Equivalent Beam Stresses (Von-Mises and Max-Shear)
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: CRBAR
+    description: >-
+      Consider Reinforcement for Section Stiffness Calculation
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: CLATS
+    description: >-
+      Change Local Axis of Tapered Section for Force / Stress Calculation
+    products: [civil]
+    # NOTE: /info evidence, not the manual's. GET /info/db/ACTL declares this
+    # on civil and not on the other product, captured 2026-09-03. The section
+    # says nothing about either product, so this tag records a measurement
+    # rather than a documentation claim. See MD-46.
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: ITER
+    description: >-
+      Number of Iterations / Load Case
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: TOL
+    description: >-
+      Convergence Tolerance
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: ACWC
+    description: >-
+      Auto Constraint for Wall Elements Connectivity
+    products: [gen]
+    type: boolean
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: info_schema
+    # RESOLVED: declared by /info and absent from the manual - the whole
+    # manual was searched for the name, not just this section.
+    # Gen NX only. The section describes one endpoint for both products and
+    # says nothing about either; the `products` tag is a measurement from
+    # /info, not a documentation claim. See MD-46.
+
+manualDefects:
+  - describes: field_name
+    manualSays: >-
+      /db/ACTL's Specifications table lists the analysis control options, and
+      makes no distinction between the two products.
+    actual: >-
+      `GET /info/db/ACTL` declares `ACWC` (" Auto Constraint for Wall Elements
+      Connectivity") on Gen NX and not on Civil NX, and `CLATS` on Civil NX and
+      not on Gen NX. The table gives both products one shape. `CLATS` was
+      already in this contract, untagged - a claim that Civil's field is also
+      Gen's.
+    evidence: >-
+      GET /info/db/ACTL on both products, captured 2026-09-03, compared by
+      scripts/info_baseline.py --divergence. Registered as MD-46.
+
+sdkRules:
+  - id: db-actl-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-actl-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 12_DB_Analysis_Control.md line 57
+  table: Parameters

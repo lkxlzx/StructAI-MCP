@@ -1,0 +1,32 @@
+# Source: 19_POST_AnalysisResult_1.md section 5. No SDK source was used.
+contractVersion: 1
+id: post-cable-force
+endpoint: /post/TABLE
+name: Cable Force
+summary: Cable tension and force components at I and J ends.
+products: [gen, civil]
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 19_POST_AnalysisResult_1.md
+    section: "5. Cable Force"
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getCableForceTable
+  modulePath: [result1]
+  tableType: CABLEFORCE
+  factory: fixed
+  optionNames: [components, constructionStage, loadCaseNames, nodeElements, stageSteps, styles, tableName, unit]
+  documentation: |-
+    docs/manual/19_POST_AnalysisResult_1.md #5 — Cable Force.
+
+    Typically queried with opt_cs=True and stage_step for a construction-stage
+    step, e.g. stage_step=["nl_001"].
+tableTypes:
+  - value: CABLEFORCE
+    description: Cable force
+    head: [Index, Elem, NodeI, NodeJ, Load, Step, Tension, FX, FY, FZ, Tension, FX, FY, FZ]
+    headNote: Construction-stage queries insert Stage before Step.
+    provenance: manual

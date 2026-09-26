@@ -1,0 +1,307 @@
+# /db/IEHC
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-iehc
+endpoint: /db/IEHC
+name: Inelastic Hinge Control Data
+surface:
+  className: InelasticHingeControl
+  exportName: inelasticHingeControl
+  modulePath: [db, properties, hinge]
+  payloadTypeName: InelasticHingeControlPayload
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 04_DB_Properties.md
+    section: "22. `/db/IEHC`"
+    url: https://support.midasuser.com/hc/en-us/articles/35944093809689
+  liveSchema:
+    checked: "2026-08-30"
+    products: [gen]
+    note: >-
+      Gen /info reports WAreaSize as string and WAreaSizeCover as integer.
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-07-26
+    - product: gen
+      ref: db-read-sweep-2026-07-26
+    - product: gen
+      ref: db-iehc-wareasize-type-2026-08-30
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/IEHC/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: BEAM_LOC
+    description: >-
+      Reference Location for Distributed Hinges · I-End: 0 / Center: 1 / J-End:
+      2
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: OPT_ConsiderRebarArea1D
+    description: >-
+      Consider Reinforcement Area
+    type: boolean
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: FAreaSizeCore
+    description: >-
+      Fiber Beam Areas Core · Auto Size: 0 / Equal-Size: 1
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: BeamDivNumNy
+    description: >-
+      Number of Divisions(Beam-Column) — Ny (y-dir)
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: BeamDivNumNz
+    description: >-
+      Number of Divisions(Beam-Column) — Nz (z-dir)
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: FAreaSizeCover
+    description: >-
+      Fiber Beam Areas Cover · Auto Size: 0 / Equal-Size: 1
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: BeamDivNumNyCover
+    description: >-
+      Number of divisions(Beam-Column, Cover) — Ny
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: BeamDivNumNzCover
+    description: >-
+      Number of divisions(Beam-Column, Cover) — Nz
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: WallConsOut
+    description: >-
+      Consider Out of Plane Nonlinearity of Plate Type
+    products: [gen]
+    type: boolean
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: WAreaSize
+    description: >-
+      Fiber Wall Areas Core
+    products: [gen]
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: WallDivNumZ
+    description: >-
+      Number of divisions — z, Core
+    products: [gen]
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: WallDivNumY
+    description: >-
+      Number of divisions — y, Core
+    products: [gen]
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: WAreaSizeCover
+    description: >-
+      Fiber Wall Areas Cover
+    products: [gen]
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: WallDivNumZCover
+    description: >-
+      Number of divisions — z, Cover
+    products: [gen]
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: WallDivNumYCover
+    description: >-
+      Number of divisions — y, Cover
+    products: [gen]
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: OPT_ConsiderRebarAreaWall
+    description: >-
+      Wall, Consider Rebar Area
+    products: [gen]
+    type: boolean
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: dR
+    description: >-
+      Shear Spring Location
+    products: [gen]
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+
+sdkRules:
+  - id: db-iehc-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-iehc-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+manualDefects:
+  - describes: field_value
+    manualSays: >-
+      The Specifications table types WAreaSize as Integer, although the
+      chapter's Request Example sends the string "AUTO".
+    actual: >-
+      Gen NX /info types WAreaSize as string; its sibling WAreaSizeCover is
+      integer, so the mismatch is limited to WAreaSize.
+    evidence: >-
+      contracts/verification/gen-nx.yaml#db-iehc-wareasize-type-2026-08-30
+      and docs/live_verification_notes.md (2026-08-30).
+
+extraction:
+  source: 04_DB_Properties.md line 1916
+  table: Specifications
+  structuralTables:
+    - heading: GEN 전용 필드 (Wall/벽체)
+      line: 1929
+      paths:
+        - "<root>"

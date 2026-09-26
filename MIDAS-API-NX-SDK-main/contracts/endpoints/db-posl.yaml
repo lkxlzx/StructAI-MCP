@@ -1,0 +1,353 @@
+# /db/POSL
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-posl
+endpoint: /db/POSL
+name: Parameter of Seismic Loads
+surface:
+  className: SeismicLoadParam
+  exportName: seismicLoadParam
+  modulePath: [db, staticLoads]
+  payloadTypeName: SeismicLoadParamPayload
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 06_DB_Static_Loads.md
+    section: 19. /db/POSL — Parameter of Seismic Loads
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-write-sweep-2026-08-16
+    - product: gen
+      ref: db-write-sweep-2026-08-16
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/POSL/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: NAME
+    description: >-
+      Load Case Name
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: CODE
+    description: >-
+      Seismic Load Code
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's SeismicLoadParam case completed a live
+      create-read-update-delete round trip on ('civil',) without this field in
+      its payload. That is evidence the call is accepted, not that the resulting
+      model is what an engineer wanted.
+    provenance: manual
+  - key: METHOD
+    description: >-
+      Seismic Calculation Method ("RES_DISP" / "EQV_STATIC")
+    products: [gen]
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's SeismicLoadParam case completed a live
+      create-read-update-delete round trip on ('civil',) without this field in
+      its payload. That is evidence the call is accepted, not that the resulting
+      model is what an engineer wanted.
+    provenance: manual
+  - key: SZ
+    description: >-
+      Seismic Zone
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: EPA
+    description: >-
+      Effective Peak Ground Acceleration
+    products: [gen]
+    # NOTE: /info evidence, not the manual's. GET /info/db/POSL declares this
+    # on gen and not on the other product, captured 2026-09-03. The section
+    # says nothing about either product, so this tag records a measurement
+    # rather than a documentation claim. See MD-46.
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's SeismicLoadParam case completed a live
+      create-read-update-delete round trip on ('civil',) without this field in
+      its payload. That is evidence the call is accepted, not that the resulting
+      model is what an engineer wanted.
+    provenance: manual
+  - key: SC
+    description: >-
+      Site Class
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: FA
+    description: >-
+      Short-period Site Coefficient
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: FV
+    description: >-
+      Long-period Site Coefficient
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: SDS
+    description: >-
+      Design Spectral Acceleration at Short Period
+    products: [gen]
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's SeismicLoadParam case completed a live
+      create-read-update-delete round trip on ('civil',) without this field in
+      its payload. That is evidence the call is accepted, not that the resulting
+      model is what an engineer wanted.
+    provenance: manual
+  - key: SD1
+    description: >-
+      Design Spectral Acceleration at 1-sec Period
+    products: [gen]
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's SeismicLoadParam case completed a live
+      create-read-update-delete round trip on ('civil',) without this field in
+      its payload. That is evidence the call is accepted, not that the resulting
+      model is what an engineer wanted.
+    provenance: manual
+  - key: USER_GROUP
+    description: >-
+      Seismic User Group
+    products: [gen]
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's SeismicLoadParam case completed a live
+      create-read-update-delete round trip on ('civil',) without this field in
+      its payload. That is evidence the call is accepted, not that the resulting
+      model is what an engineer wanted.
+    provenance: manual
+  - key: IF
+    description: >-
+      Importance Factor
+    products: [gen]
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's SeismicLoadParam case completed a live
+      create-read-update-delete round trip on ('civil',) without this field in
+      its payload. That is evidence the call is accepted, not that the resulting
+      model is what an engineer wanted.
+    provenance: manual
+  - key: RMF
+    description: >-
+      Response Modification Factor
+    products: [gen]
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's SeismicLoadParam case completed a live
+      create-read-update-delete round trip on ('civil',) without this field in
+      its payload. That is evidence the call is accepted, not that the resulting
+      model is what an engineer wanted.
+    provenance: manual
+  - key: DAMP_RATIO
+    description: >-
+      Damping Ratio
+    products: [civil]
+    type: number
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: info_schema
+    # RESOLVED: declared by /info and absent from the manual - the whole
+    # manual was searched for the name, not just this section.
+    # Civil NX only. The section describes one endpoint for both products and
+    # says nothing about either; the `products` tag is a measurement from
+    # /info, not a documentation claim. See MD-46.
+  - key: SRF
+    description: >-
+      Seismic Risk Factor
+    products: [civil]
+    type: number
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: info_schema
+    # RESOLVED: declared by /info and absent from the manual - the whole
+    # manual was searched for the name, not just this section.
+  - key: EPGAeff
+    description: >-
+      EPGAeff
+    products: [gen]
+    type: number
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: info_schema
+    # RESOLVED: declared by /info and absent from the manual - the whole
+    # manual was searched for the name, not just this section.
+  - key: Kae
+    description: >-
+      Kae
+    products: [gen]
+    type: number
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: info_schema
+    # RESOLVED: declared by /info and absent from the manual - the whole
+    # manual was searched for the name, not just this section.
+
+manualDefects:
+  - describes: field_name
+    manualSays: >-
+      /db/POSL's Specifications table gives one shape for both products.
+    actual: >-
+      Eleven fields differ. Civil NX declares `DAMP_RATIO` and `SRF`; Gen NX
+      declares `EPA`, `EPGAeff`, `IF`, `Kae`, `METHOD`, `RMF`, `SD1`, `SDS` and
+      `USER_GROUP`. This is the widest split of the ten divergent endpoints
+      after `/db/SPLC` and `/db/SBDO`, and it is the shape of the two products'
+      seismic-parameter dialogs rather than a documentation slip. Seven of the
+      Gen nine were already here untagged; the other four were in no contract.
+    evidence: >-
+      GET /info/db/POSL on both products, captured 2026-09-03, compared by
+      scripts/info_baseline.py --divergence. Registered as MD-46.
+
+sdkRules:
+  - id: db-posl-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-posl-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 06_DB_Static_Loads.md line 1683
+  table: 파라미터

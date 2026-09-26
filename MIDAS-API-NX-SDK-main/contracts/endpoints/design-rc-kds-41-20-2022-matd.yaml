@@ -1,0 +1,315 @@
+# /DESIGN/RC/KDS-41-20-2022/MATD
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: design-rc-kds-41-20-2022-matd
+endpoint: /DESIGN/RC/KDS-41-20-2022/MATD
+name: Modify Concrete Material
+surface:
+  className: ModifyConcreteMaterial
+  exportName: modifyConcreteMaterial
+  modulePath: [design, rcKds, setup]
+  payloadTypeName: ModifyConcreteMaterialPayload
+  nestedTypes:
+    - {path: CONCRETE, name: ModifyConcreteMaterialConcrete, namespace: DesignRcKdsSetupTypes}
+    - {path: REBAR, name: ModifyConcreteMaterialRebar, namespace: DesignRcKdsSetupTypes}
+
+products: [gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 26_Design_RC_KDS41202022.md
+    section: "13. `DESIGN/RC/KDS-41-20-2022/MATD` — Modify Concrete Material (콘크리트 재료 수정)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_gen
+  records:
+    - product: gen
+      ref: db-read-sweep-2026-07-26
+
+operations:
+  - method: DELETE
+    risk: destructive
+    mitigation: none
+    request:
+      wrapper: none
+    response:
+      wrapper: unknown
+    notes: >-
+      The manual shows a bodyless DELETE at this endpoint, but does not
+      state the deletion scope or response shape.
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: Assign
+    description: >-
+      Assign 래퍼 (재질 ID 문자열 키)
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: CONCRETE
+    description: >-
+      콘크리트 재료
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: CODE
+        description: >-
+          코드 (None=사용자정의, Standard=표준)
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        enum: [None, Standard]
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'CONCRETE' by numbering it '2.1', not
+        # by naming a path
+      - key: LIGHTWEIGHT
+        description: >-
+          경량콘크리트 계수(Lambda) 적용
+        type: boolean
+        requirement: optional
+        documentedDefault: false
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'CONCRETE' by numbering it '2.2', not
+        # by naming a path
+      - key: LAMBDA
+        description: >-
+          Lambda 값
+        type: number
+        requirement: optional
+        documentedDefault: 1
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'CONCRETE' by numbering it '2.3', not
+        # by naming a path
+      - key: STANDARD_CODE
+        description: >-
+          표준코드 (KS19(RC)) — CODE=Standard
+        type: string
+        requirement: conditional
+        condition: "CODE=\"Standard\""
+        appliesWhen:
+          - path: CONCRETE.CODE
+            equals: Standard
+        documentedDefault: null
+        documentedOptional: false
+        enum: [KS19(RC)]
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'CONCRETE' by numbering it '2.4', not
+        # by naming a path
+      - key: GRADE
+        description: >-
+          콘크리트 등급 (C15~C95 중 택1) — CODE=Standard
+        type: string
+        requirement: conditional
+        condition: "CODE=\"Standard\""
+        appliesWhen:
+          - path: CONCRETE.CODE
+            equals: Standard
+        documentedDefault: null
+        documentedOptional: false
+        enum: [C15, C18, C21, C24, C27, C30, C35, C40, C45, C49, C50, C55, C60, C65, C70, C75, C80, C85, C90, C95]
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'CONCRETE' by numbering it '2.5', not
+        # by naming a path
+      - key: NAME
+        description: >-
+          사용자정의 재료명 — CODE=None
+        type: string
+        requirement: conditional
+        condition: "CODE=\"None\""
+        appliesWhen:
+          - path: CONCRETE.CODE
+            equals: None
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'CONCRETE' by numbering it '2.6', not
+        # by naming a path
+      - key: FC
+        description: >-
+          설계 압축강도 fck (kN/mm — CODE=None 입력/Standard 자동
+        type: number
+        requirement: conditional
+        condition: "CODE=\"None\""
+        appliesWhen:
+          - path: CONCRETE.CODE
+            equals: None
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'CONCRETE' by numbering it '2.7', not
+        # by naming a path
+  - key: REBAR
+    description: >-
+      철근 재료
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: CODE
+        description: >-
+          코드 (None=사용자정의, Standard=표준)
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        enum: [None, Standard]
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'REBAR' by numbering it '3.1', not by
+        # naming a path
+      - key: STANDARD_CODE
+        description: >-
+          표준코드 (KS19(RC)) — CODE=Standard
+        type: string
+        requirement: conditional
+        condition: "CODE=\"Standard\""
+        appliesWhen:
+          - path: REBAR.CODE
+            equals: Standard
+        documentedDefault: null
+        documentedOptional: false
+        enum: [KS19(RC)]
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'REBAR' by numbering it '3.2', not by
+        # naming a path
+      - key: MAIN_REBAR_GRADE
+        description: >-
+          주철근 등급 (SD300/SD400/SD500/SD600/SD700/SD400S/SD500S/SD600S) — Standard
+        type: string
+        requirement: conditional
+        condition: "CODE=\"Standard\""
+        appliesWhen:
+          - path: REBAR.CODE
+            equals: Standard
+        documentedDefault: null
+        documentedOptional: false
+        enum: [SD300, SD400, SD500, SD600, SD700, SD400S, SD500S, SD600S]
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'REBAR' by numbering it '3.3', not by
+        # naming a path
+      - key: SUB_REBAR_GRADE
+        description: >-
+          보조철근 등급 (SD300~SD600S) — Standard
+        type: string
+        requirement: conditional
+        condition: "CODE=\"Standard\""
+        appliesWhen:
+          - path: REBAR.CODE
+            equals: Standard
+        documentedDefault: null
+        documentedOptional: false
+        enum: [SD300, SD400, SD500, SD600, SD700, SD400S, SD500S, SD600S]
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'REBAR' by numbering it '3.4', not by
+        # naming a path
+      - key: MAIN_REBAR_NAME
+        description: >-
+          주철근 재료명 — CODE=None
+        type: string
+        requirement: conditional
+        condition: "CODE=\"None\""
+        appliesWhen:
+          - path: REBAR.CODE
+            equals: None
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'REBAR' by numbering it '3.5', not by
+        # naming a path
+      - key: SUB_REBAR_NAME
+        description: >-
+          보조철근 재료명 — CODE=None
+        type: string
+        requirement: conditional
+        condition: "CODE=\"None\""
+        appliesWhen:
+          - path: REBAR.CODE
+            equals: None
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'REBAR' by numbering it '3.6', not by
+        # naming a path
+      - key: FY
+        description: >-
+          주철근 항복강도 Fy (kN/mm — None 입력/Standard 자동
+        type: number
+        requirement: conditional
+        condition: "CODE=\"None\""
+        appliesWhen:
+          - path: REBAR.CODE
+            equals: None
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'REBAR' by numbering it '3.7', not by
+        # naming a path
+      - key: FYS
+        description: >-
+          보조철근 항복강도 Fys (kN/mm — None 입력/Standard 자동
+        type: number
+        requirement: conditional
+        condition: "CODE=\"None\""
+        appliesWhen:
+          - path: REBAR.CODE
+            equals: None
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'REBAR' by numbering it '3.8', not by
+        # naming a path
+
+extraction:
+  source: 26_Design_RC_KDS41202022.md line 2856
+  table: 파라미터

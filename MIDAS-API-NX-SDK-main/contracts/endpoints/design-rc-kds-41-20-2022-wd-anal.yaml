@@ -1,0 +1,147 @@
+# /DESIGN/RC/KDS-41-20-2022/WD-ANAL
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: design-rc-kds-41-20-2022-wd-anal
+endpoint: /DESIGN/RC/KDS-41-20-2022/WD-ANAL
+name: RC Wall Design Perform
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 26_Design_RC_KDS41202022.md
+    section: "48. `DESIGN/RC/KDS-41-20-2022/WD-ANAL` — RC Wall Design Perform (RC 벽체 설계 수행)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-08-10
+    - product: gen
+      ref: db-read-sweep-2026-08-10
+
+operations:
+  - method: POST
+    surface:
+      exportName: performWallDesign
+      modulePath: [design, rcKds, designForces]
+      argumentTypeName: RcWallDesignPerformArgument
+      documentation: |-
+        docs/manual/26_Design_RC_KDS41202022.md #48 — WD-ANAL — RC Wall
+        Design Perform. Walls are selected by WALL_IDS+STORY pairs rather than
+        ELEMS/SECTIONS. Response: ``{"message": "success"}``.
+
+        ⚠️ CONFIRMED to hang on **Gen NX 2026 (v2.1), build 06/23/2026**, same as
+        ``perform_column_check`` (CC-ANAL) / ``perform_beam_check`` (BC-ANAL):
+        the call timed out with no HTTP response even though the app UI looked
+        completely normal (no visible stuck dialog). **Note this is despite the
+        sibling ``perform_wall_check`` (WC-ANAL) NOT reproducing the stall** —
+        so "WID+STORY-targeted = safe" is not a valid rule; this design-perform
+        function hung while the check-perform function for the same wall did
+        not.
+
+        The 2026-07-25 round in which CC-ANAL/BC-ANAL ran clean covered the
+        *check* endpoints only — **this design-perform endpoint was not among
+        them** — and it ran on the same build that hung, so it identified no
+        fix, only that the stall isn't always triggered. Keep the confirmed
+        workaround: ``get_wall_design_table`` for
+        the same wall/story returned full, real design results (rebar, ratios,
+        ``CHK: "OK"``) immediately after this call timed out, so read it back
+        regardless rather than retrying this function. See
+        docs/live_verification_notes.md.
+      nestedTypes:
+        - {path: SELECTIONS, name: RcWallDesignSelection, namespace: DesignRcKdsDesignForcesTypes}
+        - {path: SELECTIONS.WALL_IDS, name: RcWallIdsSelector, namespace: DesignRcKdsDesignForcesTypes}
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: Argument
+    description: >-
+      Argument 래퍼
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: SELECTIONS
+    description: >-
+      벽체 ID · 층 조합 목록 (생략 시 전체 벽체·전체 층 대상)
+    type: array
+    items:
+      type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: WALL_IDS
+        description: >-
+          벽체 ID 지정 (KEYS=각각, TO=범위 예 "10to20", 생략 시 전체 벽체)
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: KEYS
+            description: >-
+              벽 ID 각각
+            type: array
+            items:
+              type: integer
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # From this section's JSON Schema (line 8464), which declares KEYS and TO
+            # under WALL_IDS; the Parameters table names them only in its description.
+          - key: TO
+            description: >-
+              벽 ID 범위 (예 "10to20")
+            type: string
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+      - key: STORY
+        description: >-
+          대상 층 이름 목록 (예 ["B1F", "1F"], 생략 시 전체 층)
+        type: array
+        items:
+          type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+
+extraction:
+  prose:
+    - line: 8464
+      quote: >-
+        "KEYS": { "type": "array", "items": { "type": "integer" } },
+        "TO": { "type": "string" }
+      paths: [SELECTIONS.WALL_IDS.KEYS, SELECTIONS.WALL_IDS.TO]
+  source: 26_Design_RC_KDS41202022.md line 8479
+  table: 파라미터

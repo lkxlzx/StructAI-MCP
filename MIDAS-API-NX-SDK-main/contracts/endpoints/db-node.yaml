@@ -1,0 +1,194 @@
+# /db/NODE — Node
+#
+# Sources: docs/manual/03_DB_Node_Element.md #1 in Dennis5882/MIDAS-API, plus the
+# live DELETE finding recorded in docs/live_verification_notes.md. No SDK source
+# was consulted to author this contract; see contracts/README.md.
+contractVersion: 1
+id: db-node
+endpoint: /db/NODE
+name: Node
+surface:
+  className: Node
+  exportName: node
+  modulePath: [db, nodeElement]
+  payloadTypeName: NodePayload
+summary: >-
+  Defines node coordinates in the global coordinate system. The Assign map is
+  keyed by node number.
+
+products: [gen, civil]
+
+recordKey:
+  kind: node_id
+  description: Node number. The server assigns nothing; the caller chooses the id.
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 03_DB_Node_Element.md
+    section: "1. `/db/NODE`"
+    url: https://support.midasuser.com/hc/en-us/articles/35806845654169
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: gen
+      ref: db-node-crud-2026-07-29
+    - product: civil
+      ref: db-node-crud-2026-07-29
+
+operations:
+  - method: GET
+    risk: read_only
+    summary: Return every node in the model.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+      keyNote: >-
+        Returned under the "NODE" key. Unlike /post/TABLE responses, /db/* GET
+        keys have been stable across every observed call.
+      itemSchema: fields
+      errorShapes:
+        - httpStatus: [200, 201]
+          shape: '{"error": {...}}'
+          meaning: >-
+            This API returns failures under HTTP 200 and 201 as well. An SDK
+            must inspect the body, not only the status line.
+
+  - method: POST
+    risk: write
+    summary: Create nodes at the given ids.
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+      itemSchema: fields
+
+  - method: PUT
+    risk: write
+    summary: Update the nodes named by id, leaving the rest of the table alone.
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+      itemSchema: fields
+
+  - method: DELETE
+    variant: per_id
+    path: /db/NODE/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the node named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+      description: Echoes the deleted record. Deleting an absent id is a no-op.
+    notes: >-
+      Undocumented route. It is nonetheless the only DELETE form that deletes a
+      selection rather than the whole table - see manualDefects below. Deleting
+      a node still removes the elements attached to it, which is why this
+      operation is destructive even though it names a single record.
+
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire node table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form, with an id-keyed body. The ids in that
+        body are ignored - see manualDefects.
+    response:
+      wrapper: message
+    notes: >-
+      For /db/NODE this also removes every element attached to the deleted
+      nodes. There is no undo through the API and the products raise no
+      confirmation dialog on the API path.
+
+fields:
+  - key: X
+    description: Coordinates - x (global coordinate system)
+    type: number
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    # The manual says Optional with a default of 0. Nobody has omitted a
+    # coordinate against a running product - scripts/live_crud_check.py's Node
+    # case sends all three - so this stays unverified rather than restating the
+    # documentation as a fact about the server.
+    provenance: manual
+
+  - key: "Y"
+    description: Coordinates - y (global coordinate system)
+    type: number
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+
+  - key: Z
+    description: Coordinates - z (global coordinate system)
+    type: number
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+
+sdkRules:
+  - id: node-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names, taking every attached element with it. An SDK's ordinary
+      "delete these ids" call must therefore use the undocumented per-id URL.
+      Requests are issued one at a time and stop at the first failure, so a
+      caller that has already been handed an error is never racing further
+      deletions it cannot see.
+    riskRef: db-delete-body-empties-table
+    alternative: >-
+      Emptying the table on purpose is the separate whole_table operation.
+
+  - id: node-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the node table cannot be undone through the API, removes every
+      attached element, and triggers no product-side dialog. An explicit
+      confirmation flag is the only thing between a typo and an emptied model.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+manualDefects:
+  - describes: behaviour
+    manualSays: >-
+      DELETE /db/NODE with {"Assign": {"4": null}} deletes node 4. Chapters
+      disagree on whether each id maps to null or {}.
+    actual: >-
+      Both body forms delete the entire table, ignoring the ids, and take every
+      element attached to those nodes with them. DELETE /db/NODE/{id}, which the
+      manual does not document, deletes exactly the named record.
+    evidence: >-
+      Live test 2026-07-26 on Civil NX 2026 v2.1, reproduced across /db/NODE,
+      /db/STLD, /db/LDGR and /db/MATL. docs/live_verification_notes.md.
+
+knownDefects:
+  - ref: db-delete-body-empties-table

@@ -1,0 +1,69 @@
+# /post/PM
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: post-pm
+endpoint: /post/PM
+name: P-M Interaction Diagram
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 23_POST_Design.md
+    section: 1. P-M Interaction Diagram
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-07-31
+    - product: gen
+      ref: db-read-sweep-2026-08-13
+
+operations:
+  - method: POST
+    surface:
+      exportName: getPmInteractionDiagram
+      modulePath: [post, design]
+      takesArgument: false
+      documentation: |-
+        docs/manual/23_POST_Design.md #1 — /post/PM — P-M Interaction Diagram.
+
+        Takes no arguments; returns the current model's full P-M interaction
+        (axial force-moment) curve dataset for RC/SRC columns and members. The
+        manual doesn't publish a fixed response HEAD/DATA shape for this one —
+        the response keys depend on the active design code configuration.
+    risk: read_only
+    request:
+      wrapper: argument
+      itemSchema: empty
+    response:
+      wrapper: unknown
+    notes: >-
+      A POST-shaped read: it returns design results and changes nothing. The
+      manual's JSON Schema spells the key `argument`, while the section's
+      request example and prose both send `{"Argument": {}}`, which is what
+      both SDKs send and what the 2026-07-31 Civil NX probe accepted. The
+      manual states outright that it publishes no fixed response and that the
+      keys depend on the design-code configuration, so the response stays
+      `unknown`. Live, on both products, it has only ever answered a
+      precondition error - "Please perform analysis", then "Please Check RC
+      Design Code" once analysis existed - never a populated result.
+
+# The manual documents the argument as an empty object and the response as
+# unfixed, so there is no field to transcribe.
+fields: []
+
+extraction:
+  source: 23_POST_Design.md line ?
+  table: none found

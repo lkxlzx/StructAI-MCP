@@ -1,0 +1,25 @@
+version: 2
+
+updates:
+  # Keeps the pinned action SHAs in .github/workflows/ current. Pinning by SHA
+  # is what makes a compromised tag unable to change what CI runs; Dependabot
+  # is what keeps that pin from going stale.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "ci"
+    labels:
+      - dependencies
+
+  # Runtime deps are deliberately minimal (requests only); this mostly tracks
+  # the [dev] extra — pytest, ruff, mypy, responses.
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "build"
+    labels:
+      - dependencies

@@ -1,0 +1,201 @@
+# /DESIGN/RC/KDS-41-20-2022/CD-TABLE
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: design-rc-kds-41-20-2022-cd-table
+endpoint: /DESIGN/RC/KDS-41-20-2022/CD-TABLE
+name: RC Column Design Table
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 26_Design_RC_KDS41202022.md
+    section: "43. `DESIGN/RC/KDS-41-20-2022/CD-TABLE` — RC Column Design Table (RC 기둥 설계 테이블)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-08-10
+    - product: gen
+      ref: db-read-sweep-2026-08-10
+
+operations:
+  - method: POST
+    surface:
+      exportName: getColumnDesignTable
+      modulePath: [design, rcKds, designForces]
+      argumentTypeName: RcMemberDesignTableArgument
+      documentation: |-
+        docs/manual/26_Design_RC_KDS41202022.md #43 — CD-TABLE — RC Column
+        Design Table. Includes P-M interaction and shear check results. Response:
+        ``{table_name_or_"Result Table": {"FORCE": ..., "DIST": ..., "HEAD":
+        [...32 columns...], "DATA": [[...], ...]}}``.
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: Argument
+    description: >-
+      Argument 래퍼
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: TABLE_TYPE
+    description: >-
+      표 타입 ("MEMB"/"PROP")
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    enum: [MEMB, PROP]
+    safeToOmit: unverified
+    provenance: manual
+  - key: ELEMS
+    description: >-
+      요소 지정 — KEYS/TO/STRUCTURE_GROUP_NAME 중 하나
+    type: object
+    requirement: conditional
+    condition: "ELEMS/SECTIONS 중 하나"
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    # RESOLVED: this section's own row says only 요소 지정 -
+    # KEYS/TO/STRUCTURE_GROUP_NAME 중 하나, which describes what goes inside
+    # ELEMS, not when ELEMS is needed. The condition for this exact field pair
+    # is stated in these sibling sections: 39 BD-ANAL, 40 BD-TABLE, 41
+    # BD-REPORT, 42 CD-ANAL, 44 CD-REPORT, 45 BRD-ANAL and 47 BRD-REPORT -
+    # each writes ELEMS/SECTIONS 중 하나 in the row and carries a JSON Schema
+    # oneOf of `{required: [ELEMS], not: {required: [SECTIONS]}}` against its
+    # mirror. This section and CD-TABLE are the only two of the nine with
+    # neither. No appliesWhen: the manual names no discriminator field - the
+    # two are alternatives and the choice is the caller's, the same shape as
+    # /ope/AUTOMESH's LENGTH/DIV. See MD-33.
+  - key: SECTIONS
+    description: >-
+      단면 번호 목록
+    type: array
+    items:
+      type: integer
+    requirement: conditional
+    condition: "ELEMS/SECTIONS 중 하나"
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    # RESOLVED: this section's row states no condition at all. It is the other
+    # half of the pair above, and is stated in these sibling sections: 39
+    # BD-ANAL, 40 BD-TABLE, 41 BD-REPORT, 42 CD-ANAL, 44 CD-REPORT, 45
+    # BRD-ANAL and 47 BRD-REPORT. See MD-33.
+  - key: PRI_SORT
+    description: >-
+      정렬 기준 (0=SECT, 1=MEMB)
+    type: integer
+    requirement: optional
+    documentedDefault: 1
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: RESULT
+    description: >-
+      결과 필터 (0=All, 1=OK, 2=NG)
+    type: integer
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: TABLE_NAME
+    description: >-
+      응답 표 제목 · 저장 경로 · 단위 · 포맷 · 표시 열
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: EXPORT_PATH
+    description: >-
+      응답 표 제목 · 저장 경로 · 단위 · 포맷 · 표시 열
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: UNIT
+    description: >-
+      응답 표 제목 · 저장 경로 · 단위 · 포맷 · 표시 열
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: STYLES
+    description: >-
+      응답 표 제목 · 저장 경로 · 단위 · 포맷 · 표시 열
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: COMPONENTS
+    description: >-
+      응답 표 제목 · 저장 경로 · 단위 · 포맷 · 표시 열
+    type: array
+    items:
+      type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+
+manualDefects:
+  - describes: requiredness
+    manualSays: >-
+      Rows 3 and 4 mark `ELEMS` and `SECTIONS` 조건부 and state no condition for
+      either. The `ELEMS` row carries only 요소 지정 - `KEYS`/`TO`/
+      `STRUCTURE_GROUP_NAME` 중 하나, which is `ELEMS`'s internal shape, not a
+      requiredness condition; the `SECTIONS` row says nothing. This section's own
+      JSON Schema has `required: ["TABLE_TYPE"]` and no branch keyword.
+    actual: >-
+      They are alternatives: exactly one of the two. Chapter 26 states this for
+      the same field pair in seven of the nine BD/CD/BRD sections - BD-ANAL,
+      BD-TABLE, BD-REPORT, CD-ANAL, CD-REPORT, BRD-ANAL and BRD-REPORT - writing
+      `ELEMS`/`SECTIONS` 중 하나 in the row and carrying a JSON Schema `oneOf` of
+      `{"required": ["ELEMS"], "not": {"required": ["SECTIONS"]}}` against its
+      mirror. `CD-TABLE` and `BRD-TABLE` are the only two with neither, including
+      against their own `-ANAL` and `-REPORT` companions, which take the same
+      pair. Recorded `conditional` with that phrase and **no** `appliesWhen`: the
+      manual names no discriminator field, because which one to send is the
+      caller's choice. Same shape as MD-28.
+    evidence: >-
+      docs/manual/26_Design_RC_KDS41202022.md sections 43 and 46, rows 3 and 4 and
+      their JSON Schemas, against the same rows and schemas in sections 39, 40,
+      41, 42, 44, 45 and 47. Registered as MD-33.
+
+extraction:
+  source: 26_Design_RC_KDS41202022.md line 7811
+  table: 파라미터

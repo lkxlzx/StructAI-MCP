@@ -1,0 +1,482 @@
+# /db/RPSC
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-rpsc
+endpoint: /db/RPSC
+name: Section Manager – Reinforcements
+surface:
+  className: SectionReinforcement
+  exportName: sectionReinforcement
+  modulePath: [db, properties, section]
+  payloadTypeName: SectionReinforcementPayload
+  nestedTypes:
+    - {path: MBARS, name: SectionReinforcementGroup, namespace: DbPropertiesSectionTypes}
+    - {path: MBARS.MBAR_ITEMS, name: SectionReinforcementLongitudinalItem, namespace: DbPropertiesSectionTypes}
+    - {path: SBAR_ITEMS, name: SectionReinforcementShearItem, namespace: DbPropertiesSectionTypes}
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 04_DB_Properties.md
+    section: "16. `/db/RPSC`"
+    url: https://support.midasuser.com/hc/en-us/articles/35943227821465
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-08-16
+    - product: gen
+      ref: db-read-sweep-2026-08-16
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/RPSC/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: OPT_MBAR_J
+    description: >-
+      Same Rebar Data at i and j-end (Longitudinal)
+    type: boolean
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: OPT_SBAR_J
+    description: >-
+      Same Shear Rebar Data at i and j-end
+    type: boolean
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: OPT_CRACKED
+    description: >-
+      Cracked Section
+    type: boolean
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: SBAR_ITEMS
+    description: >-
+      Shear Reinforcement Data (Array, Index 0=i-section / 1=j-section)
+    type: array
+    items:
+      type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: OPT_DR
+        description: >-
+          Diagonal Reinforcement (DR)
+        type: boolean
+        requirement: optional
+        documentedDefault: false
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: DR_PITCH
+        description: >-
+          [DR] Pitch
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: DR_THETA
+        description: >-
+          [DR] Angle
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: DR_AW
+        description: >-
+          [DR] Area
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: OPT_SBW
+        description: >-
+          Steel Bar for Web (SBW)
+        type: boolean
+        requirement: optional
+        documentedDefault: false
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: SBW_PITCH
+        description: >-
+          [SBW] Pitch
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: SBW_ANGLE
+        description: >-
+          [SBW] Angle
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: SBW_AP
+        description: >-
+          [SBW] Area
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: SBW_PS
+        description: >-
+          [SBW] Pre-force
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: SBW_FACTOR
+        description: >-
+          [SBW] Shear Reduction Factor
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: OPT_TR
+        description: >-
+          Torsional Reinforcement (TR)
+        type: boolean
+        requirement: optional
+        documentedDefault: false
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: TR_PITCH
+        description: >-
+          [TR] Pitch
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: TR_AWT
+        description: >-
+          [TR] Area (Web)
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: TR_ALT
+        description: >-
+          [TR] Area (Longitudinal)
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: OPT_SR
+        description: >-
+          Stirrup Exist
+        type: boolean
+        requirement: optional
+        documentedDefault: false
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: SR_PITCH
+        description: >-
+          [SR] Pitch
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: SR_AW
+        description: >-
+          [SR] Area
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: OPT_LBAR_FLG
+        description: >-
+          Enclosing Stirrup
+        type: boolean
+        requirement: optional
+        documentedDefault: false
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: LBAR_THICK
+        description: >-
+          (Enclosed 단면적 산정용) Cover Thickness
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: LBAR_INC_FC
+        description: >-
+          Include Flange/Cantilever · Off: 0 / On: 1
+        type: integer
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+  - key: MBARS
+    description: >-
+      Longitudinal Reinforcement Properties
+    type: array
+    items:
+      type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: live_corrected
+    # RESOLVED: /info declares this field differently - by depth, not by name.
+    # The manual puts MBAR_ITEMS at the root beside SBAR_ITEMS, and
+    # the two really are asymmetric - GET /info/db/RPSC declares SBAR_ITEMS at
+    # the root and MBAR_ITEMS one level down, inside this array. A section that
+    # flattens one of a pair and not the other is easy to read as tidying up an
+    # inconsistency; it is not. See MD-40.
+    properties:
+      - key: MBAR_ITEMS
+        description: >-
+          Longitudinal Reinforcement Data (Array, Index 0=i-section / 1=j-section)
+        type: array
+        items:
+          type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: IJ
+            description: >-
+              Section Position · "I" / "J"
+            type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: NAME
+            description: >-
+              Bar Name
+            type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: REF_Y
+            description: >-
+              Reference Y · Centroid: 0 / Left: 1
+            type: integer
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: Y
+            description: >-
+              Distance from Reference (Y-dir)
+            type: number
+            requirement: optional
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: REF_Z
+            description: >-
+              Reference Z · Top: 0 / Bottom: 1
+            type: integer
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: Z
+            description: >-
+              Distance from Reference (Z-dir)
+            type: number
+            requirement: optional
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: NUM
+            description: >-
+              Number of Rebar
+            type: integer
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: SPACING
+            description: >-
+              Spacing between Rebars
+            type: number
+            requirement: optional
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: PART
+            description: >-
+              Part
+            type: integer
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+
+manualDefects:
+  - describes: field_name
+    manualSays: >-
+      `MBAR_ITEMS` is a root property of the record, listed as row 5 beside
+      `SBAR_ITEMS` as row 4, both `Array[Object]` and both described as
+      "Array, Index 0=i-section / 1=j-section".
+    actual: >-
+      `GET /info/db/RPSC` declares five root properties - `MBARS`,
+      `OPT_CRACKED`, `OPT_MBAR_J`, `OPT_SBAR_J`, `SBAR_ITEMS`. `SBAR_ITEMS` is
+      at the root as documented; `MBAR_ITEMS` is not, and lives inside `MBARS`,
+      an array the section never mentions. The members of `MBAR_ITEMS` are the
+      nine the manual gives, unchanged - only its depth is wrong.
+    evidence: >-
+      GET /info/db/RPSC on Gen NX and Civil NX, captured 2026-09-03 in the full
+      /info sweep, against docs/manual/04_DB_Properties.md section 16. The
+      section was itself rewritten on 2026-08-25 to add MBAR_ITEMS, which had
+      been missing entirely; the correction restored the fields and placed them
+      at the wrong depth. Registered as MD-40.
+
+sdkRules:
+  - id: db-rpsc-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-rpsc-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 04_DB_Properties.md line 1640
+  table: Specifications
+  structuralTables:
+    - heading: "`SBAR_ITEMS[]` — 전단철근"
+      line: 1650
+      paths:
+        - SBAR_ITEMS
+    - heading: "`MBAR_ITEMS[]` — 종방향철근"
+      line: 1675
+      paths:
+        - MBAR_ITEMS

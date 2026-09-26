@@ -1,0 +1,350 @@
+# /db/REBR
+#
+# The third contract here whose fields come from the server rather than the
+# manual, and the one that took the least work to settle: /db/REBC's shape
+# defect was root-caused on 2026-08-27 by a live POST comparison, and this
+# section makes all the same claims about its own endpoint. A GET
+# /info/db/REBR captured 2026-09-03 shows the server takes the same shape as
+# /db/REBC - `vMAIN_BAR` as an array with a per-entry `D0`, an integer
+# `HOOP_TYPE`, and no `CREATE_SUB_SECTION`/`ELEMS` at all.
+#
+# This contract was first written from the manual on 2026-09-04 and corrected
+# the same day, when a full sweep of the /info capture against every contract
+# reported two properties here that no contract recorded. Reviewing the
+# generated npm diff had not caught it: the manual's shape generates a
+# perfectly coherent type, just not the one the server accepts. See MD-34.
+contractVersion: 1
+id: db-rebr
+endpoint: /db/REBR
+name: Modify Brace Rebar Data
+surface:
+  className: BraceRebar
+  exportName: braceRebar
+  modulePath: [db, design]
+  payloadTypeName: BraceRebarPayload
+  nestedTypes:
+    - {path: ITEMS, name: BraceRebarItem, namespace: DbDesignTypes}
+    - {path: ITEMS.SHEAR_BAR_CEN, name: HoopShearBarSpec, namespace: DbDesignTypes}
+    - {path: ITEMS.SHEAR_BAR_END, name: HoopShearBarSpec, namespace: DbDesignTypes}
+    - {path: ITEMS.vMAIN_BAR, name: BraceMainBarItem, namespace: DbDesignTypes}
+
+products: [gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 24_DB_Design.md
+    section: "13. `/db/REBR` — Modify Brace Rebar Data (가새 철근 데이터 수정)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_gen
+  records:
+    - product: gen
+      ref: db-read-sweep-2026-07-26
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/REBR/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: ITEMS
+    description: >-
+      Concrete Brace Rebar Items
+    type: array
+    items:
+      type: object
+    minItems: 1
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: live_verified
+    # RESOLVED: the one field name the manual and the server agree on,
+    # measured against a live product by GET /info/db/REBR. The manual's 파라미터
+    # table wraps it in an `Assign` map keyed by section number and /info's
+    # Argument declares it directly - the ordinary envelope difference, not a
+    # disagreement.
+    properties:
+      - key: ID
+        description: >-
+          ID (read only)
+        type: integer
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: vMAIN_BAR
+        description: >-
+          Main Bar List
+        type: array
+        items:
+          type: object
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: live_corrected
+        # RESOLVED: the manual gives a single `MAIN_BAR` object and a top-level
+        # `DO`. The array below, with a `D0` inside each entry - a zero, not the
+        # letter - is what GET /info/db/REBR declares, so it is measured against a
+        # live product. Identical to /db/REBC, where a live POST comparison showed
+        # the documented form is refused outright with `Wrong Field`. See MD-34.
+        properties:
+          - key: NAME
+            description: >-
+              Main Name
+            type: string
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_corrected
+          - key: NUM
+            description: >-
+              Number
+            type: integer
+            minimum: 4
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_corrected
+            # RESOLVED: /info states no bound, so nothing here is measured against a
+            # live product - the minimum is the manual's, whose row for this count
+            # says 개수 (min 4) and whose JSON Schema repeats it in a `description`. The
+            # manual is wrong about where this field lives, which is no reason to
+            # discard what it says about its value; chapter 26's sibling states the
+            # same bound. See MD-30.
+          - key: ROW
+            description: >-
+              Row
+            type: integer
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_corrected
+          - key: D0
+            description: >-
+              Concrete Face ~ Center of Rebar
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_corrected
+      - key: SHEAR_BAR_END
+        description: >-
+          Shear Bar-End
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: live_verified
+        properties:
+          - key: NAME
+            description: >-
+              Name
+            type: string
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_verified
+          - key: LEG_Y
+            description: >-
+              Leg y
+            type: integer
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_verified
+          - key: LEG_Z
+            description: >-
+              Leg z
+            type: integer
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_verified
+          - key: DIST
+            description: >-
+              Dist
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_verified
+      - key: SHEAR_BAR_CEN
+        description: >-
+          Shear Bar-Center
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: live_verified
+        properties:
+          - key: NAME
+            description: >-
+              Name
+            type: string
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_verified
+          - key: LEG_Y
+            description: >-
+              Leg y
+            type: integer
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_verified
+          - key: LEG_Z
+            description: >-
+              Leg z
+            type: integer
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_verified
+          - key: DIST
+            description: >-
+              Dist
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: live_verified
+      - key: HOOP_TYPE
+        description: >-
+          Hoop Type (1=Tied, 2=Spiral)
+        type: integer
+        enum: [1, 2]
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: live_corrected
+        # RESOLVED: the manual types this String with the values "Ties" and
+        # "Spirals" and a default of "Ties". The integer here is measured against
+        # a live product: GET /info/db/REBR declares the type and names both
+        # values in its own description. Identical to /db/REBC, where the same two
+        # claims were recorded as defects. The default is not carried over - /info
+        # states none, and the manual's is stated for a different type, so no
+        # literal wire default is known.
+
+manualDefects:
+  - describes: field_name
+    manualSays: >-
+      Each `ITEMS` entry carries a single `MAIN_BAR` object
+      (`NAME`/`NUM`/`ROW`), a top-level `DO`, and an optional
+      `CREATE_SUB_SECTION` with an `ELEMS` object.
+    actual: >-
+      The server takes `vMAIN_BAR`, an array of `{NAME, NUM, ROW, D0}` - the
+      cover distance lives inside each entry as `D0`, spelled with a zero.
+      `CREATE_SUB_SECTION` and `ELEMS` do not exist here at all. This is the
+      same defect as `/db/REBC`'s, field for field, in the section for the
+      sibling endpoint: the chapter describes both the same way and the server
+      takes both the same way, which is not the way the chapter describes.
+      `/db/REBC`'s live POST comparison established what happens to a caller
+      who follows the documented shape - `Wrong Field`, outright refusal - and
+      no such comparison has been run here, so this contract rests on the
+      `/info` schema plus that precedent rather than on a round trip of its
+      own.
+    evidence: >-
+      GET /info/db/REBR on Gen NX, captured 2026-09-03 in the full /info sweep,
+      against docs/manual/24_DB_Design.md section 13's 파라미터 tables and JSON
+      Schema. The /db/REBC precedent and its POST comparison are in
+      docs/live_verification_notes.md (2026-08-27). Registered as MD-34.
+  - describes: field_value
+    manualSays: >-
+      `HOOP_TYPE` is a String with the values `"Ties"` and `"Spirals"`.
+    actual: >-
+      `GET /info/db/REBR` declares `"HOOP_TYPE": {"type": "integer",
+      "description": " Hoop Type (1=Tied, 2=Spiral)"}`. Same claim, same
+      correction, as `/db/REBC`'s. Registered as MD-34.
+    evidence: >-
+      GET /info/db/REBR on Gen NX, captured 2026-09-03. Registered as MD-34.
+  - describes: default
+    manualSays: >-
+      `HOOP_TYPE` defaults to the string `"Ties"`.
+    actual: >-
+      The field is an integer, so a string default cannot be the wire value.
+      Whether the server defaults to `1` is not stated anywhere and has not
+      been measured, so this contract records no default rather than
+      translating one. Registered as MD-34.
+    evidence: >-
+      GET /info/db/REBR on Gen NX, captured 2026-09-03, which declares no
+      default. Registered as MD-34.
+
+extraction:
+  source: 24_DB_Design.md line 1
+  table: none
+  note: >-
+    No table. The extractor's draft was promoted on 2026-09-04 and its fields
+    replaced the same day: it transcribes a shape the server does not declare,
+    for the same reason /db/REBC's and /db/REBW's drafts were discarded. What
+    the manual is still the source for is `ITEMS`'s minItems and `NUM`'s
+    minimum, neither of which /info states and neither of which the shape
+    defect touches.

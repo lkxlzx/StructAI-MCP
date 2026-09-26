@@ -1,0 +1,269 @@
+# /ope/USLC
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: ope-uslc
+endpoint: /ope/USLC
+name: Using Load Combinations
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 15_OPE.md
+    section: "4. `/ope/USLC` — Using Load Combinations"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-write-sweep-2026-08-07
+    - product: gen
+      ref: db-write-sweep-2026-08-07
+
+operations:
+  - method: POST
+    surface:
+      exportName: useLoadCombinations
+      modulePath: [ope]
+      argumentTypeName: UsingLoadCombinationsArgument
+      documentation: |-
+        docs/manual/15_OPE.md #4 — /ope/USLC — Using Load Combinations.
+      nestedTypes:
+        - {path: LCOM_LIST, name: LoadCombinationRef, namespace: OpeTypes}
+        - {path: LOADS, name: UsingLoadTypes, namespace: OpeTypes}
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: PREFIX
+    description: >-
+      하중케이스/설계조합 이름 접두어
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedDefaultNote: System
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: POSITION
+    description: >-
+      설계조합 생성 위치 · 강재: "STEEL" / 콘크리트: "CONC" / SRC: "SRC"
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: LCOM_LIST
+    description: >-
+      선택된 조합 목록
+    type: array
+    items:
+      type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: TYPE
+        description: >-
+          하중조합 타입 · 일반: "GEN" / 강재: "STEEL" / 콘크리트: "CONC" / SRC: "SRC" / 강합성거더:
+          "STLCOMP" / 내진: "SEISMIC"
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: NAME
+        description: >-
+          하중조합 이름
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+  - key: LOADS
+    description: >-
+      선택 하중 종류
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: SELF_WEIGHT
+        description: >-
+          자중
+        type: boolean
+        requirement: optional
+        documentedDefault: true
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: NODAL_BODY_FROCE
+        description: >-
+          절점체적력
+        type: boolean
+        requirement: optional
+        documentedDefault: true
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: NODAL_LOAD
+        description: >-
+          절점하중
+        type: boolean
+        requirement: optional
+        documentedDefault: true
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: SPECIFIED_DISPLACEMENT
+        description: >-
+          지정변위
+        type: boolean
+        requirement: optional
+        documentedDefault: true
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: BEAM_LOAD
+        description: >-
+          보하중
+        type: boolean
+        requirement: optional
+        documentedDefault: true
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: FLOOR_LOAD
+        description: >-
+          바닥하중
+        type: boolean
+        requirement: optional
+        documentedDefault: true
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: FINISHING_MATERIAL_LOAD
+        description: >-
+          마감재하중
+        type: boolean
+        requirement: optional
+        documentedDefault: true
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: PRESSURE_LOAD
+        description: >-
+          압력하중
+        type: boolean
+        requirement: optional
+        documentedDefault: true
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: PLANE_LOAD
+        description: >-
+          평면하중
+        type: boolean
+        requirement: optional
+        documentedDefault: true
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: SYSTEM_TEMPERATURE
+        description: >-
+          시스템 온도
+        type: boolean
+        requirement: optional
+        documentedDefault: true
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: NODAL_TEMPERATURE
+        description: >-
+          절점 온도
+        type: boolean
+        requirement: optional
+        documentedDefault: true
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: ELEMENT_TEMPERATURE
+        description: >-
+          요소 온도
+        type: boolean
+        requirement: optional
+        documentedDefault: true
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: TEMPERATURE_GRADIENT
+        description: >-
+          온도구배
+        type: boolean
+        requirement: optional
+        documentedDefault: true
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: BEAM_SECTION_TEMPERATURE
+        description: >-
+          보단면 온도
+        type: boolean
+        requirement: optional
+        documentedDefault: true
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: PRESTRESS_LOAD
+        description: >-
+          프리스트레스 하중
+        type: boolean
+        requirement: optional
+        documentedDefault: true
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: PRETENSION_LOAD
+        description: >-
+          프리텐션 하중
+        type: boolean
+        requirement: optional
+        documentedDefault: true
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: TENDON_PRESTRESS_LOAD
+        description: >-
+          텐던 프리스트레스 하중
+        type: boolean
+        requirement: optional
+        documentedDefault: true
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+
+extraction:
+  source: 15_OPE.md line 532
+  table: Parameters

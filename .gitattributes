@@ -1,17 +1,47 @@
-# Normalise text to LF inside the repository so a Windows checkout (where
-# core.autocrlf=true) and a Linux/macOS checkout produce identical blobs.
-* text=auto
+# Line-ending policy.
+#
+# This file matters here more than in most repositories because two vendored
+# third-party trees are committed (`MIDAS-API-main/`, `MIDAS-API-NX-SDK-main/`).
+# With `core.autocrlf=true` and no attributes file, Git normalises their LF
+# endings on commit and rewrites them to CRLF on checkout — so the working copy
+# silently stops matching upstream, which defeats the point of vendoring a
+# snapshot. Those two trees are therefore pinned to `-text`: byte-identical, no
+# conversion, no warnings.
 
-# Binary payloads: never touch these.
-*.rar   binary
-*.7z    binary
-*.zip   binary
-*.png   binary
-*.jpg   binary
-*.jpeg  binary
-*.ico   binary
-*.pdf   binary
-*.mgbx  binary
+# Default: normalise text files to LF in the repository.
+* text=auto eol=lf
 
-# Machine-written audit trails: keep them byte-exact, no eol rewriting.
-*.jsonl -text
+# --- vendored upstream snapshots: never touch a byte -----------------------
+MIDAS-API-main/** -text
+MIDAS-API-NX-SDK-main/** -text
+
+# --- binary ----------------------------------------------------------------
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.gz binary
+*.whl binary
+*.dll binary
+*.so binary
+*.dylib binary
+*.exe binary
+*.db binary
+*.sqlite binary
+*.xlsm binary
+*.mp4 binary
+*.mgb binary
+
+# --- SQL is text; the schema is diffed on every review ---------------------
+*.sql text eol=lf
+
+# --- generated JSON is diffed, so keep it LF and let it merge --------------
+*.json text eol=lf
+
+# --- Git's own machinery ---------------------------------------------------
+.gitattributes text
+.gitignore text
+*.md text eol=lf

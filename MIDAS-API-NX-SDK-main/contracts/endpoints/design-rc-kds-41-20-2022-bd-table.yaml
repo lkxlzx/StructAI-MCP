@@ -1,0 +1,165 @@
+# /DESIGN/RC/KDS-41-20-2022/BD-TABLE
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: design-rc-kds-41-20-2022-bd-table
+endpoint: /DESIGN/RC/KDS-41-20-2022/BD-TABLE
+name: RC Beam Design Table
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 26_Design_RC_KDS41202022.md
+    section: "40. `DESIGN/RC/KDS-41-20-2022/BD-TABLE` — RC Beam Design Table (RC 보 설계 테이블)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-08-10
+    - product: gen
+      ref: db-read-sweep-2026-08-10
+
+operations:
+  - method: POST
+    surface:
+      exportName: getBeamDesignTable
+      modulePath: [design, rcKds, designForces]
+      argumentTypeName: RcMemberDesignTableArgument
+      documentation: |-
+        docs/manual/26_Design_RC_KDS41202022.md #40 — BD-TABLE — RC Beam
+        Design Table. Response: ``{table_name_or_"RC Beam Design Result":
+        {"FORCE": ..., "DIST": ..., "HEAD": [...25 columns...], "DATA":
+        [[...], ...]}}``.
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: Argument
+    description: >-
+      Argument 래퍼
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: TABLE_TYPE
+    description: >-
+      표 타입 ("MEMB"=부재별, "PROP"=단면별)
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    enum: [MEMB, PROP]
+    safeToOmit: unverified
+    provenance: manual
+  - key: ELEMS
+    description: >-
+      요소 지정 (ELEMS/SECTIONS 중 하나) — KEYS/TO/STRUCTURE_GROUP_NAME
+    type: object
+    requirement: conditional
+    condition: "oneOf: exactly one of \"ELEMS\", \"SECTIONS\" is required"
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: SECTIONS
+    description: >-
+      단면 번호 목록
+    type: array
+    items:
+      type: integer
+    requirement: conditional
+    condition: "oneOf: exactly one of \"ELEMS\", \"SECTIONS\" is required"
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: PRI_SORT
+    description: >-
+      정렬 기준 (0=SECT, 1=MEMB) — TABLE_TYPE=MEMB일 때
+    type: integer
+    requirement: optional
+    documentedDefault: 1
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: RESULT
+    description: >-
+      결과 필터 (0=All, 1=OK, 2=NG)
+    type: integer
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: TABLE_NAME
+    description: >-
+      응답 표 제목
+    type: string
+    requirement: optional
+    documentedDefault: RC Beam Design Result
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: EXPORT_PATH
+    description: >-
+      결과 파일 저장 경로
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: UNIT
+    description: >-
+      단위 설정 (FORCE/DIST/HEAT/TEMP)
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedDefaultNote: System
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: STYLES
+    description: >-
+      숫자 포맷 (FORMAT, PLACE 0~15)
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedDefaultNote: System
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: COMPONENTS
+    description: >-
+      표시 열 목록 (아래 HEAD 참조)
+    type: array
+    items:
+      type: string
+    requirement: optional
+    documentedDefault: null
+    documentedDefaultNote: All
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+
+extraction:
+  source: 26_Design_RC_KDS41202022.md line 7397
+  table: 파라미터

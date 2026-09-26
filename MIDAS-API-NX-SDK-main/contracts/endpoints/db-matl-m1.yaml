@@ -1,0 +1,393 @@
+# /db/MATL-M1
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-matl-m1
+endpoint: /db/MATL-M1
+name: Material Properties (Hyper-S)
+surface:
+  className: MaterialHyperS
+  exportName: materialHyperS
+  modulePath: [db, properties, material]
+  payloadTypeName: MaterialHyperSPayload
+  nestedTypes:
+    - {path: PARAM, name: MaterialHyperSParam, namespace: DbPropertiesMaterialTypes}
+    - {path: PARAM.THERMAL_TRANS, name: MaterialHyperSThermalTransfer, namespace: DbPropertiesMaterialTypes}
+    - {path: PARAM.USER_DEFINED, name: MaterialHyperSUserDefined, namespace: DbPropertiesMaterialTypes}
+
+products: [civil]
+
+source:
+  manual:
+    status: contradicted
+    justification: >-
+      The chapter section for this endpoint states only a URL, its methods and
+      a link to the official article - it carries no Specifications table and no
+      JSON Schema, so the manual describes the endpoint's existence but not its
+      request. The fields below come from GET /info{endpoint}, captured in
+      schema/hyper-s-info.json; the methods and the label above are still the
+      manual's. Registered as MD-12.
+
+      This section additionally claims the endpoint's base material structure is
+      the same as /db/MATL with Hyperelastic support added. It is not, which is
+      why the status here is contradicted rather than absent - see manualDefects
+      and MD-03.
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 04_DB_Properties.md
+    section: "2. `/db/MATL-M1`"
+    url: https://support.midasuser.com/hc/ko/articles/56396523438873
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_civil
+  records:
+    - product: civil
+      ref: db-write-sweep-2026-08-31
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/MATL-M1/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: MATL_NAME
+    description: >-
+      Material Name
+    type: string
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: info_schema
+  - key: MATL_TYPE
+    description: >-
+      Material Type
+    type: string
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: info_schema
+  - key: DAMP_RAT
+    description: >-
+      Damping Ratio
+    type: number
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: info_schema
+  - key: PARAM
+    description: >-
+      Material Parameters
+    type: array
+    items:
+      type: object
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: info_schema
+    properties:
+      - key: P_TYPE
+        description: >-
+          Type of Material (Standard:0, Isotropic:1, Orthotropic:2)
+        type: integer
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+        # RESOLVED: the served description names values for this field - (Standard:0,
+        # Isotropic:1, Orthotropic:2) - but /info declares neither an enum nor any
+        # conditional structure, so the values live in the description and no
+        # variant is built from this capture. That is a fact about the source, not
+        # a reading of this endpoint: an /info schema is flat and states no branch
+        # anywhere. A gate on these values would have to come from the manual or
+        # from a live observation, and the sibling contracts drafted from
+        # identical prose keep the values in the description too
+      - key: STANDARD
+        description: >-
+          Standard
+        type: string
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: CODE
+        description: >-
+          Code
+        type: string
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: DB
+        description: >-
+          DB Name
+        type: string
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: USER_DEFINED
+        description: >-
+          User Defined Properties
+        type: object
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+        properties:
+          - key: bELAST
+            description: >-
+              User Elasticity
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: POISN
+            description: >-
+              Poisson's ratio
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: THERMAL
+            description: >-
+              Coefficients of linear thermal
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: DEN
+            description: >-
+              Weight Density
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: ELAST_M
+            description: >-
+              Modulii of elasticity [X,Y,Z]
+            type: array
+            items:
+              type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+            # RESOLVED: the served schema states maxItems=3 on this array's items subschema
+            # rather than on the array, where JSON Schema ignores it, so it is not
+            # transcribed (MD-12)
+          - key: THERMAL_M
+            description: >-
+              Coefficients of linear thermal [X,Y,Z]
+            type: array
+            items:
+              type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+            # RESOLVED: the served schema states maxItems=3 on this array's items subschema
+            # rather than on the array, where JSON Schema ignores it, so it is not
+            # transcribed (MD-12)
+          - key: SHEAR_M
+            description: >-
+              Shear modulii [xy,xz,yz]
+            type: array
+            items:
+              type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+            # RESOLVED: the served schema states maxItems=3 on this array's items subschema
+            # rather than on the array, where JSON Schema ignores it, so it is not
+            # transcribed (MD-12)
+          - key: POISN_M
+            description: >-
+              Poisson's ratio [xy,xz,yz]
+            type: array
+            items:
+              type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+            # RESOLVED: the served schema states maxItems=3 on this array's items subschema
+            # rather than on the array, where JSON Schema ignores it, so it is not
+            # transcribed (MD-12)
+          - key: bMASS_DENS
+            description: >-
+              Use Mass Density
+            type: boolean
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: MASS
+            description: >-
+              Mass Density
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+      - key: PLASTIC_MATL_NAME
+        description: >-
+          Plastic Material Name
+        type: string
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: THERMAL_TRANS
+        description: >-
+          Thermal Transfer
+        type: object
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+        properties:
+          - key: HE_SPEC
+            description: >-
+              Specific Heat
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: HE_COND
+            description: >-
+              Heat Conduction
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+
+manualDefects:
+  - describes: field_name
+    manualSays: >-
+      04_DB_Properties.md, section 2: the Hyper-S endpoint uses the same base
+      material structure as /db/MATL and additionally supports Hyper-S
+      hyperelastic material models.
+    actual: >-
+      The two endpoints do not share their wire keys. /db/MATL-M1 takes
+      MATL_NAME, MATL_TYPE, PARAM and DAMP_RAT; /db/MATL takes NAME, TYPE,
+      PARAM, DAMP_RAT, HE_COND, HE_SPEC, PLMT, P_NAME and bMASS_DENS. The
+      hyperelastic fields HE_COND and HE_SPEC are on /db/MATL, not on the
+      Hyper-S endpoint the sentence is describing. PARAM[].P_TYPE is also
+      numbered differently: 0-based here, 1-based on /db/MATL.
+    evidence: >-
+      docs/live_verification_notes.md, "/db/MATL-M1 is not /db/MATL plus
+      Hyper-S additions" (Civil NX 2026 v2.2, 2026-08-31), confirmed by the
+      write round trips of all three P_TYPE branches the same day and by the
+      /info capture in schema/hyper-s-info.json. Registered as MD-03.
+
+sdkRules:
+  - id: db-matl-m1-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-matl-m1-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 04_DB_Properties.md line ?
+  table: none found

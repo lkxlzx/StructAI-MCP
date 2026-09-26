@@ -1,0 +1,280 @@
+# /DESIGN/RC/KDS-41-20-2022/HCBM
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: design-rc-kds-41-20-2022-hcbm
+endpoint: /DESIGN/RC/KDS-41-20-2022/HCBM
+name: Haunched Beam Assignment
+surface:
+  className: HaunchedBeamAssignment
+  exportName: haunchedBeamAssignment
+  modulePath: [design, rcKds, setup]
+  payloadTypeName: HaunchedBeamAssignmentPayload
+  nestedTypes:
+    - {path: PART_A, name: HaunchPartSelector, namespace: DesignRcKdsSetupTypes}
+    - {path: PART_B, name: HaunchPartSelector, namespace: DesignRcKdsSetupTypes}
+    - {path: PART_C, name: HaunchPartSelector, namespace: DesignRcKdsSetupTypes}
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 26_Design_RC_KDS41202022.md
+    section: "19. `DESIGN/RC/KDS-41-20-2022/HCBM` — Haunched Beam Assignment (헌치보 배정)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-07-26
+    - product: gen
+      ref: db-read-sweep-2026-07-26
+
+operations:
+  - method: DELETE
+    risk: destructive
+    mitigation: none
+    request:
+      wrapper: none
+    response:
+      wrapper: unknown
+    notes: >-
+      The manual shows a bodyless DELETE at this endpoint, but does not
+      state the deletion scope or response shape.
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: Assign
+    description: >-
+      Assign 래퍼 (ID 문자열 키)
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: NAME
+    description: >-
+      헌치 이름
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: PART_A
+    description: >-
+      Part A 요소 입력 (방식 1개만 사용)
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: INPUT_METHOD
+        description: >-
+          입력 방식 (KEYS=개별 ID, TO=ID 범위)
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        enum: [KEYS, TO]
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'PART_A' by numbering it '3.1', not by
+        # naming a path
+      - key: KEYS
+        description: >-
+          개별 요소 ID (INPUT_METHOD=KEYS, 최소 1개)
+        type: array
+        items:
+          type: integer
+        minItems: 1
+        requirement: conditional
+        condition: "INPUT_METHOD=\"KEYS\""
+        appliesWhen:
+          - path: PART_A.INPUT_METHOD
+            equals: KEYS
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'PART_A' by numbering it '3.2', not by
+        # naming a path
+      - key: TO
+        description: >-
+          ID 범위 (예 "101 to 105") (INPUT_METHOD=TO)
+        type: string
+        requirement: conditional
+        condition: "INPUT_METHOD=\"TO\""
+        appliesWhen:
+          - path: PART_A.INPUT_METHOD
+            equals: TO
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'PART_A' by numbering it '3.3', not by
+        # naming a path
+  - key: PART_B
+    description: >-
+      Part B 요소 입력 (구조는 Part A와 동일)
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: INPUT_METHOD
+        description: >-
+          입력 방식 (KEYS=개별 ID, TO=ID 범위)
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        enum: [KEYS, TO]
+        safeToOmit: unverified
+        provenance: manual
+      - key: KEYS
+        description: >-
+          개별 요소 ID (INPUT_METHOD=KEYS, 최소 1개)
+        type: array
+        items:
+          type: integer
+        minItems: 1
+        requirement: conditional
+        condition: "INPUT_METHOD=\"KEYS\""
+        appliesWhen:
+          - path: PART_B.INPUT_METHOD
+            equals: KEYS
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: TO
+        description: >-
+          ID 범위 (예 "101 to 105") (INPUT_METHOD=TO)
+        type: string
+        requirement: conditional
+        condition: "INPUT_METHOD=\"TO\""
+        appliesWhen:
+          - path: PART_B.INPUT_METHOD
+            equals: TO
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+  - key: PART_C
+    description: >-
+      Part C 요소 입력 (구조는 Part A와 동일)
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: INPUT_METHOD
+        description: >-
+          입력 방식 (KEYS=개별 ID, TO=ID 범위)
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        enum: [KEYS, TO]
+        safeToOmit: unverified
+        provenance: manual
+      - key: KEYS
+        description: >-
+          개별 요소 ID (INPUT_METHOD=KEYS, 최소 1개)
+        type: array
+        items:
+          type: integer
+        minItems: 1
+        requirement: conditional
+        condition: "INPUT_METHOD=\"KEYS\""
+        appliesWhen:
+          - path: PART_C.INPUT_METHOD
+            equals: KEYS
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: TO
+        description: >-
+          ID 범위 (예 "101 to 105") (INPUT_METHOD=TO)
+        type: string
+        requirement: conditional
+        condition: "INPUT_METHOD=\"TO\""
+        appliesWhen:
+          - path: PART_C.INPUT_METHOD
+            equals: TO
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+  - key: POS_TYPE
+    description: >-
+      설계 위치 타입 (0=Part 1/2, 1=User)
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    enum: [0, 1]
+    safeToOmit: unverified
+    provenance: manual
+  - key: L1
+    description: >-
+      사용자 정의 L1 거리 (POS_TYPE=1일 때)
+    type: number
+    requirement: optional
+    documentedDefault: 1
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: L2
+    description: >-
+      사용자 정의 L2 거리 (POS_TYPE=1일 때)
+    type: number
+    requirement: optional
+    documentedDefault: 1
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+
+extraction:
+  source: 26_Design_RC_KDS41202022.md line 3884
+  table: 파라미터

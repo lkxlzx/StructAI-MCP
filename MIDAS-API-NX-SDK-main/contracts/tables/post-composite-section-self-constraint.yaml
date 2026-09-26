@@ -1,0 +1,32 @@
+contractVersion: 1
+id: post-composite-section-self-constraint
+endpoint: /post/TABLE
+name: Composite Section Self-Constraint
+summary: Self-constraint force or stress for composite sections.
+products: [gen, civil]
+source: {manual: {status: documented, repo: Dennis5882/MIDAS-API, chapterFile: 20_POST_AnalysisResult_2.md, section: "38. Composite Section for C.S. (Self-Constraint Force and Stress)"}}
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getCompositeSectionSelfConstraintBeamTable
+  modulePath: [result1]
+  tableType: SELF_CONST_BEAM_FORCE
+  factory: variable
+  optionNames: [components, constructionStage, loadCaseNames, nodeElements, stageSteps, styles, tableName, unit]
+  documentation: |-
+    docs/manual/20_POST_AnalysisResult_2.md #38 — Composite Section for C.S.
+    (Self-Constraint Force and Stress).
+
+    table_type: TABLE_TYPE_SELF_CONSTRAINT_BEAM_FORCE (default) or
+    TABLE_TYPE_SELF_CONSTRAINT_BEAM_STRESS.
+tableTypes:
+  - value: SELF_CONST_BEAM_FORCE
+    description: Composite-section self-constraint beam force
+    head: [Index, Elem, Load, SectionPart, Part, Axial, Moment-y, Moment-z]
+    headNote: Construction-stage queries add Stage and Step after Load.
+    provenance: manual
+  - value: SELF_CONST_BEAM_STRESS
+    description: Composite-section self-constraint beam stress
+    head: [Index, Elem, Load, SectionPart, Part, Axial, Moment-y, Moment-z]
+    headNote: Construction-stage queries add Stage and Step after Load.
+    provenance: manual

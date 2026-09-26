@@ -1,0 +1,53 @@
+{
+  "$comment": [
+    "StructAI ← MIDAS NX 连接配置（引导用）。",
+    "复制为 midas.json 并填入真实值。midas.json 含 MAPI-Key，不得入库。",
+    "base_url / MAPI-Key / software 三项按项目决定落在本文件；",
+    "midas_clients 表仍是多租户运行时注册表，本文件是它的引导来源。",
+    "依据：docs/MIDAS_API_对接规范_v1.0.md §2（连接与认证）、§2.5（会话与并发模型）。"
+  ],
+  "clients": [
+    {
+      "name": "本机 Gen NX",
+      "software": "MIDAS Gen NX",
+      "product": "gen",
+      "base_url": "https://moa-engineers.midasit.com:443",
+      "mapi_key": "REPLACE_WITH_MAPI_KEY",
+      "owner": null,
+      "department": null,
+      "visibility": "private",
+      "timeout_seconds": 60,
+      "verify_tls": true,
+      "max_concurrency": 1,
+      "enabled": true
+    },
+    {
+      "name": "本机 Civil NX",
+      "software": "MIDAS Civil NX",
+      "product": "civil",
+      "base_url": "https://moa-engineers.midasit.com:443",
+      "mapi_key": "REPLACE_WITH_MAPI_KEY",
+      "owner": null,
+      "department": null,
+      "visibility": "private",
+      "timeout_seconds": 120,
+      "verify_tls": true,
+      "max_concurrency": 1,
+      "enabled": false
+    },
+    {
+      "name": "本地 3030 直连示例",
+      "software": "MIDAS Gen NX",
+      "product": "gen",
+      "base_url": "http://localhost:3030",
+      "mapi_key": "REPLACE_WITH_MAPI_KEY",
+      "owner": null,
+      "department": null,
+      "visibility": "private",
+      "timeout_seconds": 60,
+      "verify_tls": false,
+      "max_concurrency": 1,
+      "enabled": false
+    }
+  ]
+}

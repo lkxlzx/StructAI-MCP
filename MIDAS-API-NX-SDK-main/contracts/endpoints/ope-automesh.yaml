@@ -1,0 +1,436 @@
+# /ope/AUTOMESH
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: ope-automesh
+endpoint: /ope/AUTOMESH
+name: Auto-Mesh Planar Area
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 15_OPE.md
+    section: "6. `/ope/AUTOMESH` — Auto-Mesh Planar Area"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-write-sweep-2026-07-30
+    - product: gen
+      ref: db-write-sweep-2026-07-30
+
+operations:
+  - method: POST
+    surface:
+      exportName: autoMesh
+      modulePath: [ope]
+      argumentTypeName: AutoMeshArgument
+      documentation: |-
+        docs/manual/15_OPE.md #6 — /ope/AUTOMESH — Auto-Mesh Planar Area.
+      nestedTypes:
+        - {path: ADDITIONAL_OPTION, name: AutoMeshAdditionalOption, namespace: OpeTypes}
+        - {path: DOMAIN_NAME, name: AutoMeshDomainName, namespace: OpeTypes}
+        - {path: MESHER, name: AutoMesher, namespace: OpeTypes}
+        - {path: MESH_SIZE, name: AutoMeshSize, namespace: OpeTypes}
+        - {path: PROPERTY, name: AutoMeshProperty, namespace: OpeTypes}
+        - {path: PROPERTY.ELEMENT_SUB_TYPE, name: AutoMeshElementSubType, namespace: OpeTypes}
+        - {path: MESHER.INCLUDE_INTERIOR_NODES, name: InteriorInclusionOption, namespace: OpeTypes}
+        - {path: MESHER.INCLUDE_INTERIOR_LINES, name: InteriorInclusionOption, namespace: OpeTypes}
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: MESHER
+    description: >-
+      메셔 설정
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: METHOD
+        description: >-
+          자동 메시 방법 · 노드: "Nodes" / 선요소: "LineElements" / 평면요소: "PlanarElements"
+        type: string
+        requirement: optional
+        documentedDefault: LineElements
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: TARGETS
+        description: >-
+          메시 대상 요소/노드 목록
+        type: array
+        items:
+          type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: TYPE
+        description: >-
+          메시 형태 · 사각형: "Quadrilateral" / 사각+삼각: "Quadandtriangle" / 삼각형: "Triangle"
+        type: string
+        requirement: optional
+        documentedDefault: Quadrilateral
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: MESH_INNER_DOMAIN
+        description: >-
+          내부 도메인 메시 생성 여부
+        type: boolean
+        requirement: optional
+        documentedDefault: false
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: INCLUDE_INTERIOR_NODES
+        description: >-
+          영역 내 노드 고려 옵션
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: OPT_CHECK
+            description: >-
+              활성화
+            type: boolean
+            requirement: optional
+            documentedDefault: true
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: OPTION
+            description: >-
+              감지 방식 · "Auto"/"User"
+            type: string
+            requirement: optional
+            documentedDefault: Auto
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: VALUE
+            description: >-
+              포함 노드 번호(User일 때)
+            type: array
+            items:
+              type: integer
+            requirement: conditional
+            condition: User일 때
+            appliesWhen:
+              - path: MESHER.INCLUDE_INTERIOR_NODES.OPTION
+                equals: User
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+      - key: INCLUDE_INTERIOR_LINES
+        description: >-
+          영역 내 선요소 고려 옵션 (구조는 1-5와 동일)
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: this object's members are stated elsewhere in the same
+        # section, and the row points at where: 구조는 1-5와 동일. Rows 1-5-a to
+        # 1-5-c give the three, the JSON Schema declares the identical trio under
+        # INCLUDE_INTERIOR_LINES, and the section's second Request Example sends
+        # `{ OPT_CHECK: true, OPTION: "User", VALUE: [2] }`. Transcribed from
+        # those rows, with VALUE's condition reading against this object's own
+        # OPTION.
+        properties:
+          - key: OPT_CHECK
+            description: >-
+              활성화
+            type: boolean
+            requirement: optional
+            documentedDefault: true
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: OPTION
+            description: >-
+              감지 방식 · "Auto"/"User"
+            type: string
+            requirement: optional
+            documentedDefault: Auto
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: VALUE
+            description: >-
+              포함 선요소 번호(User일 때)
+            type: array
+            items:
+              type: integer
+            requirement: conditional
+            condition: "User일 때"
+            appliesWhen:
+              - path: MESHER.INCLUDE_INTERIOR_LINES.OPTION
+                equals: User
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+      - key: INCLUDE_BOUNDARY_CONNECTIVITY
+        description: >-
+          메시 경계 연결 여부
+        type: boolean
+        requirement: optional
+        documentedDefault: true
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+  - key: MESH_SIZE
+    description: >-
+      메시 크기
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: LENGTH
+        description: >-
+          길이 기준 (DIV와 동시 사용 불가)
+        type: number
+        requirement: conditional
+        condition: "DIV와 동시 사용 불가"
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the table types this Number and the section's JSON Schema
+        # types it integer. Number is kept, and this is the one field in the pair
+        # where the narrower reading would cost something: a mesh size is a length
+        # in model units, so integer would exclude values the row's own
+        # description (길이 기준) admits, and no third statement supports it - the
+        # section's Request Example sends `"LENGTH": 1`, which both readings
+        # accept. See MD-28.
+        # RESOLVED: requiredness is the table's own contradiction, and what
+        # settles it is stated elsewhere in the same section. The cell says
+        # Required while the same
+        # row says `DIV`와 동시 사용 불가 and `DIV`'s row says the same of this one,
+        # so the two cannot both be sent - and the section's two Request Examples
+        # send exactly one each (`MESH_SIZE: { LENGTH: 1 }` and
+        # `MESH_SIZE: { DIV: 3 }`). Recorded conditional with the manual's phrase;
+        # no appliesWhen, because the manual names no discriminator - the choice
+        # is the caller's. documentedOptional stays false: the manual does say
+        # Required. See MD-28.
+      - key: DIV
+        description: >-
+          분할수 기준 (LENGTH와 동시 사용 불가)
+        type: integer
+        requirement: conditional
+        condition: "LENGTH와 동시 사용 불가"
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the table types this Number and the section's JSON Schema
+        # types it integer. Integer is kept - the narrower of the two documented
+        # types, and the one the row's own description supports: 분할수 is a
+        # division count, and the Request Example sends `"DIV": 3`. Unlike its
+        # sibling LENGTH, narrowing costs nothing here. See MD-28.
+        # RESOLVED: requiredness is the table's own contradiction, and what
+        # settles it is stated elsewhere in the same section - see the same note
+        # on LENGTH above. See MD-28.
+  - key: PROPERTY
+    description: >-
+      요소 속성
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: ELEMENT_TYPE
+        description: >-
+          요소 타입 · "Plate"/"PlaneStress"/"PlaneStrain"/"Axisymmetric"
+        type: string
+        requirement: optional
+        documentedDefault: Plate
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: ELEMENT_SUB_TYPE
+        description: >-
+          요소 세부 타입
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: TYPE
+            description: >-
+              판 두께 타입(ELEMENT_TYPE="Plate"일 때) · "Thick"/"Thin"
+            type: string
+            requirement: optional
+            documentedDefault: Thick
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: WITH_DRILLING_DOF
+            description: >-
+              Drilling DOF 사용(Plate/PlaneStress일 때)
+            type: boolean
+            requirement: optional
+            documentedDefault: true
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+      - key: MATERIAL
+        description: >-
+          재료 번호
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: THICKNESS
+        description: >-
+          두께 번호(Plate/PlaneStress일 때)
+        type: integer
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+  - key: DOMAIN_NAME
+    description: >-
+      도메인 이름
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: NAME
+        description: >-
+          이름
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+  - key: ADDITIONAL_OPTION
+    description: >-
+      추가 옵션
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: DELETE_LINE_ELEM
+        description: >-
+          원본 선/경계 요소 삭제
+        type: boolean
+        requirement: optional
+        documentedDefault: false
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: SUBDIVIDE_LINE_ELEM
+        description: >-
+          원본 선/경계 요소 재분할
+        type: boolean
+        requirement: optional
+        documentedDefault: true
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+
+manualDefects:
+  - describes: field_name
+    manualSays: >-
+      Row 1-6 declares `MESHER.INCLUDE_INTERIOR_LINES` and then lists none of
+      its members, writing "구조는 1-5와 동일" in the description instead. The
+      table therefore names three fields fewer than the request has.
+    actual: >-
+      The three are `OPT_CHECK`, `OPTION` and `VALUE`, exactly as rows 1-5-a to
+      1-5-c give them for the sibling `INCLUDE_INTERIOR_NODES`. The section's own
+      JSON Schema declares the identical trio under `INCLUDE_INTERIOR_LINES`, and
+      its second Request Example sends
+      `"INCLUDE_INTERIOR_LINES": { "OPT_CHECK": true, "OPTION": "User", "VALUE": [2] }`.
+      Transcribed here from those rows rather than left out, because a payload
+      type built from the table alone would refuse a call the manual itself
+      prints. `VALUE`'s condition is rooted on this object's own `OPTION`, not on
+      the sibling's. Same shape as MD-26 and MD-22: members the table has no rows
+      for, supplied by a second statement in the same section.
+    evidence: >-
+      docs/manual/15_OPE.md section 6's Parameters row 1-6 against rows 1-5-a to
+      1-5-c, the JSON Schema printed above them, and the second POST Request Body
+      below them. Registered as MD-28.
+  - describes: requiredness
+    manualSays: >-
+      Rows 2-1 and 2-2 both mark `MESH_SIZE.LENGTH` and `MESH_SIZE.DIV`
+      **Required**, while each row's own description says the two cannot be
+      used together (`DIV`와 동시 사용 불가 / `LENGTH`와 동시 사용 불가).
+    actual: >-
+      They are alternatives, and no payload can satisfy both cells. The
+      section's own two Request Examples send exactly one each -
+      `"MESH_SIZE": { "LENGTH": 1 }` and `"MESH_SIZE": { "DIV": 3 }` - so a
+      caller following the Required column literally would be sending a request
+      the manual's own examples contradict. Recorded `conditional` with each
+      row's phrase as the condition and no `appliesWhen`: the manual names no
+      discriminator field, because which one to send is the caller's modelling
+      choice, not a branch the payload declares. `documentedOptional` stays
+      false - the manual does say Required, and that is what the flag records.
+    evidence: >-
+      docs/manual/15_OPE.md section 6's Parameters rows 2-1 and 2-2 against the
+      two POST Request Bodies printed below them in the same section.
+      Registered as MD-28.
+  - describes: field_value
+    manualSays: >-
+      The Parameters table types both `MESH_SIZE.LENGTH` and `MESH_SIZE.DIV`
+      Number; the section's own JSON Schema types both `integer`.
+    actual: >-
+      The two fields do not resolve the same way, and the difference is in what
+      each names. `DIV` is 분할수 - a division count - so `integer` is kept: it
+      is the narrower of the two documented types and the Request Example's
+      `3` satisfies both readings, so narrowing costs nothing. `LENGTH` is a
+      mesh size in model length units, and `integer` would exclude values the
+      row's own description admits, with no third statement to support it, so
+      the table's `Number` is kept there. Related to MD-27, which resolved five
+      of these in one direction because all five were counts.
+    evidence: >-
+      docs/manual/15_OPE.md section 6's Parameters rows 2-1 and 2-2 against the
+      JSON Schema printed above them in the same section. Registered as MD-28.
+
+extraction:
+  source: 15_OPE.md line 979
+  table: Parameters

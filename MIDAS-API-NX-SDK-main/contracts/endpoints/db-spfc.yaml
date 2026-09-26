@@ -1,0 +1,854 @@
+# /db/SPFC
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-spfc
+endpoint: /db/SPFC
+name: Response Spectrum Functions
+surface:
+  className: ResponseSpectrumFunction
+  exportName: responseSpectrumFunction
+  modulePath: [db, dynamicLoads]
+  payloadTypeName: ResponseSpectrumFunctionPayload
+  nestedTypes:
+    - {path: aFUNC, name: ResponseSpectrumFunctionValue, namespace: DbDynamicLoadsTypes}
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 09_DB_Dynamic_Loads.md
+    section: 1. /db/SPFC – Response Spectrum Functions
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-write-sweep-2026-08-16
+    - product: gen
+      ref: db-write-sweep-2026-08-16
+    - product: gen
+      ref: spfc-calc-opt-2026-09-03
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/SPFC/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: NAME
+    description: >-
+      RS 함수명
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: iTYPE
+    description: >-
+      스펙트럼 데이터 타입 (1=정규화가속도, 2=가속도, 3=속도, 4=변위)
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: iMETHOD
+    description: >-
+      스케일 방법 (0=Scale Factor, 1=Max Value)
+    type: integer
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: SCALE
+    description: >-
+      스케일 값
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: GRAV
+    description: >-
+      중력 가속도 (정규화 가속도 타입에만 해당)
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: DRATIO
+    description: >-
+      감쇠비
+    type: number
+    requirement: optional
+    documentedDefault: 0.05
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: DESC
+    description: >-
+      설명
+    type: string
+    requirement: optional
+    documentedDefault: ""
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: STR
+    description: >-
+      코드 데이터 (STR 오브젝트)
+    type: object
+    requirement: conditional
+    condition: "Korea/US/Eurocode/China/Japan/Taiwan/India/Other Countries Type"
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: SPEC_CODE
+        description: >-
+          설계 스펙트럼 코드
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: SFI
+        description: >-
+          설계 지진 등급(Seismic Fortification Intensity)
+        type: string
+        requirement: optional
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            equals: "CH2010"
+        documentedDefault: "0.05g"
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: SC_
+        description: >-
+          지반 종류(I0/I1/II/III/IV)
+        type: string
+        requirement: optional
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            equals: "CH2010"
+        documentedDefault: "I0"
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: EQ_
+        description: >-
+          지진 영향(Frequent/Middle/Scarce)
+        type: string
+        requirement: required
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            equals: "CH2010"
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: SPECTYPE
+        description: >-
+          스펙트럼 타입 (1=Elastic, 2=Design)
+        type: string
+        requirement: unstated
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            equals: "EURO2004"
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: GROUTYPE
+        description: >-
+          지반 타입 (0=A, 1=B, 2=C, 3=D, 4=E)
+        type: string
+        requirement: unstated
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            equals: "EURO2004"
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: NATIONALANNEX
+        description: >-
+          국가 부속서 코드
+        type: string
+        requirement: unstated
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            equals: "EURO2004"
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+    # Every design-code table places its rows by object: KDS(41-17-00:2019)'s
+    # rows are numbered under STR/OPT/VAL, and the later tables write the object
+    # beside each key - `SFI`(STR), `PERIOD`(VAL). Each member applies to the
+    # SPEC_CODE values whose tables list it; the SPEC_CODE tables name them.
+    # The EURO2004 table puts SPECTYPE, GROUTYPE and NATIONALANNEX in OPT;
+    # GET /info declares them in STR as strings, and the section's EURO2004
+    # Request Body is refused as printed on both products, with or without OPT
+    # (2026-09-22). They are recorded where /info puts them, claiming nothing.
+  - key: OPT
+    description: >-
+      옵션 데이터 (OPT 오브젝트)
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: SC_
+        description: >-
+          지반 분류 (0=S1, 1=S2, 2=S3, 3=S4, 4=S5, 5=S6)
+        type: integer
+        requirement: optional
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            in: ["KDS(17-10-00:2018)", "KDS(41-17-00:2019)"]
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: iSEISZONE
+        description: >-
+          지진 구역
+        type: integer
+        requirement: optional
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            in: ["IRC:SP:114-2018", "IS1893(2016)", "IS2002", "JP_BRG2002", "JP_BRG2012", "JP_BRG2017", "KDS(17-10-00:2018)", "KDS(41-17-00:2019)", "TAIWAN(2022)"]
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: NSC
+        description: >-
+          근원 유형(0/1/2)
+        type: integer
+        requirement: optional
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            equals: "CH2010"
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: nLForce
+        description: >-
+          공칭 횡력(0=전단력차, 1=관성력)
+        type: integer
+        requirement: optional
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            equals: "CH2010"
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: iSEISZONEFACTOR
+        description: >-
+          지진 지역 계수(Z) 0=1.0/1=0.9/2=0.8/3=0.7
+        type: integer
+        requirement: optional
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            equals: "JPN2000"
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: SOILCLASS
+        description: >-
+          지반 종류
+        type: integer
+        requirement: optional
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            in: ["IRC:SP:114-2018", "IS1893(2016)", "IS2002", "JPN2000", "JP_BRG2002", "JP_BRG2012", "JP_BRG2017", "TAIWAN(2022)"]
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: iEQMETHOD
+        description: >-
+          지진 입력 방법(Level1/Level2 Type I/Level2 Type II)
+        type: integer
+        requirement: optional
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            in: ["JP_BRG2002", "JP_BRG2012", "JP_BRG2017"]
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: iSPECTYPE
+        description: >-
+          스펙트럼 방향(0=수평/1=수직)
+        type: integer
+        requirement: optional
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            equals: "TAIWAN(2022)"
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: iSPECUSE
+        description: >-
+          스펙트럼 용도(0=Design/1=Small-Medium/2=Maximum)
+        type: integer
+        requirement: optional
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            equals: "TAIWAN(2022)"
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: iSUBZONE
+        description: >-
+          세부 구역(Taipei Basin I~IV/User Input, 구역이 Taipei Basin일 때)
+        type: integer
+        requirement: optional
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            equals: "TAIWAN(2022)"
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: ZA
+        description: >-
+          가속도 구역(Za, 0~6)
+        type: integer
+        requirement: optional
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            equals: "NBC95"
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: ZV
+        description: >-
+          속도 구역(Zv, 0~6)
+        type: integer
+        requirement: optional
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            equals: "NBC95"
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+    # KDS(17-10-00:2018)'s table numbers SC_ and iSEISZONE (1)/(2) without a
+    # parent; KDS(41-17-00:2019)'s identical rows, and GET /info, put them in OPT.
+  - key: VAL
+    description: >-
+      계수 데이터 (VAL 오브젝트)
+    type: object
+    requirement: conditional
+    condition: "Korea/US/Eurocode/China/Japan/Taiwan/India/Other Countries Type"
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: aSRA
+        description: >-
+          스펙트럼 응답 가속도 [Sds, Sd1] (Taiwan(2022): [Sds,Sd1,Sms,Sm1], General/Near Fault 구역)
+        type: array
+        items:
+          type: number
+        requirement: conditional
+        condition: "Taiwan(2022): 설명의 구역(iSEISZONE)일 때; KDS(41-17-00:2019): Required"
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            in: ["KDS(41-17-00:2019)", "TAIWAN(2022)"]
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: aSCP
+        description: >-
+          지반 증폭 계수 [Fa, Fv]
+        type: array
+        items:
+          type: number
+        requirement: required
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            in: ["KDS(17-10-00:2018)", "KDS(41-17-00:2019)"]
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: EPA
+        description: >-
+          지진 구역 계수 (Ar): Area I=0.11, Area II=0.07
+        type: number
+        requirement: required
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            equals: "KS_BRG"
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: SPTYPE
+        description: >-
+          지반 프로파일 타입 (S1=1.0, S2=1.2, S3=1.5, S4=2.0)
+        type: number
+        requirement: required
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            equals: "KS_BRG"
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: aTG
+        description: >-
+          설계 특성 주기 [Tg, Tg1, Tg2] (GB50011-2010은 Tg만 사용)
+        type: array
+        items:
+          type: number
+        requirement: required
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            equals: "CH2010"
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: MaxEQ
+        description: >-
+          최대 지진영향계수
+        type: number
+        requirement: required
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            equals: "CH2010"
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: CO
+        description: >-
+          밑면 전단력 계수(Co)
+        type: number
+        requirement: required
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            equals: "JPN2000"
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: CZ
+        description: >-
+          수정 계수(Cz) — MIDAS가 다른 값으로 자동 계산해 입력값이 무시됨
+        type: number
+        requirement: required
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            in: ["JP_BRG2002", "JP_BRG2012", "JP_BRG2017"]
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: aSRA_T
+        description: >-
+          대만분지 스펙트럼 가속도 [Sds_t,Sd1_t,Sms_t,Sm1_t] (Taipei Basin 구역)
+        type: array
+        items:
+          type: number
+        requirement: conditional
+        condition: "Taiwan(2022): 설명의 구역(iSEISZONE)일 때"
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            equals: "TAIWAN(2022)"
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: aNSF
+        description: >-
+          근단층 지진 영향 [Nda,Ndv,Nma,Nmv] (Near Fault 구역)
+        type: array
+        items:
+          type: number
+        requirement: conditional
+        condition: "Taiwan(2022): 설명의 구역(iSEISZONE)일 때"
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            equals: "TAIWAN(2022)"
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: aSMF
+        description: >-
+          지반 증폭 계수 [Fda,Fdv,Fma,Fmv] (General/Near Fault 구역)
+        type: array
+        items:
+          type: number
+        requirement: conditional
+        condition: "Taiwan(2022): 설명의 구역(iSEISZONE)일 때"
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            equals: "TAIWAN(2022)"
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: DP
+        description: >-
+          감쇠비
+        type: number
+        requirement: required
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            in: ["CH2010", "IRC:SP:114-2018", "IS1893(2016)", "IS2002", "TAIWAN(2022)"]
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: PERIOD
+        description: >-
+          최대 주기
+        type: number
+        requirement: required
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            in: ["CH2010", "IRC:SP:114-2018", "IS1893(2016)", "IS2002", "JPN2000", "JP_BRG2002", "JP_BRG2012", "JP_BRG2017", "KDS(17-10-00:2018)", "KDS(41-17-00:2019)", "KS_BRG", "NBC95", "TAIWAN(2022)"]
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: IE
+        description: >-
+          중요도 계수
+        type: number
+        requirement: required
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            in: ["IRC:SP:114-2018", "IS1893(2016)", "IS2002", "KDS(17-10-00:2018)", "KDS(41-17-00:2019)", "KS_BRG"]
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: R_
+        description: >-
+          반응 수정 계수 (R)
+        type: number
+        requirement: required
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            in: ["IRC:SP:114-2018", "IS1893(2016)", "IS2002", "KDS(41-17-00:2019)", "KS_BRG"]
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: ZONEFACTOR
+        description: >-
+          EPA (구역 계수)
+        type: number
+        requirement: required
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            equals: "KDS(41-17-00:2019)"
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: IF
+        description: >-
+          중요도 계수(I)
+        type: number
+        requirement: required
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            equals: "TAIWAN(2022)"
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: SMFACTOR
+        description: >-
+          지진 증폭 계수(ay)
+        type: number
+        requirement: required
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            equals: "TAIWAN(2022)"
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: RMFACTOR
+        description: >-
+          반응 수정 계수(R)
+        type: number
+        requirement: required
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            equals: "TAIWAN(2022)"
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: FUNDAMENTAL_PERIOD
+        description: >-
+          기본 주기(T1)
+        type: number
+        requirement: required
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            equals: "TAIWAN(2022)"
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: DPFAC
+        description: >-
+          감쇠 배율 계수(값 1 고정)
+        type: integer
+        requirement: required
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            in: ["IRC:SP:114-2018", "IS1893(2016)", "IS2002"]
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: USERDEFSEISZONE
+        description: >-
+          사용자 정의 지진구역 값 (IRC:SP:114-2018, iSEISZONE=4일 때만)
+        type: number
+        requirement: required
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            equals: "IRC:SP:114-2018"
+          - path: OPT.iSEISZONE
+            equals: 4
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: V
+        description: >-
+          구역 속도비(v)
+        type: number
+        requirement: required
+        appliesWhen:
+          - path: STR.SPEC_CODE
+            equals: "NBC95"
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+    # KDS(17-10-00:2018) and KS_BRG number their rows VAL.(n). The Taiwan(2022)
+    # zone rows state their zone in words, not as an iSEISZONE value, so the
+    # zone is kept as condition text. Stored as sent on both products for every
+    # design-code Request Body in the section except EURO2004 (2026-09-22).
+  - key: CALC_OPT
+    description: >-
+      계산 옵션
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: live_corrected
+    # Marked Create Only; honoured on PUT as well (MD-15, recorded under
+    # manualDefects).
+  - key: aFUNC
+    description: >-
+      함수 데이터 배열
+    type: array
+    items:
+      type: object
+    requirement: conditional
+    condition: "User Type; a design-code function needs it unless CALC_OPT is true (MD-15)"
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: PERIOD
+        description: >-
+          주기 (sec)
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: VALUE
+        description: >-
+          값 (데이터 타입에 따라 다름)
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+    # The User Type table's; the design-code examples were sent with this
+    # curve as well and are stored with it (2026-09-22).
+
+manualDefects:
+  - describes: behaviour
+    manualSays: >-
+      The EURO2004 table places SPECTYPE, GROUTYPE and NATIONALANNEX in OPT,
+      and its Request Body sends them there with VAL.ag.
+    actual: >-
+      That body is refused with Unknown Error on both products, and so is it
+      with OPT removed, with VAL.AG (the /info spelling), and with both.
+      GET /info declares the three in STR, as strings. No working EURO2004
+      request has been found.
+    evidence: >-
+      scripts/live_manual_feedback.py --case c3 and --case c4, 2026-09-22;
+      docs/live_verification_notes.md; MD-60.
+  - describes: requiredness
+    manualSays: >-
+      The KDS(41-17-00:2019) parameter table marks `CALC_OPT` `Create Only`,
+      which says the server reads it on POST and ignores it on PUT.
+    actual: >-
+      It is honoured on PUT. Sending `CALC_OPT: true` on a PUT rebuilt a
+      spectrum that had been hand-set to a flat two-point curve into the
+      103-point curve the code parameters generate; sending `false`, or
+      omitting it, left the stale curve in place while accepting new
+      parameters. The cell is true of the manual's other `Create Only`,
+      /db/SECT's, and not of this one - which is why the contract schema's
+      `create_only` describes the documentation and not the behaviour.
+    evidence: >-
+      docs/live_verification_notes.md, "what the manual's 'Create Only'
+      actually means" (2026-09-03), measured on Gen NX against an empty
+      document. Registered as MD-15.
+  - describes: behaviour
+    manualSays: >-
+      The section's KDS(41-17-00:2019) Request Body example omits `CALC_OPT`
+      and supplies no `aFUNC`, presenting it as a working request.
+    actual: >-
+      That exact body is refused: `[Error] Spectrum Function Data (Name:...)
+      contains errors.(Item:Spectrum Data)`. A design-spectrum function needs
+      either `CALC_OPT: true`, so the server builds the curve from
+      `STR`/`OPT`/`VAL`, or an explicit `aFUNC`. The documented default
+      `false` is correct; it is the example that cannot run.
+    evidence: >-
+      docs/live_verification_notes.md, "what the manual's 'Create Only'
+      actually means" (2026-09-03). Registered as MD-15.
+
+sdkRules:
+  - id: db-spfc-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-spfc-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 09_DB_Dynamic_Loads.md line 51
+  table: 1-2. 공통 파라미터 (모든 코드 타입)
+  missingColumns:
+    - heading: EURO2004 주요 추가 파라미터
+      line: 230
+      columns: [Default]
+  structuralTables:
+    - heading: 1-2-A. User Type
+      line: 65
+      paths: [aFUNC]
+    - heading: design-code tables (KDS(41-17-00:2019) through Canada NBC95)
+      line: 116
+      paths: [STR, OPT, VAL, CALC_OPT]
+      note: >-
+        Ten tables, one or more SPEC_CODE values each, whose rows the
+        section places in STR, OPT or VAL by numbering or by the object
+        written beside the key. Merged per object, each member gated on the
+        SPEC_CODE values of the tables that list it.

@@ -1,0 +1,26 @@
+contractVersion: 1
+id: post-story-axial-force-sum
+endpoint: /post/TABLE
+name: Story Axial Force Sum
+products: [gen, civil]
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 21_POST_StoryTables.md
+    section: "9. Story Axial Force Sum"
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getStoryAxialForceSumTable
+  modulePath: [story]
+  tableType: STORY_AXIAL_FORCE_SUM
+  factory: fixed
+  optionNames: [components, constructionStage, loadCaseNames, nodeElements, stageSteps, styles, tableName, unit]
+  documentation: |-
+    docs/manual/21_POST_StoryTables.md #9 — Story Axial Force Sum.
+
+    Sum of vertical-element axial force per story, plus the axial-force
+    centroid (X/Y coordinates).
+tableTypes:
+  - {value: STORY_AXIAL_FORCE_SUM, provenance: manual}

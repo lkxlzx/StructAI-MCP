@@ -1,0 +1,381 @@
+# /db/MVLDid
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-mvldid
+endpoint: /db/MVLDid
+name: Moving Load Cases – India
+surface:
+  className: MovingLoadCaseIndia
+  exportName: movingLoadCaseIndia
+  modulePath: [db, movingLoads]
+  payloadTypeName: MovingLoadCaseIndiaPayload
+  nestedTypes:
+    - {path: SUB_LOAD_ITEMS, name: MovingLoadCaseIndiaSubLoadItem, namespace: DbMovingLoadsTypes}
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 08_DB_Moving_Loads.md
+    section: 14. /db/MVLDid – Moving Load Cases – India
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-07-26
+    - product: gen
+      ref: db-read-sweep-2026-07-26
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/MVLDid/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: LCNAME
+    description: >-
+      Load Case Name
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: DESC
+    description: >-
+      Description
+    type: string
+    requirement: optional
+    documentedDefault: ""
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: SCALE_FACTOR
+    description: >-
+      Multiple Presence Factor [1-2, 3, 4, ≥5]
+    type: array
+    items:
+      type: number
+    minItems: 4
+    maxItems: 4
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: OPT_AUTO_LL
+    description: >-
+      Auto Live Load Combinations
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: OPT_LC_FOR_PERMIT_LOAD
+    description: >-
+      Load Cases for Permit Vehicle
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: NUM_LOADED_LANES
+    description: >-
+      Number of Loaded Lanes
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: SUB_LOAD_ITEMS
+    description: >-
+      Sub-Load Cases
+    type: array
+    items:
+      type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: MIN_NUM_LOADED_LANES
+        description: >-
+          Min. Number of Loaded Lanes
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'SUB_LOAD_ITEMS' by numbering it
+        # '(ii)', not by naming a path
+      - key: MAX_NUM_LOADED_LANES
+        description: >-
+          Max. Number of Loaded Lanes
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'SUB_LOAD_ITEMS' by numbering it
+        # '(iii)', not by naming a path
+      - key: VEHICLE_CLASS_1
+        description: >-
+          Vehicle
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'SUB_LOAD_ITEMS' by numbering it
+        # '(iv)', not by naming a path
+      - key: SELECTED_LANES
+        description: >-
+          Selected Lanes
+        type: array
+        items:
+          type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'SUB_LOAD_ITEMS' by numbering it
+        # '(v)', not by naming a path
+      - key: SCALE_FACTOR
+        description: >-
+          Scale Factor
+        type: number
+        requirement: required
+        condition: Auto Live Load Combinations (OPT_AUTO_LL=true)
+        appliesWhen:
+          - path: OPT_AUTO_LL
+            equals: true
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'SUB_LOAD_ITEMS' by numbering it
+        # '(i)', not by naming a path
+      - key: VEHICLE_CLASS_2
+        description: >-
+          Vehicle Class II
+        type: string
+        requirement: required
+        condition: Auto Live Load Combinations (OPT_AUTO_LL=true)
+        appliesWhen:
+          - path: OPT_AUTO_LL
+            equals: true
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'SUB_LOAD_ITEMS' by numbering it
+        # '(iii)', not by naming a path
+      - key: FOOTWAY
+        description: >-
+          Vehicle Footway
+        type: string
+        requirement: required
+        condition: Auto Live Load Combinations (OPT_AUTO_LL=true)
+        appliesWhen:
+          - path: OPT_AUTO_LL
+            equals: true
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'SUB_LOAD_ITEMS' by numbering it
+        # '(iv)', not by naming a path
+      - key: CARRIAGE_WAY_WIDTH
+        description: >-
+          Carriageway Width
+        type: number
+        requirement: read_only
+        condition: Auto Live Load Combinations (OPT_AUTO_LL=true)
+        appliesWhen:
+          - path: OPT_AUTO_LL
+            equals: true
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'SUB_LOAD_ITEMS' by numbering it
+        # '(v)', not by naming a path
+      - key: CARRIAGE_WAY_LOADING
+        description: >-
+          Carriageway Loading
+        type: number
+        requirement: read_only
+        condition: Auto Live Load Combinations (OPT_AUTO_LL=true)
+        appliesWhen:
+          - path: OPT_AUTO_LL
+            equals: true
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'SUB_LOAD_ITEMS' by numbering it
+        # '(vi)', not by naming a path
+      - key: SELECTED_FOOTWAY_LANES
+        description: >-
+          Selected Lanes for Footway
+        type: array
+        items:
+          type: string
+        requirement: required
+        condition: Auto Live Load Combinations (OPT_AUTO_LL=true)
+        appliesWhen:
+          - path: OPT_AUTO_LL
+            equals: true
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'SUB_LOAD_ITEMS' by numbering it
+        # '(viii)', not by naming a path
+  - key: PERMIT_VEHICLE
+    description: >-
+      Permit Vehicle ID
+    type: integer
+    requirement: required
+    condition: Permit Vehicle (OPT_LC_FOR_PERMIT_LOAD=true)
+    appliesWhen:
+      - path: OPT_LC_FOR_PERMIT_LOAD
+        equals: true
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: REF_LANE
+    description: >-
+      Reference Lane ID
+    type: integer
+    requirement: required
+    condition: Permit Vehicle (OPT_LC_FOR_PERMIT_LOAD=true)
+    appliesWhen:
+      - path: OPT_LC_FOR_PERMIT_LOAD
+        equals: true
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: ECCEN
+    description: >-
+      Eccentricity
+    type: number
+    requirement: required
+    condition: Permit Vehicle (OPT_LC_FOR_PERMIT_LOAD=true)
+    appliesWhen:
+      - path: OPT_LC_FOR_PERMIT_LOAD
+        equals: true
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: PERMIT_SCALE_FACTOR
+    description: >-
+      Scale Factor
+    type: number
+    requirement: required
+    condition: Permit Vehicle (OPT_LC_FOR_PERMIT_LOAD=true)
+    appliesWhen:
+      - path: OPT_LC_FOR_PERMIT_LOAD
+        equals: true
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+
+sdkRules:
+  - id: db-mvldid-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-mvldid-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 08_DB_Moving_Loads.md line 1713
+  table: Parameters

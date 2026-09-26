@@ -1,0 +1,2184 @@
+# /db/FIMP
+#
+# The largest contract here, and the one where the manual says outright that it
+# is not transcribing its source. Its own callout puts the reason plainly: the
+# official article is over 5900 lines covering seventeen hysteresis models, and
+# the chapter details Kent & Park alone, keeping only the fact that the others
+# exist as MATL_TYPE / HYS_MODEL combinations.
+#
+# So the shape here comes from GET /info/db/FIMP, which both products serve
+# identically, and the manual supplies what /info cannot: the three top-level
+# fields' requiredness, the two MATL_TYPE values, and every requiredness inside
+# Kent & Park. Nothing else is claimed. Which HYS_MODEL value selects which of
+# the seventeen objects is documented for exactly one of them.
+contractVersion: 1
+id: db-fimp
+endpoint: /db/FIMP
+name: Inelastic Material Properties
+surface:
+  className: InelasticMaterialProperty
+  exportName: inelasticMaterialProperty
+  modulePath: [db, properties, material]
+  payloadTypeName: InelasticMaterialPropertyPayload
+
+products: [civil, gen]
+productsEvidence: >-
+  Both. GET /info/db/FIMP answers on Civil NX and Gen NX and the two schemas
+  are byte-identical, captured 2026-09-01 in schema/info-schemas.json.
+
+recordKey:
+  kind: record_id
+  description: The material id, as the section's Request Body uses it.
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 04_DB_Properties.md
+    section: "28. `/db/FIMP`"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: info-schema-sweep-2026-09-01
+    - product: gen
+      ref: info-schema-sweep-2026-09-01
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/FIMP/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Nobody has written to this endpoint through either SDK. The field names
+      below come from the server's own schema, which is a strong source for
+      what it accepts and no source at all for which combinations of MATL_TYPE,
+      HYS_MODEL and model object it accepts together.
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: NAME
+    description: >-
+      Material Name
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: live_verified
+  - key: MATL_TYPE
+    description: >-
+      Material Type - Concrete: "CONC" / Steel: "STEEL"
+    type: string
+    enum: [CONC, STEEL]
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: live_verified
+    enumNote: >-
+      The manual states both values in the row itself. They name the two
+      objects below, so this field says which of `CONC` and `STEEL` a
+      record fills in.
+  - key: HYS_MODEL
+    description: >-
+      Hysteresis Model
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: live_verified
+    provenanceNote: >-
+      Manual and /info agree on the name, the type and that it is required.
+      Neither states the value set. The manual gives exactly one value,
+      `"KPM"` for Kent & Park, in the heading of the one model table it
+      chose to detail; /info declares no enum. So none is recorded here -
+      seventeen model objects sit below and only one has a documented
+      selector, and inventing the other sixteen from the object keys would
+      be a guess about the wire rather than a transcription.
+  - key: CONC
+    description: >-
+      Concrete Model
+    type: object
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: info_schema
+    provenanceNote: >-
+      Named as an object by the section's own JSON Schema block and by its
+      Request Body, and absent from its Specifications table - which is the
+      MD-07 defect. Its members are the concrete hysteresis models, one
+      object each; a record fills in the one `HYS_MODEL` selects.
+    properties:
+      - key: KENPAR
+        description: >-
+          Kent & Park model parameters
+        type: object
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+        provenanceNote: >-
+          The one model the manual transcribes in full, and the only place in
+          this contract where a requiredness comes from the manual rather than
+          from silence. Its table keys every row `"KENPAR"."FC"`, naming the
+          parent inside the key rather than as a level, which is what MD-07
+          records.
+        properties:
+          - key: FC
+            description: >-
+              Concrete Strength (fc')
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: live_verified
+          - key: EC0
+            description: >-
+              Peak Strain (ec0)
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: live_verified
+          - key: K
+            description: >-
+              Strength/Strain Factor
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: live_verified
+          - key: ECU
+            description: >-
+              Ultimate Strain (ecu)
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: live_verified
+          - key: PARTIAL_FACT
+            description: >-
+              Partial Safety Factor
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: live_verified
+          - key: EC1_METHOD
+            description: >-
+              Hardening Strain Method - Manual: 0 / Calculation: 1
+            type: integer
+            enum: [0, 1]
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: live_verified
+          - key: EC1
+            description: >-
+              Hardening Strain Manual (ec1)
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: live_verified
+          - key: Z
+            description: >-
+              Hardening Strain Calculation (Z)
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: live_verified
+          - key: STRENGTH_AFTER
+            description: >-
+              Strength After Critical Strain - Zero: 0 / Keep: 1
+            type: integer
+            enum: [0, 1]
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: live_verified
+      - key: JPSTND
+        description: >-
+          JPSTND
+        type: object
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+        properties:
+          - key: FC
+            description: >-
+              fc
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: EPEAK
+            description: >-
+              epeak
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: PARTIAL_FACT
+            description: >-
+              Partial Safety Factor
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+      - key: JP_H14
+        description: >-
+          JP_H14
+        type: object
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+        properties:
+          - key: EARTHQUAKE_TYPE
+            description: >-
+              Earthquake Type
+            type: integer
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: EC
+            description: >-
+              Ec
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: SIGMA_CK
+            description: >-
+              σck
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: SIGMA_SY
+            description: >-
+              σsy
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: ALPHA
+            description: >-
+              α
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: SIGMA_BT
+            description: >-
+              σbt
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: AH
+            description: >-
+              Ah
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: S
+            description: >-
+              s
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: D
+            description: >-
+              d
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: BETA
+            description: >-
+              β
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: STRENGTH_LIMIT
+            description: >-
+              Strength after Critical Strain Property
+            type: integer
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+      - key: NAGOYA
+        description: >-
+          NAGOYA
+        type: object
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+        properties:
+          - key: SIGMA_CK
+            description: >-
+              σck
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: EPSILON_CC
+            description: >-
+              εcc
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: K
+            description: >-
+              K
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: EPSILON_CU
+            description: >-
+              εcu
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: EPSILON_T0
+            description: >-
+              εt0
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: EPSILON_TU
+            description: >-
+              εtu
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: EPSILON_T1
+            description: >-
+              εt1
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: STRENGTH_AFTER
+            description: >-
+              Strength after Critical Strain Property
+            type: integer
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+      - key: TRILIN
+        description: >-
+          TRILIN
+        type: object
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+        properties:
+          - key: INPUT_METHOD
+            description: >-
+              Input method : σ - ε / σ - α
+            type: integer
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: SIGMA_Y_ITEMS
+            description: >-
+              SIGMA_Y_ITEMS
+            type: array
+            items:
+              type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: EPSILON_T_ITEMS
+            description: >-
+              εt
+            type: array
+            items:
+              type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: EPSILON_Y_ITEMS
+            description: >-
+              εy
+            type: array
+            items:
+              type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: K_ITEMS
+            description: >-
+              K
+            type: array
+            items:
+              type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: EPSILON_CU
+            description: >-
+              εcu
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+      - key: CHGB02
+        description: >-
+          CHGB02
+        type: object
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+        properties:
+          - key: FCK
+            description: >-
+              fc*
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: EC
+            description: >-
+              εc
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: FTK
+            description: >-
+              ft*
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: ET
+            description: >-
+              εt
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+      - key: MANDER
+        description: >-
+          MANDER
+        type: object
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+        properties:
+          - key: CONC_TYPE
+            description: >-
+              Concrete Type
+            type: integer
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: KE
+            description: >-
+              Confined Conrete Data
+            type: object
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+            properties:
+              - key: SC_REBAR_TYPE
+                description: >-
+                  Section & Confinement Rebar Type
+                type: integer
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: OPT_ACC
+                description: >-
+                  Use Area of Effective Concrete Core (Acc)
+                type: boolean
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: ACC
+                description: >-
+                  Area of Effective Concrete Core (Acc)
+                type: number
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: OPT_AE
+                description: >-
+                  Use Total Area of Effectively Confined Core Concrete
+                type: boolean
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: AE
+                description: >-
+                  Total Area of Effectively Confined Core Concrete
+                type: number
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: OPT_KE
+                description: >-
+                  Use Ae / Acc = Ae / (Ac (1-ρcc))
+                type: boolean
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: KE
+                description: >-
+                  Ae / Acc = Ae / (Ac (1-ρcc))
+                type: number
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: OPT_FL
+                description: >-
+                  Use The Effective Lateral confining stress on the Concrete (Circular)
+                type: boolean
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: FL
+                description: >-
+                  The Effective Lateral confining stress on the Concrete (Circular)
+                type: number
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+          - key: CCS
+            description: >-
+              Confined Concrete Strength & Strain
+            type: object
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+            properties:
+              - key: OPT_FCC
+                description: >-
+                  Use Strength of Confined Concrete (fcc)
+                type: boolean
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: FCC
+                description: >-
+                  Strength of Confined Concrete (fcc)
+                type: number
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: OPT_EPSILON_CC
+                description: >-
+                  Use Strain for Confined Concrete corresponding to fcc (ecc)
+                type: boolean
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: EPSILON_CC
+                description: >-
+                  Strain for Confined Concrete corresponding to fcc (ecc)
+                type: number
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: OPT_EPSILON_CY
+                description: >-
+                  Use Yield Strain for confined Concrete
+                type: boolean
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: EPSILON_CY
+                description: >-
+                  Yield Strain for confined Concrete
+                type: number
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: OPT_ENABLE_EPSILON_CU
+                description: >-
+                  Enable Ultimate Strain for Concrete Group
+                type: boolean
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: USE_RHO_S
+                description: >-
+                  Use Ratio of the Volume of Transverse... (ρs)
+                type: boolean
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: RHO_S
+                description: >-
+                  Ratio of the Volume of Transverse... (ρs)
+                type: number
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: IDX_STEEL_MATERIAL
+                description: >-
+                  Ultimate Strain for Confined Concrete - Steel Matrial
+                type: integer
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: USE_EPSILON_CU
+                description: >-
+                  Use Ultimate Strain for Confined Concrete - eCU
+                type: boolean
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: EPSILON_CU
+                description: >-
+                  Ultimate Strain for Confined Concrete -d eCU
+                type: number
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+          - key: UCD
+            description: >-
+              Unconfined Concrete Data
+            type: object
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+            properties:
+              - key: OPT_FCO
+                description: >-
+                  Use Unconfined Concrete Strength
+                type: boolean
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: FCO
+                description: >-
+                  Unconfined Concrete Strength
+                type: number
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: OPT_EPSILON_CO
+                description: >-
+                  Use Unconfined Concrete Strain
+                type: boolean
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: EPSILON_CO
+                description: >-
+                  Unconfined Concrete Strain
+                type: number
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: OPT_EPSILON_CY
+                description: >-
+                  Use Yield Strain for unconfined Concrete
+                type: boolean
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: EPSILON_CY
+                description: >-
+                  Yield Strain for unconfined Concrete
+                type: number
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: OPT_EPSILON_SP
+                description: >-
+                  Use Spalling Strain for Unconfined
+                type: boolean
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: EPSILON_SP
+                description: >-
+                  Spalling Strain for Unconfined
+                type: number
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: IDX_EC
+                description: >-
+                  Elastic Modulus of Concrete Index
+                type: integer
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: EC
+                description: >-
+                  Elastic Modulus of Concrete
+                type: number
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: IDX_FT
+                description: >-
+                  Tensile Strength of Concrete Index
+                type: integer
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: FT
+                description: >-
+                  Tensile Strength of Concrete
+                type: number
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: EPSILON_T
+                description: >-
+                  Tensile Strain of Concrete
+                type: number
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+          - key: FIELD_2
+            description: >-
+              Field 2
+            type: object
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+            properties:
+              - key: nRectSectAutoorUser
+                description: >-
+                  nRectSectAutoorUser
+                type: integer
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: nCircSectAutoorUser
+                description: >-
+                  nCircSectAutoorUser
+                type: integer
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: dXdirectionbc
+                description: >-
+                  dXdirectionbc
+                type: number
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: dXdirectionwxi
+                description: >-
+                  dXdirectionwxi
+                type: number
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: nXdirectionn
+                description: >-
+                  nXdirectionn
+                type: integer
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: dYdirectiondc
+                description: >-
+                  dYdirectiondc
+                type: number
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: dYdirectionwyj
+                description: >-
+                  dYdirectionwyj
+                type: number
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: nYdirectionm
+                description: >-
+                  nYdirectionm
+                type: integer
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: dds
+                description: >-
+                  dds
+                type: number
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: nLongiRebarType
+                description: >-
+                  nLongiRebarType
+                type: integer
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: nLongiRebarNum
+                description: >-
+                  nLongiRebarNum
+                type: integer
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: strLongiRebarSize
+                description: >-
+                  strLongiRebarSize
+                type: string
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: dLongiRebarArea
+                description: >-
+                  dLongiRebarArea
+                type: number
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: bLongiRebarRatio
+                description: >-
+                  bLongiRebarRatio
+                type: boolean
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: dLongiRebarRatio
+                description: >-
+                  dLongiRebarRatio
+                type: number
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: nGeneralRebarType
+                description: >-
+                  nGeneralRebarType
+                type: integer
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: strGeneralRebarSize
+                description: >-
+                  strGeneralRebarSize
+                type: string
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: dGeneralRebarArea
+                description: >-
+                  dGeneralRebarArea
+                type: number
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: dHoopsSpaceS1
+                description: >-
+                  dHoopsSpaceS1
+                type: number
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: dClearHoopsSpaceS2
+                description: >-
+                  dClearHoopsSpaceS2
+                type: number
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: nGeneralRebarNumX
+                description: >-
+                  nGeneralRebarNumX
+                type: integer
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: nGeneralRebarNumY
+                description: >-
+                  nGeneralRebarNumY
+                type: integer
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: dGeneralAsx
+                description: >-
+                  dGeneralAsx
+                type: number
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: dGeneralAsy
+                description: >-
+                  dGeneralAsy
+                type: number
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: bRectStrengthfyh
+                description: >-
+                  bRectStrengthfyh
+                type: boolean
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: dRectStrengthfyh
+                description: >-
+                  dRectStrengthfyh
+                type: number
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: bGeneralAsx
+                description: >-
+                  bGeneralAsx
+                type: boolean
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: bGeneralAsy
+                description: >-
+                  bGeneralAsy
+                type: boolean
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: bRectRatiopx
+                description: >-
+                  bRectRatiopx
+                type: boolean
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: dRectRatiopx
+                description: >-
+                  dRectRatiopx
+                type: number
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: bRectRatiopy
+                description: >-
+                  bRectRatiopy
+                type: boolean
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: dRectRatiopy
+                description: >-
+                  dRectRatiopy
+                type: number
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: bRectStressflx
+                description: >-
+                  bRectStressflx
+                type: boolean
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: dRectStressflx
+                description: >-
+                  dRectStressflx
+                type: number
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: bRectStressfly
+                description: >-
+                  bRectStressfly
+                type: boolean
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: dRectStressfly
+                description: >-
+                  dRectStressfly
+                type: number
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: bCircularStrengthfyh
+                description: >-
+                  bCircularStrengthfyh
+                type: boolean
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: dCircularStrengthfyh
+                description: >-
+                  dCircularStrengthfyh
+                type: number
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: bGeneralRebarArea
+                description: >-
+                  bGeneralRebarArea
+                type: boolean
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: bCircularRatiops
+                description: >-
+                  bCircularRatiops
+                type: boolean
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+              - key: dCircularRatiops
+                description: >-
+                  dCircularRatiops
+                type: number
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+      - key: JP_H24
+        description: >-
+          JP_H24
+        type: object
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+        properties:
+          - key: EC
+            description: >-
+              Ec
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: SIGMA_CK
+            description: >-
+              σck
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: SIGMA_SY
+            description: >-
+              σsy
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: ALPHA
+            description: >-
+              α
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: SIGMA_BT
+            description: >-
+              σbt
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: AH
+            description: >-
+              Ah
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: S
+            description: >-
+              s
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: D
+            description: >-
+              d
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: BETA
+            description: >-
+              β
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: STRENGTH_LIMIT
+            description: >-
+              Strength after Critical Strain Property
+            type: integer
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+      - key: CHGB10
+        description: >-
+          CHGB10
+        type: object
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+        properties:
+          - key: FCR
+            description: >-
+              fc.r
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: FTR
+            description: >-
+              ft.r
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: ECR
+            description: >-
+              εc.r
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: ETR
+            description: >-
+              εt.r
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: EC
+            description: >-
+              Ec
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+  - key: STEEL
+    description: >-
+      Steel Model
+    type: object
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: info_schema
+    provenanceNote: >-
+      The steel half of the same split, and the same MD-07 omission.
+    properties:
+      - key: MENEGO
+        description: >-
+          Menegoto-Pinto Model
+        type: object
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+        properties:
+          - key: FY
+            description: >-
+              fy
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: E
+            description: >-
+              E
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: B
+            description: >-
+              b
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: PARTIAL_FACT
+            description: >-
+              Partial Safety Factor
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+      - key: BILINE
+        description: >-
+          Bilinear Model
+        type: object
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+        properties:
+          - key: FY
+            description: >-
+              fY
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: E1
+            description: >-
+              E1
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: E2E1
+            description: >-
+              E2/E1
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: PARTIAL_FACT
+            description: >-
+              Partial Safety Factor
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+      - key: GENBIL
+        description: >-
+          Asymmetrical Bilinear Steel Model
+        type: object
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+        properties:
+          - key: SIGMA_Y
+            description: >-
+              σY
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: SIGMA_CY
+            description: >-
+              σCY
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: EPSILON_1
+            description: >-
+              ε1
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: EPSILON_2
+            description: >-
+              ε2
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: E_ITEMS
+            description: >-
+              E
+            type: array
+            items:
+              type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+      - key: TRILIN
+        description: >-
+          Trilinear Steel Model
+        type: object
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+        properties:
+          - key: INPUT_METHOD
+            description: >-
+              Input method : σ - ε / σ - α
+            type: integer
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: SIGMA_Y_ITEMS
+            description: >-
+              σy
+            type: array
+            items:
+              type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: EPSILON_Y_ITEMS
+            description: >-
+              εy
+            type: array
+            items:
+              type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: K_ITEMS
+            description: >-
+              K
+            type: array
+            items:
+              type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+      - key: PARKMD
+        description: >-
+          Park Model
+        type: object
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+        properties:
+          - key: FY
+            description: >-
+              fy
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: FU
+            description: >-
+              fu
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: ES
+            description: >-
+              Es
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: EPSILON_SH
+            description: >-
+              εsh
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: EPSILON_SU
+            description: >-
+              εsu
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+      - key: JPROAD
+        description: >-
+          Japan Roadway Specification Model
+        type: object
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+        properties:
+          - key: SIGMA_Y
+            description: >-
+              σy
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: ES
+            description: >-
+              Es
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: EPSILON_ST
+            description: >-
+              εst
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+      - key: CHGB10
+        description: >-
+          CHGB10
+        type: object
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+        properties:
+          - key: FYR
+            description: >-
+              fyr
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: FSTR
+            description: >-
+              fstr
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: EPSILON_C
+            description: >-
+              εc
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: EPSILON_T
+            description: >-
+              εt
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: EUY
+            description: >-
+              Euy
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: EU
+            description: >-
+              Eu
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: K
+            description: >-
+              K
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+      - key: ENRGDS
+        description: >-
+          Energy Based Model
+        type: object
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+        properties:
+          - key: SHAPE_OF_CURVE
+            description: >-
+              Shape of Curve (General / Perfect Plastic)
+            type: integer
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: OPT_STRENGTH_LOSS
+            description: >-
+              Enable Strength Loss Boolean
+            type: boolean
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: OPT_USE_STRENGTH_LOSS
+            description: >-
+              Use Strength Loss Boolean
+            type: boolean
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: OPT_SYMMETRIC
+            description: >-
+              Is Symmetric Boolean
+            type: boolean
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: INPUT_TYPE
+            description: >-
+              Input Type
+            type: integer
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: FMR_ITEMS
+            description: >-
+              Force Moment Ratio Itmes
+            type: array
+            items:
+              type: object
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+            properties:
+              - key: ITEMS
+                description: >-
+                  ITEMS
+                type: array
+                items:
+                  type: number
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: info_schema
+          - key: YIELD_STRENGTHS
+            description: >-
+              Yield Strength (+, -)
+            type: array
+            items:
+              type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: OPT_USE_YIELD_STRAIN
+            description: >-
+              Yield Strian - User Defined
+            type: boolean
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: YIELD_STRAINS
+            description: >-
+              Yield Strain Items
+            type: array
+            items:
+              type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: ELASTIC_MODULUS
+            description: >-
+              Elastic Modulus
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: OPT_USE_TOTAL_STR_LOSS_AT_E
+            description: >-
+              Use Total Strength Loss at Point E, -E
+            type: boolean
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: OPT_TOTAL_STR_LOSS_AT_E
+            description: >-
+              Enable Total Strength Loss at Point E, -E
+            type: boolean
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: OPT_CYCLIC_DEGRATION
+            description: >-
+              Use Cyclic Degration
+            type: boolean
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: A_B_P
+            description: >-
+              A - B (Cyclic Degenration : +)
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: C_P
+            description: >-
+              C (Cyclic Degenration : +)
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: D_P
+            description: >-
+              D (Cyclic Degenration : +)
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: E_P
+            description: >-
+              E (Cyclic Degenration : +)
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: A_B_M
+            description: >-
+              A - B (Cyclic Degenration : -)
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: C_M
+            description: >-
+              C (Cyclic Degenration : -)
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: D_M
+            description: >-
+              D (Cyclic Degenration : -)
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: E_M
+            description: >-
+              E (Cyclic Degenration : -)
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: OPT_UNLOADING_STIFF_FACTOR
+            description: >-
+              Unloading Stiffness Factor Boolean
+            type: boolean
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: UNLOADING_STIFF_FACTOR
+            description: >-
+              Unloading Stiffness Factor
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+
+manualDefects:
+  - describes: field_name
+    manualSays: >-
+      The Kent & Park table keys its nine rows `"KENPAR"."FC"`,
+      `"KENPAR"."PARTIAL_FACT"` and so on, and the Specifications table above
+      it lists only `NAME`, `MATL_TYPE` and `HYS_MODEL` - naming neither `CONC`
+      nor `STEEL`.
+    actual: >-
+      Those rows are three levels deep, not two: the Request Body in the same
+      section sends `CONC` > `KENPAR` > `FC`. A dotted key names the immediate
+      parent and silently drops the one above it, so a table read on its own
+      puts `KENPAR` at the top of the record. The section's own JSON Schema
+      block does declare `CONC` and `STEEL` as objects, so the chapter carries
+      the missing level - just not in the table a caller reads for the field
+      list.
+    evidence: >-
+      The section's own JSON Schema block and Request Body, 04_DB_Properties.md
+      section 28, against GET /info/db/FIMP captured 2026-09-01. Registered as
+      MD-07.
+  - describes: behaviour
+    manualSays: >-
+      A callout states that the official article runs past 5900 lines across
+      the concrete and steel model families, that this chapter details Kent &
+      Park as the representative model, and that the rest are recorded only as
+      existing `MATL_TYPE` / `HYS_MODEL` combinations.
+    actual: >-
+      Recorded not as a fault but as the reason this contract's other source is
+      the server. The chapter is accurate about its own coverage, and a reader
+      who takes its field list for the endpoint's field list gets one model out
+      of seventeen. /info supplies the other sixteen object shapes; it supplies
+      no requiredness for any of them, and no mapping from a `HYS_MODEL` value
+      to the object it selects. Both gaps are left open here rather than
+      guessed.
+    evidence: >-
+      04_DB_Properties.md section 28's own callout, and GET /info/db/FIMP.
+
+sdkRules:
+  - id: db-fimp-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-fimp-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog. An inelastic material is referenced by the fibre
+      sections built on it, so losing the table silently invalidates them too.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 04_DB_Properties.md line 2089
+  table: Specifications
+  note: >-
+    The Specifications table gives three fields and stops, by the chapter's own
+    declared choice. The rest of the field tree was written from GET
+    /info/db/FIMP with scripts/contract_from_info.py's renderer, then the
+    manual's claims were laid back over the parts it does cover: NAME,
+    MATL_TYPE and HYS_MODEL as Required, MATL_TYPE's two values, and the nine
+    Kent & Park rows the manual marks Required. Everything else is `unstated`,
+    because /info declares no required array and reading its silence as
+    Optional would be a claim nobody has made.

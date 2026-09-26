@@ -1,0 +1,18 @@
+contractVersion: 1
+id: post-axisymmetric-force-local
+endpoint: /post/TABLE
+name: Axisymmetric Force Local
+summary: Local axisymmetric force components.
+products: [gen, civil]
+source: {manual: {status: documented, repo: Dennis5882/MIDAS-API, chapterFile: 20_POST_AnalysisResult_2.md, section: "16. Axisymmetric Force (Local)"}}
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getAxisymmetricForceLocalTable
+  modulePath: [result1]
+  tableType: AXISYMMETRICFL
+  factory: fixed
+  optionNames: [components, constructionStage, loadCaseNames, nodeElements, stageSteps, styles, tableName, unit]
+  documentation: |-
+    docs/manual/20_POST_AnalysisResult_2.md #16 — Axisymmetric Force (Local).
+tableTypes: [{value: AXISYMMETRICFL, description: Local axisymmetric force, head: [Index, Elem, Load, Node, Fx, Fy, Fz], provenance: manual}]

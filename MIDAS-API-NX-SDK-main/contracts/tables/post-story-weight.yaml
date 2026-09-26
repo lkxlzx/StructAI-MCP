@@ -1,0 +1,40 @@
+# Source: 18_POST_PreProcess.md section 10. No SDK source was used.
+contractVersion: 1
+id: post-story-weight
+endpoint: /post/TABLE
+name: Story Weight Table
+summary: Story weights by element category.
+products: [gen, civil]
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 18_POST_PreProcess.md
+    section: "10. Story Weight Table"
+  liveNotes:
+    - docs/live_verification_notes.md
+verification:
+  status: verified_gen
+  records:
+    - product: gen
+      ref: db-write-sweep-2026-08-13
+risk: read_only
+surface:
+  exportName: getStoryWeightTable
+  modulePath: [preProcess]
+  tableType: STORYWEIGHT
+  factory: fixed
+  optionNames: [components, styles, tableName, unit]
+  documentation: |-
+    docs/manual/18_POST_PreProcess.md #10 — Story Weight Table.
+
+    2026-08-06 manual update: gained unit/styles/components (TABLE_TYPE
+    itself, "STORYWEIGHT", is unchanged).
+
+    ⚠️ Live-verified 2026-08-13 (Gen NX v2.1, build 08/12/2026): against
+    the same 2-story model, returned real per-story populated rows.
+tableTypes:
+  - value: STORYWEIGHT
+    description: Story weights by element category
+    head: [Index, Story, Level, Truss, Beam, Membrane, Plate, Wall, Solid, Sum]
+    provenance: manual

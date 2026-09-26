@@ -1,0 +1,642 @@
+# /DESIGN/RC/KDS-41-20-2022/DCRE
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: design-rc-kds-41-20-2022-dcre
+endpoint: /DESIGN/RC/KDS-41-20-2022/DCRE
+name: Design Criteria for Rebar
+surface:
+  className: RebarDesignCriteria
+  exportName: rebarDesignCriteria
+  modulePath: [design, rcKds, rebar]
+  payloadTypeName: RebarDesignCriteriaPayload
+  nestedTypes:
+    - {path: Assign.BEAM, name: DcreBeamCriteria, namespace: DesignRcKdsRebarTypes}
+    - {path: Assign.BRACE, name: DcreColumnBraceCriteria, namespace: DesignRcKdsRebarTypes}
+    - {path: Assign.COLUMN, name: DcreColumnBraceCriteria, namespace: DesignRcKdsRebarTypes}
+    - {path: Assign.WALL, name: DcreWallCriteria, namespace: DesignRcKdsRebarTypes}
+    - {path: Assign.WALL.ADDITIONAL_WALL_DATA, name: DcreWallAdditionalData, namespace: DesignRcKdsRebarTypes}
+    - {path: Assign.WALL.MATERIAL_BY_DIAMETER_INPUT, name: DcreWallMaterialByDiameterInput, namespace: DesignRcKdsRebarTypes}
+    - {path: Assign.WALL.MATERIAL_BY_DIAMETER_INPUT.HORIZONTAL_REBAR, name: DcreWallMaterialByDiameterEntry, namespace: DesignRcKdsRebarTypes}
+    - {path: Assign.WALL.MATERIAL_BY_DIAMETER_INPUT.VERTICAL_END_REBAR, name: DcreWallMaterialByDiameterEntry, namespace: DesignRcKdsRebarTypes}
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 26_Design_RC_KDS41202022.md
+    section: "33. `DESIGN/RC/KDS-41-20-2022/DCRE` — Design Criteria for Rebar (철근 설계기준)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-07-26
+    - product: gen
+      ref: db-read-sweep-2026-07-26
+
+operations:
+  - method: DELETE
+    risk: destructive
+    mitigation: none
+    request:
+      wrapper: none
+    response:
+      wrapper: unknown
+    notes: >-
+      The manual shows a bodyless DELETE at this endpoint, but does not
+      state the deletion scope or response shape.
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: Assign
+    description: >-
+      인덱스 문자열 1개만 갖는 전역 설정 맵
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: BEAM
+        description: >-
+          보 철근 기준
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: MAIN_REBAR
+            description: >-
+              주철근 규격 배열 (최대 5종) · 항목은 19종 (D4 ~ D57)
+            type: array
+            items:
+              type: string
+            requirement: optional
+            documentedDefault: ["D22"]
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: STIRRUPS
+            description: >-
+              스터럽 규격 · 19종
+            type: string
+            requirement: optional
+            documentedDefault: D10
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual's own description says this has 19 values and lists
+            # 5; the list is a sample, so no enum is transcribed
+          - key: STIRRUP_ARRANGEMENT
+            description: >-
+              스터럽 다리 수 · 2 ~ 20
+            type: integer
+            requirement: optional
+            documentedDefault: 2
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual's own description spans 2 to 20 and the list omits
+            # an end of that range; it is a sample, so no enum is transcribed
+          - key: SIDE_BAR
+            description: >-
+              측면철근 규격 · 19종
+            type: string
+            requirement: optional
+            documentedDefault: D13
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual's own description says this has 19 values and lists
+            # 5; the list is a sample, so no enum is transcribed
+          - key: DT
+            description: >-
+              상단 피복
+            type: number
+            requirement: optional
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: DB
+            description: >-
+              하단 피복
+            type: number
+            requirement: optional
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: DOUBLY_REBAR
+            description: >-
+              복철근 설계
+            type: boolean
+            requirement: optional
+            documentedDefault: true
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: DOUBLY_K
+            description: >-
+              복철근 k 계수
+            type: number
+            requirement: optional
+            documentedDefault: 1
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: SPACING_LIMIT
+            description: >-
+              간격 제한 고려
+            type: boolean
+            requirement: optional
+            documentedDefault: true
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: SPLICED_BARS
+            description: >-
+              이음 옵션 (None | 50% | 100%)
+            type: string
+            requirement: optional
+            documentedDefault: "50%"
+            documentedOptional: true
+            enum: [None, "50%", "100%"]
+            safeToOmit: unverified
+            provenance: manual
+      - key: COLUMN
+        description: >-
+          기둥 철근 기준
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: MAIN_REBAR
+            description: >-
+              주철근 규격 배열 (최대 5종)
+            type: array
+            items:
+              type: string
+            requirement: optional
+            documentedDefault: ["D22"]
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: TIES_SPIRALS
+            description: >-
+              띠철근/나선철근 규격 · 19종
+            type: string
+            requirement: optional
+            documentedDefault: D10
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual's own description says this has 19 values and lists
+            # 5; the list is a sample, so no enum is transcribed
+          - key: ARRANGEMENT_Y
+            description: >-
+              다리 수 (Y) (전체 19종: 2 ~ 20)
+            type: integer
+            requirement: optional
+            documentedDefault: 2
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual's own description says this has 19 values and lists
+            # 5; the list is a sample, so no enum is transcribed
+          - key: ARRANGEMENT_Z
+            description: >-
+              다리 수 (Z) (전체 19종: 2 ~ 20)
+            type: integer
+            requirement: optional
+            documentedDefault: 2
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual's own description says this has 19 values and lists
+            # 5; the list is a sample, so no enum is transcribed
+          - key: DO
+            description: >-
+              주철근 중심 피복 do
+            type: number
+            requirement: optional
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: SPACING_LIMIT
+            description: >-
+              간격 제한 고려
+            type: boolean
+            requirement: optional
+            documentedDefault: true
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: SPLICED_BARS
+            description: >-
+              이음 옵션
+            type: string
+            requirement: optional
+            documentedDefault: "50%"
+            documentedOptional: true
+            enum: [None, "50%", "100%"]
+            safeToOmit: unverified
+            provenance: manual
+      - key: BRACE
+        description: >-
+          가새 철근 기준
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: MAIN_REBAR
+            description: >-
+              주철근 규격 배열 (최대 5종)
+            type: array
+            items:
+              type: string
+            requirement: optional
+            documentedDefault: ["D22"]
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: TIES_SPIRALS
+            description: >-
+              띠철근/나선철근 규격 · 19종
+            type: string
+            requirement: optional
+            documentedDefault: D10
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual's own description says this has 19 values and lists
+            # 5; the list is a sample, so no enum is transcribed
+          - key: ARRANGEMENT_Y
+            description: >-
+              다리 수 (Y) (전체 19종: 2 ~ 20)
+            type: integer
+            requirement: optional
+            documentedDefault: 2
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual's own description says this has 19 values and lists
+            # 5; the list is a sample, so no enum is transcribed
+          - key: ARRANGEMENT_Z
+            description: >-
+              다리 수 (Z) (전체 19종: 2 ~ 20)
+            type: integer
+            requirement: optional
+            documentedDefault: 2
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual's own description says this has 19 values and lists
+            # 5; the list is a sample, so no enum is transcribed
+          - key: DO
+            description: >-
+              주철근 중심 피복 do
+            type: number
+            requirement: optional
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: SPACING_LIMIT
+            description: >-
+              간격 제한 고려
+            type: boolean
+            requirement: optional
+            documentedDefault: true
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: SPLICED_BARS
+            description: >-
+              이음 옵션
+            type: string
+            requirement: optional
+            documentedDefault: "50%"
+            documentedOptional: true
+            enum: [None, "50%", "100%"]
+            safeToOmit: unverified
+            provenance: manual
+      - key: WALL
+        description: >-
+          벽체 철근 기준
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: VERTICAL_REBAR
+            description: >-
+              수직 철근 규격 배열 (다중 선택) · 19종
+            type: array
+            items:
+              type: string
+            requirement: optional
+            documentedDefault: ["D13"]
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: HORIZONTAL_REBAR
+            description: >-
+              수평 철근 규격 (전체 19종: D4 ~ D57)
+            type: string
+            requirement: optional
+            documentedDefault: D10
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual's own description says this has 19 values and lists
+            # 5; the list is a sample, so no enum is transcribed
+          - key: END_REBAR
+            description: >-
+              단부 철근 규격 (전체 19종: D4 ~ D57)
+            type: string
+            requirement: optional
+            documentedDefault: D10
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual's own description says this has 19 values and lists
+            # 5; the list is a sample, so no enum is transcribed
+          - key: BE_HORZ_REBAR
+            description: >-
+              경계요소 수평 철근 규격 (전체 19종: D4 ~ D57)
+            type: string
+            requirement: optional
+            documentedDefault: D10
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual's own description says this has 19 values and lists
+            # 5; the list is a sample, so no enum is transcribed
+          - key: BE_HORZ_SPACE
+            description: >-
+              경계요소 수평 간격
+            type: number
+            requirement: optional
+            documentedDefault: 0.2
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: BE_VERT_SPACE
+            description: >-
+              경계요소 수직 간격
+            type: number
+            requirement: optional
+            documentedDefault: 0.1
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: DE
+            description: >-
+              단부 첫 수직철근까지 거리
+            type: number
+            requirement: optional
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: DW
+            description: >-
+              벽면까지 피복 거리
+            type: number
+            requirement: optional
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: MATERIAL_BY_DIAMETER
+            description: >-
+              직경별 재질 사용
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: MATERIAL_BY_DIAMETER_INPUT
+            description: >-
+              직경별 재질 입력 (사용 시)
+            type: object
+            requirement: conditional
+            condition: 사용 시
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            properties:
+              - key: VERTICAL_END_REBAR
+                description: >-
+                  수직/단부 철근 재질 매핑 배열
+                type: array
+                items:
+                  type: object
+                requirement: optional
+                documentedDefault: null
+                documentedOptional: true
+                safeToOmit: unverified
+                provenance: manual
+                properties:
+                  - key: REBAR_DIAMETER
+                    description: >-
+                      철근 직경 · 19종 (D4 ~ D57)
+                    type: string
+                    requirement: optional
+                    documentedDefault: null
+                    documentedOptional: true
+                    safeToOmit: unverified
+                    provenance: manual
+                    # RESOLVED: the manual's own description says this has 19 values and lists
+                    # 5; the list is a sample, so no enum is transcribed
+                  - key: MATERIAL
+                    description: >-
+                      재질 등급 · None,SD300,SD400,SD500,SD600,SD700,SD400S,SD500S,SD600S
+                    type: string
+                    requirement: optional
+                    documentedDefault: null
+                    documentedOptional: true
+                    enum: [None, SD300, SD400, SD500, SD600, SD700, SD400S, SD500S, SD600S]
+                    safeToOmit: unverified
+                    provenance: manual
+              - key: HORIZONTAL_REBAR
+                description: >-
+                  수평 철근 재질 매핑 배열
+                type: array
+                items:
+                  type: object
+                requirement: optional
+                documentedDefault: null
+                documentedOptional: true
+                safeToOmit: unverified
+                provenance: manual
+                properties:
+                  - key: REBAR_DIAMETER
+                    description: >-
+                      철근 직경 · 19종 (D4 ~ D57)
+                    type: string
+                    requirement: optional
+                    documentedDefault: null
+                    documentedOptional: true
+                    safeToOmit: unverified
+                    provenance: manual
+                    # RESOLVED: the manual's own description says this has 19 values and lists
+                    # 5; the list is a sample, so no enum is transcribed
+                  - key: MATERIAL
+                    description: >-
+                      재질 등급 · None,SD300,SD400,SD500,SD600,SD700,SD400S,SD500S,SD600S
+                    type: string
+                    requirement: optional
+                    documentedDefault: null
+                    documentedOptional: true
+                    enum: [None, SD300, SD400, SD500, SD600, SD700, SD400S, SD500S, SD600S]
+                    safeToOmit: unverified
+                    provenance: manual
+          - key: ADDITIONAL_WALL_DATA
+            description: >-
+              벽체 추가 데이터
+            type: object
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            properties:
+              - key: OUT_OF_PLANE_BENDING
+                description: >-
+                  면외 휨 설계
+                type: boolean
+                requirement: optional
+                documentedDefault: false
+                documentedOptional: true
+                safeToOmit: unverified
+                provenance: manual
+              - key: VERTICAL_REBAR_SPACING
+                description: >-
+                  수직 철근 간격 설정 (UNIT: mm/in, LIST_FOR_DESIGN: 간격 값 배열)
+                type: object
+                requirement: optional
+                documentedDefault: {"UNIT": "mm","LIST_FOR_DESIGN": [100,150]}
+                documentedOptional: true
+                safeToOmit: unverified
+                provenance: manual
+              - key: HORIZONTAL_REBAR_SPACING_FROM
+                description: >-
+                  수평 철근 간격(from)
+                type: number
+                requirement: optional
+                documentedDefault: 0.05
+                documentedOptional: true
+                safeToOmit: unverified
+                provenance: manual
+              - key: END_REBAR_METHOD
+                description: >-
+                  단부 철근 설계 방법 (1=Method-1 … 4=Method-4)
+                type: integer
+                requirement: optional
+                documentedDefault: 1
+                documentedOptional: true
+                enum: [1, 2, 3, 4]
+                safeToOmit: unverified
+                provenance: manual
+              - key: DIST1
+                description: >-
+                  단부 철근 4개 배근 간격
+                type: number
+                requirement: optional
+                documentedDefault: 0.3
+                documentedOptional: true
+                safeToOmit: unverified
+                provenance: manual
+              - key: DIST2
+                description: >-
+                  단부 철근 6개 배근 간격
+                type: number
+                requirement: optional
+                documentedDefault: 0.15
+                documentedOptional: true
+                safeToOmit: unverified
+                provenance: manual
+              - key: DIST3
+                description: >-
+                  단부 철근 8개 이상 배근 간격
+                type: number
+                requirement: optional
+                documentedDefault: 0.1
+                documentedOptional: true
+                safeToOmit: unverified
+                provenance: manual
+
+extraction:
+  source: 26_Design_RC_KDS41202022.md line 5868
+  table: Root / 부재 그룹
+  structuralTables:
+    - heading: "BEAM 객체 (기둥/가새는 유사, DCRM-* 참조)"
+      line: 5878
+      paths:
+        - Assign.BEAM
+    - heading: COLUMN / BRACE 객체 (공통)
+      line: 5891
+      paths:
+        - Assign.COLUMN
+        - Assign.BRACE
+    - heading: WALL 객체
+      line: 5901
+      paths:
+        - Assign.WALL
+    - heading: WALL 객체
+      line: 5913
+      paths:
+        - Assign.WALL.MATERIAL_BY_DIAMETER_INPUT.VERTICAL_END_REBAR
+        - Assign.WALL.MATERIAL_BY_DIAMETER_INPUT.HORIZONTAL_REBAR
+    - heading: ADDITIONAL_WALL_DATA 객체
+      line: 5922
+      paths:
+        - Assign.WALL.ADDITIONAL_WALL_DATA

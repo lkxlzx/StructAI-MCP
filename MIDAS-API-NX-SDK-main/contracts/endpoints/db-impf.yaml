@@ -1,0 +1,248 @@
+# /db/IMPF
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-impf
+endpoint: /db/IMPF
+name: Additional Impact Factor
+surface:
+  className: AdditionalImpactFactor
+  exportName: additionalImpactFactor
+  modulePath: [db, movingLoads]
+  payloadTypeName: AdditionalImpactFactorPayload
+  nestedTypes:
+    - {path: ITEMS, name: AdditionalImpactFactorItem, namespace: DbMovingLoadsTypes}
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 08_DB_Moving_Loads.md
+    section: 26. /db/IMPF – Additional Impact Factor
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-07-26
+    - product: gen
+      ref: db-read-sweep-2026-07-26
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/IMPF/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: ITEMS
+    description: >-
+      Additional Impact Factor Items
+    type: array
+    items:
+      type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: ID
+        description: Serial Number
+        type: integer
+        requirement: required
+        condition: Line Lane / Surface Lane (Impact Factor, Effective Span Length – User Input); Line Lane (Effective Span Length – Auto Calculation)
+        appliesWhen:
+          - path: ITEMS.FACT_TYPE
+            in: [IMPACT_FACT, EFF_SPAN_LEN_USER, EFF_SPAN_LEN_AUTO]
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: LANE_TYPE
+        description: >-
+          Lane Type ("LINE" / "SURFACE"); the EFF_SPAN_LEN_AUTO table states "LINE"
+        type: string
+        requirement: required
+        condition: Line Lane / Surface Lane (Impact Factor, Effective Span Length – User Input); Line Lane (Effective Span Length – Auto Calculation)
+        appliesWhen:
+          - path: ITEMS.FACT_TYPE
+            in: [IMPACT_FACT, EFF_SPAN_LEN_USER, EFF_SPAN_LEN_AUTO]
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: LANE_NAME
+        description: Lane Name
+        type: string
+        requirement: required
+        condition: Line Lane / Surface Lane (Impact Factor, Effective Span Length – User Input); Line Lane (Effective Span Length – Auto Calculation)
+        appliesWhen:
+          - path: ITEMS.FACT_TYPE
+            in: [IMPACT_FACT, EFF_SPAN_LEN_USER, EFF_SPAN_LEN_AUTO]
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: FACT_TYPE
+        description: >-
+          Factor Type ("IMPACT_FACT" / "EFF_SPAN_LEN_USER" / "EFF_SPAN_LEN_AUTO")
+        type: string
+        requirement: required
+        condition: Line Lane / Surface Lane (Impact Factor, Effective Span Length – User Input); Line Lane (Effective Span Length – Auto Calculation)
+        appliesWhen:
+          - path: ITEMS.FACT_TYPE
+            in: [IMPACT_FACT, EFF_SPAN_LEN_USER, EFF_SPAN_LEN_AUTO]
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: FACTOR
+        description: Factor
+        type: number
+        requirement: required
+        condition: Line Lane / Surface Lane (Impact Factor, Effective Span Length – User Input)
+        appliesWhen:
+          - path: ITEMS.FACT_TYPE
+            in: [IMPACT_FACT, EFF_SPAN_LEN_USER]
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: ELEMTYPE
+        description: Element Type ("BEAM" / "TRUSS" / "PLATE")
+        type: string
+        requirement: required
+        condition: Line Lane (Effective Span Length – Auto Calculation)
+        appliesWhen:
+          - path: ITEMS.FACT_TYPE
+            equals: EFF_SPAN_LEN_AUTO
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: PARTS
+        description: >-
+          Parts (Beam: [i, 1/4, 1/2, 3/4, j] / Plate: [cent, i, j, k, l])
+        type: array
+        items:
+          type: boolean
+        requirement: conditional
+        condition: Beam/Plate만 — ⚠️ Truss 예제에는 PARTS 필드 자체가 없음, 2026-08-25 확인
+        appliesWhen:
+          - path: ITEMS.FACT_TYPE
+            equals: EFF_SPAN_LEN_AUTO
+          - path: ITEMS.ELEMTYPE
+            in: [BEAM, PLATE]
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: COMPONENTS
+        description: >-
+          Components (Beam: [My_max, My_min, Mz_max, Mz_min, Fx_max, Fx_min] /
+          Truss: [Max, Min] / Plate: [Mxx_max, Mxx_min, Myy_max, Myy_min,
+          Fxx_max, Fxx_min, Fyy_max, Fyy_min])
+        type: array
+        items:
+          type: boolean
+        requirement: required
+        condition: Line Lane (Effective Span Length – Auto Calculation)
+        appliesWhen:
+          - path: ITEMS.FACT_TYPE
+            equals: EFF_SPAN_LEN_AUTO
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+
+sdkRules:
+  - id: db-impf-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-impf-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 08_DB_Moving_Loads.md line 2754
+  table: Parameters
+  missingColumns:
+    - heading: Line Lane / Surface Lane (Impact Factor, Effective Span Length – User Input)
+      line: 2760
+      columns: [Default]
+    - heading: Line Lane (Effective Span Length – Auto Calculation)
+      line: 2770
+      columns: [Default]

@@ -1,0 +1,25 @@
+contractVersion: 1
+id: post-tendon-weight
+endpoint: /post/TABLE
+name: Tendon Weight
+summary: Tendon weight by profile, property, or group.
+products: [gen, civil]
+source: {manual: {status: documented, repo: Dennis5882/MIDAS-API, chapterFile: 20_POST_AnalysisResult_2.md, section: "34. Tendon Weight"}}
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getTendonWeightTable
+  modulePath: [result1]
+  tableType: TNDN_WEIGHT_GROUP
+  factory: variable
+  optionNames: [components, styles, tableName, unit]
+  documentation: |-
+    docs/manual/20_POST_AnalysisResult_2.md #34 — Tendon Weight.
+
+    table_type: TABLE_TYPE_TENDON_WEIGHT_GROUP (default), _PROFILE, or
+    _PROPERTY. A group/profile/property summary, not node/element-scoped, so
+    NODE_ELEMS is not exposed here.
+tableTypes:
+  - {value: TNDN_WEIGHT_PROFILE, description: Tendon weight by profile, head: [Index, TendonName, TendonNum, Area, Length, Weight/Length, Weight, TotalWeight], provenance: manual}
+  - {value: TNDN_WEIGHT_PROPERTY, description: Tendon weight by property, head: [Index, TendonProperty, Area, TotalLength, Weight/Length, TotalWeight], provenance: manual}
+  - {value: TNDN_WEIGHT_GROUP, description: Tendon weight by group, head: [Index, TendonGroup, TotalLength, TotalWeight], provenance: manual}

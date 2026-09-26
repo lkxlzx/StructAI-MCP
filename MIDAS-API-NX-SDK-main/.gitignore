@@ -1,0 +1,33 @@
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.env
+.vscode/
+.idea/
+.claude/
+.mcp.json
+
+# Generated from docs/vendor_report_ko.md by scripts/make_vendor_docx.py
+*.docx
+
+# MkDocs build output
+site/
+
+# TypeScript/npm build output
+packages/typescript/node_modules/
+packages/typescript/dist/
+
+# Machine-drafted endpoint contracts (scripts/extract_contracts.py --emit).
+# Deliberately not committed: a draft is an unreviewed transcription of a manual
+# chapter, and none of them can validate until a human answers safeToOmit for
+# every field. Regenerate them any time; a contract enters the repo by being
+# reviewed and moved into contracts/endpoints/.
+contracts/drafts/

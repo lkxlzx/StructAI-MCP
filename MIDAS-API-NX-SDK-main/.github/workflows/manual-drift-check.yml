@@ -1,0 +1,94 @@
+name: Manual Drift Check
+
+on:
+  schedule:
+    # 매주 수요일 03:00 UTC — 형제 저장소(MIDAS-API)의 manual-sync.yml(매주 월요일)
+    # 이후 반영될 시간을 두고 체크. 형제 저장소 diff는 사람이 처리하는 이슈 기반이라
+    # 정확히 맞물리진 않지만, 매주 도는 것만으로 충분함.
+    - cron: '0 3 * * 3'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Dennis5882/MIDAS-API
+          path: MIDAS-API
+          fetch-depth: 0
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.11'
+
+      # AI 미호출 — coverage.json의 vendored_at_commit 이후 docs/manual/*.md가
+      # 바뀌었는지, 바뀌었다면 어느 midas_nx 모듈이 영향받는지만 순수 diff로 계산.
+      - name: Check MIDAS-API manual for drift (no AI)
+        id: diff
+        run: |
+          if python3 scripts/check_manual_drift.py --manual-api-repo MIDAS-API --out /tmp/manual_drift.json; then
+            echo "has_diff=false" >> "$GITHUB_OUTPUT"
+            echo "No manual drift detected since last vendored commit."
+          else
+            echo "has_diff=true" >> "$GITHUB_OUTPUT"
+            echo "Drift detected:"
+            cat /tmp/manual_drift.json
+          fi
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: steps.diff.outputs.has_diff == 'true'
+        with:
+          name: manual-drift
+          path: /tmp/manual_drift.json
+
+      # 변경이 있을 때만 이슈를 열어(또는 갱신해) 알림. 실제 패치는 사람이
+      # Claude Code 대화창에서 이 이슈 내용을 프롬프트로 넘겨 진행한다.
+      - name: Open/update notification issue
+        if: steps.diff.outputs.has_diff == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          DRIFT_JSON="$(cat /tmp/manual_drift.json)"
+          TITLE="MIDAS-API manual drift 감지 ($(date -u +%Y-%m-%d))"
+          BODY=$(cat <<EOF
+          형제 저장소(Dennis5882/MIDAS-API)의 docs/manual/이 이 저장소가 마지막으로
+          반영한 커밋 이후로 바뀌었습니다. Claude Code 대화창에서 아래 프롬프트를
+          붙여넣어 반영하세요.
+
+          ---
+
+          \`\`\`
+          MIDAS-API manual에서 drift가 감지됐어. 아래 리포트의 stale_modules에 나온
+          모듈들을 형제 저장소(../MIDAS-API)의 해당 chapter_file과 대조해서 docstring/
+          TypedDict 스키마가 여전히 맞는지 확인하고, 달라진 부분만 반영해줘
+          (전체 재검토 금지). changed_chapters_not_yet_implemented는 아직 구현 안 된
+          챕터라 지금은 참고만 하면 돼.
+
+          $DRIFT_JSON
+
+          1. 각 stale 모듈의 소스 파일을 열어 매뉴얼 인용(docstring)과 실제 TypedDict
+             필드를 새 chapter_file 내용과 비교해줘.
+          2. 차이가 있으면 코드/테스트/CHANGELOG를 갱신해줘.
+          3. 다 반영했으면 docs/coverage.json의 "vendored_at_commit"을 이 리포트의
+             new_commit 값으로 갱신해줘.
+          4. 마지막에 커밋·푸시는 나에게 확인 받고 진행해.
+          \`\`\`
+
+          ---
+          워크플로우 실행 로그: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EOF
+          )
+
+          EXISTING=$(gh issue list --search "MIDAS-API manual drift 감지 in:title" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --body "$BODY"
+          else
+            gh issue create --title "$TITLE" --body "$BODY"
+          fi

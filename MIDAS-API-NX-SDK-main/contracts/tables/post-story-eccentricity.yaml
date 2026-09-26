@@ -1,0 +1,26 @@
+contractVersion: 1
+id: post-story-eccentricity
+endpoint: /post/TABLE
+name: Story Eccentricity
+products: [gen, civil]
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 21_POST_StoryTables.md
+    section: "7. Story Eccentricity"
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getStoryEccentricityTable
+  modulePath: [story]
+  tableType: STORY_ECNTRICITY
+  factory: fixed
+  optionNames: [components, constructionStage, loadCaseNames, nodeElements, stageSteps, styles, tableName, unit]
+  documentation: |-
+    docs/manual/21_POST_StoryTables.md #7 — Story Eccentricity.
+
+    Weight/stiffness center coordinates, eccentricity distance, torsional
+    stiffness, elastic radius, and eccentricity ratio per story.
+tableTypes:
+  - {value: STORY_ECNTRICITY, provenance: manual}

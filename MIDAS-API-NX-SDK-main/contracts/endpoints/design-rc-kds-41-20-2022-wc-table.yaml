@@ -1,0 +1,223 @@
+# /DESIGN/RC/KDS-41-20-2022/WC-TABLE
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: design-rc-kds-41-20-2022-wc-table
+endpoint: /DESIGN/RC/KDS-41-20-2022/WC-TABLE
+name: RC Wall Check Table
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 26_Design_RC_KDS41202022.md
+    section: "64. `DESIGN/RC/KDS-41-20-2022/WC-TABLE` — RC Wall Check Table (RC 벽체 검토 테이블)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-08-10
+    - product: gen
+      ref: db-read-sweep-2026-08-10
+
+operations:
+  - method: POST
+    surface:
+      exportName: getWallCheckTable
+      modulePath: [design, rcKds, checks]
+      argumentTypeName: RcWallCheckTableArgument
+      documentation: |-
+        docs/manual/26_Design_RC_KDS41202022.md #64 — WC-TABLE — RC Wall
+        Check Table. Unlike the beam/column/brace check tables, the response is
+        NOT a HEAD/DATA table: it echoes ``TABLE_NAME``/``TABLE_TYPE``/``UNIT``/
+        ``STYLES``/``COMPONENTS`` at the top level plus a ``"DATA"`` array whose
+        entries are objects keyed by each requested COMPONENTS name (one object
+        per wall-mark/story row), e.g. ``{"TABLE_NAME": ..., "COMPONENTS": [...],
+        "DATA": [{"WID": 1, "Story": "3F", ...}, ...]}``.
+      nestedTypes:
+        - {path: SELECTIONS, name: RcWallDesignSelection, namespace: DesignRcKdsDesignForcesTypes}
+        - {path: SELECTIONS.WALL_IDS, name: RcWallIdsSelector, namespace: DesignRcKdsDesignForcesTypes}
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: Argument
+    description: >-
+      Argument 래퍼
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: TABLE_TYPE
+    description: >-
+      출력 단위 ("WID+STORY" / "WID")
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    enum: [WID+STORY, WID]
+    safeToOmit: unverified
+    provenance: manual
+  - key: SELECTIONS
+    description: >-
+      벽/층 선택 목록 (생략 시 전체)
+    type: array
+    items:
+      type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: WALL_IDS
+        description: >-
+          벽 ID (KEYS 또는 TO)
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'SELECTIONS' by numbering it '3.1',
+        # not by naming a path
+        properties:
+          - key: KEYS
+            description: >-
+              벽 ID 각각
+            type: array
+            items:
+              type: integer
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # From this section's JSON Schema (line 11836), which declares KEYS and TO
+            # under WALL_IDS with a oneOf: exactly one of the two. The Parameters table
+            # names them only in WALL_IDS's description.
+          - key: TO
+            description: >-
+              벽 ID 범위 (예 "10to20")
+            type: string
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+      - key: STORY
+        description: >-
+          층 이름 목록
+        type: array
+        items:
+          type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'SELECTIONS' by numbering it '3.2',
+        # not by naming a path
+  - key: PRI_SORT
+    description: >-
+      WID+STORY 정렬 (0=Story, 1=WID)
+    type: integer
+    requirement: optional
+    documentedDefault: 1
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: PRI_SORT_WID
+    description: >-
+      WID 정렬 (0=WallMark, 1=WID)
+    type: integer
+    requirement: optional
+    documentedDefault: 1
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: RESULT
+    description: >-
+      결과 필터 (0=All, 1=OK, 2=NG)
+    type: integer
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: TABLE_NAME
+    description: >-
+      응답 테이블 제목
+    type: string
+    requirement: optional
+    documentedDefault: RC Wall Checking Result
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: EXPORT_PATH
+    description: >-
+      결과 저장 경로
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: UNIT
+    description: >-
+      단위 설정
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedDefaultNote: System
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: STYLES
+    description: >-
+      숫자 형식
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedDefaultNote: System
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: COMPONENTS
+    description: >-
+      출력 컬럼 목록
+    type: array
+    items:
+      type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+
+extraction:
+  prose:
+    - line: 11836
+      quote: >-
+        "KEYS": { "type": "array", "items": { "type": "integer" } },
+        "TO": { "type": "string" }
+      paths: [SELECTIONS.WALL_IDS.KEYS, SELECTIONS.WALL_IDS.TO]
+  source: 26_Design_RC_KDS41202022.md line 11980
+  table: 파라미터

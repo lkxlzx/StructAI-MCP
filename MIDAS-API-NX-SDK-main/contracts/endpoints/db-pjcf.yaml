@@ -1,0 +1,469 @@
+# /db/PJCF
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products, verification status and the DELETE
+# shape come from docs/coverage.json's live record and the measured /db/* DELETE
+# behaviour, not from the manual's framing. safeToOmit is answered `true` only
+# where a confirmed live payload actually omitted the field.
+contractVersion: 1
+id: db-pjcf
+endpoint: /db/PJCF
+name: Project Information
+surface:
+  className: ProjectInfo
+  exportName: projectInfo
+  modulePath: [db, project]
+  payloadTypeName: ProjectInfoPayload
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 02_DB_Project_Structure.md
+    section: "1. `/db/PJCF` — Project Information"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-write-sweep-2026-08-16
+    - product: gen
+      ref: db-write-sweep-2026-08-16
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/PJCF/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: PROJECT
+    description: >-
+      Project Name
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: REVISION
+    description: >-
+      Revision Info
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's ProjectInfo case completed a live
+      create-read-update-delete round trip on gen and civil without this field
+      in its payload. That is evidence the call is accepted, not that the
+      resulting model is what an engineer wanted.
+    provenance: manual
+  - key: USER
+    description: >-
+      Username
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: EMAIL
+    description: >-
+      E-mail
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's ProjectInfo case completed a live
+      create-read-update-delete round trip on gen and civil without this field
+      in its payload. That is evidence the call is accepted, not that the
+      resulting model is what an engineer wanted.
+    provenance: manual
+  - key: ADDRESS
+    description: >-
+      Address
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's ProjectInfo case completed a live
+      create-read-update-delete round trip on gen and civil without this field
+      in its payload. That is evidence the call is accepted, not that the
+      resulting model is what an engineer wanted.
+    provenance: manual
+  - key: TEL
+    description: >-
+      Telephone Numbers
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's ProjectInfo case completed a live
+      create-read-update-delete round trip on gen and civil without this field
+      in its payload. That is evidence the call is accepted, not that the
+      resulting model is what an engineer wanted.
+    provenance: manual
+  - key: FAX
+    description: >-
+      Fax Numbers
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's ProjectInfo case completed a live
+      create-read-update-delete round trip on gen and civil without this field
+      in its payload. That is evidence the call is accepted, not that the
+      resulting model is what an engineer wanted.
+    provenance: manual
+  - key: CLIENT
+    description: >-
+      Client
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's ProjectInfo case completed a live
+      create-read-update-delete round trip on gen and civil without this field
+      in its payload. That is evidence the call is accepted, not that the
+      resulting model is what an engineer wanted.
+    provenance: manual
+  - key: TITLE
+    description: >-
+      Title
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's ProjectInfo case completed a live
+      create-read-update-delete round trip on gen and civil without this field
+      in its payload. That is evidence the call is accepted, not that the
+      resulting model is what an engineer wanted.
+    provenance: manual
+  - key: ENGINEER
+    description: >-
+      Engineer (Review Name)
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's ProjectInfo case completed a live
+      create-read-update-delete round trip on gen and civil without this field
+      in its payload. That is evidence the call is accepted, not that the
+      resulting model is what an engineer wanted.
+    provenance: manual
+  - key: EDATE
+    description: >-
+      Engineer Review Date
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's ProjectInfo case completed a live
+      create-read-update-delete round trip on gen and civil without this field
+      in its payload. That is evidence the call is accepted, not that the
+      resulting model is what an engineer wanted.
+    provenance: manual
+  - key: CHECK1
+    description: >-
+      Checker 1 Name
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's ProjectInfo case completed a live
+      create-read-update-delete round trip on gen and civil without this field
+      in its payload. That is evidence the call is accepted, not that the
+      resulting model is what an engineer wanted.
+    provenance: manual
+  - key: CDATE1
+    description: >-
+      Checker 1 Date
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's ProjectInfo case completed a live
+      create-read-update-delete round trip on gen and civil without this field
+      in its payload. That is evidence the call is accepted, not that the
+      resulting model is what an engineer wanted.
+    provenance: manual
+  - key: CHECK2
+    description: >-
+      Checker 2 Name
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's ProjectInfo case completed a live
+      create-read-update-delete round trip on gen and civil without this field
+      in its payload. That is evidence the call is accepted, not that the
+      resulting model is what an engineer wanted.
+    provenance: manual
+  - key: CDATE2
+    description: >-
+      Checker 2 Date
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's ProjectInfo case completed a live
+      create-read-update-delete round trip on gen and civil without this field
+      in its payload. That is evidence the call is accepted, not that the
+      resulting model is what an engineer wanted.
+    provenance: manual
+  - key: CHECK3
+    description: >-
+      Checker 3 Name
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's ProjectInfo case completed a live
+      create-read-update-delete round trip on gen and civil without this field
+      in its payload. That is evidence the call is accepted, not that the
+      resulting model is what an engineer wanted.
+    provenance: manual
+  - key: CDATE3
+    description: >-
+      Checker 3 Date
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's ProjectInfo case completed a live
+      create-read-update-delete round trip on gen and civil without this field
+      in its payload. That is evidence the call is accepted, not that the
+      resulting model is what an engineer wanted.
+    provenance: manual
+  - key: APPROVE
+    description: >-
+      Approver Name
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's ProjectInfo case completed a live
+      create-read-update-delete round trip on gen and civil without this field
+      in its payload. That is evidence the call is accepted, not that the
+      resulting model is what an engineer wanted.
+    provenance: manual
+  - key: ADATE
+    description: >-
+      Approver Date
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's ProjectInfo case completed a live
+      create-read-update-delete round trip on gen and civil without this field
+      in its payload. That is evidence the call is accepted, not that the
+      resulting model is what an engineer wanted.
+    provenance: manual
+  - key: COMMENT
+    description: >-
+      Comments
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's ProjectInfo case completed a live
+      create-read-update-delete round trip on gen and civil without this field
+      in its payload. That is evidence the call is accepted, not that the
+      resulting model is what an engineer wanted.
+    provenance: manual
+  - key: FILE_NAME
+    description: >-
+      Model File Name
+    type: string
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: info_schema
+    # RESOLVED: declared by /info and absent from the manual - the whole
+    # manual was searched for the name, not just this section.
+    # One of five properties of the model file itself that the server
+    # returns from this endpoint and the section's twenty documented
+    # properties do not mention. Plainly computed rather than sent - a
+    # caller cannot set the file's size - but /info declares no default and
+    # states no requiredness, and read_only is a normalization of a Required
+    # column this section never fills in for them.
+  - key: DIR
+    description: >-
+      Model File Directory
+    type: string
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: info_schema
+    # RESOLVED: declared by /info and absent from the manual - the whole
+    # manual was searched for the name, not just this section.
+  - key: FILE_SIZE
+    description: >-
+      Model File Size
+    type: string
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: info_schema
+    # RESOLVED: declared by /info and absent from the manual - the whole
+    # manual was searched for the name, not just this section.
+  - key: CREATED
+    description: >-
+      Model File Created Time
+    type: string
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: info_schema
+    # RESOLVED: declared by /info and absent from the manual - the whole
+    # manual was searched for the name, not just this section.
+  - key: MODIFIED
+    description: >-
+      Model File Modified Time
+    type: string
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: info_schema
+    # RESOLVED: declared by /info and absent from the manual - the whole
+    # manual was searched for the name, not just this section.
+
+manualDefects:
+  - describes: field_name
+    manualSays: >-
+      /db/PJCF's record has twenty properties, all of them project
+      metadata a caller types in - project name, revision, reviewers,
+      dates, comments.
+    actual: >-
+      `GET /info/db/PJCF` declares five more, all about the model file
+      itself: `FILE_NAME`, `DIR`, `FILE_SIZE`, `CREATED` and `MODIFIED`,
+      every one a string. They are plainly computed rather than sent - a
+      caller cannot set the file's size - but /info states no requiredness
+      and this section has no Required cell for them to normalize, so the
+      contract records them as `unstated` rather than promoting them to
+      `read_only` on an inference.
+    evidence: >-
+      Found by scripts/info_baseline.py --against-contracts on 2026-09-04,
+      sweeping the 2026-09-03 /info capture against every contract. The
+      manual was then searched in full for the name, not just this
+      section. Registered as MD-41.
+
+sdkRules:
+  - id: db-pjcf-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-pjcf-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 02_DB_Project_Structure.md line 134
+  table: Specifications

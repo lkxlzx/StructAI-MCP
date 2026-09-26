@@ -1,0 +1,302 @@
+# /db/HSFC
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-hsfc
+endpoint: /db/HSFC
+name: Heat Source Functions
+surface:
+  className: HeatSourceFunction
+  exportName: heatSourceFunction
+  modulePath: [db, constructionStage]
+  payloadTypeName: HeatSourceFunctionPayload
+  nestedTypes:
+    - {path: ITEM, name: TimeValuePoint, namespace: DbBaseTypes}
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 10_DB_Construction_Stage.md
+    section: 11. /db/HSFC – Heat Source Functions
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-write-sweep-2026-08-17
+    - product: gen
+      ref: db-write-sweep-2026-08-17
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/HSFC/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: NAME
+    description: >-
+      함수명
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: TYPE
+    description: >-
+      함수 타입 ("CONST" / "FUNC" / "USER")
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: TEMP_CONST
+    description: >-
+      열원 온도
+    type: number
+    requirement: optional
+    condition: "Constant 타입 (TYPE=\"CONST\") 추가 파라미터"
+    appliesWhen:
+      - path: TYPE
+        equals: CONST
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: OPT_USE_CONC_DATA
+    description: >-
+      콘크리트 데이터 사용 여부 (false)
+    type: boolean
+    requirement: optional
+    condition: "Code 타입 (TYPE=\"FUNC\")"
+    appliesWhen:
+      - path: TYPE
+        equals: FUNC
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: K
+    description: >-
+      최대 단열 온도 상승 (K)
+    type: number
+    requirement: optional
+    condition: "Code 타입 (TYPE=\"FUNC\") - 콘크리트 데이터 미사용 (OPT_USE_CONC_DATA=false)"
+    appliesWhen:
+      - path: TYPE
+        equals: FUNC
+      - path: OPT_USE_CONC_DATA
+        equals: false
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: ALPHA
+    description: >-
+      반응 속도 계수 (a)
+    type: number
+    requirement: optional
+    condition: "Code 타입 (TYPE=\"FUNC\") - 콘크리트 데이터 미사용 (OPT_USE_CONC_DATA=false)"
+    appliesWhen:
+      - path: TYPE
+        equals: FUNC
+      - path: OPT_USE_CONC_DATA
+        equals: false
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: CEMENT_TYPE
+    description: >-
+      시멘트 타입 (0=보통, 1=중용열, 2=조기강도, 3=고로슬래그, 4=플라이애시)
+    type: integer
+    requirement: optional
+    condition: "Code 타입 (TYPE=\"FUNC\") - 콘크리트 데이터 사용 (OPT_USE_CONC_DATA=true)"
+    appliesWhen:
+      - path: TYPE
+        equals: FUNC
+      - path: OPT_USE_CONC_DATA
+        equals: true
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: TEMP_FUNC
+    description: >-
+      온도 (0=10°C, 1=20°C, 2=30°C)
+    type: integer
+    requirement: optional
+    condition: "Code 타입 (TYPE=\"FUNC\") - 콘크리트 데이터 사용 (OPT_USE_CONC_DATA=true)"
+    appliesWhen:
+      - path: TYPE
+        equals: FUNC
+      - path: OPT_USE_CONC_DATA
+        equals: true
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: CEMENT_CONT
+    description: >-
+      시멘트 함유량
+    type: number
+    requirement: optional
+    condition: "Code 타입 (TYPE=\"FUNC\") - 콘크리트 데이터 사용 (OPT_USE_CONC_DATA=true)"
+    appliesWhen:
+      - path: TYPE
+        equals: FUNC
+      - path: OPT_USE_CONC_DATA
+        equals: true
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: IS_ADIABATIC_TEMP
+    description: >-
+      데이터 타입 (false=열원, true=온도)
+    type: boolean
+    requirement: optional
+    condition: "User 타입 (TYPE=\"USER\") 추가 파라미터"
+    appliesWhen:
+      - path: TYPE
+        equals: USER
+    documentedDefault: true
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: SCALE_FACTOR
+    description: >-
+      스케일 계수
+    type: number
+    requirement: required
+    condition: "User 타입 (TYPE=\"USER\") 추가 파라미터"
+    appliesWhen:
+      - path: TYPE
+        equals: USER
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: ITEM
+    description: >-
+      함수 데이터 목록
+    type: array
+    items:
+      type: object
+    requirement: required
+    condition: "User 타입 (TYPE=\"USER\") 추가 파라미터"
+    appliesWhen:
+      - path: TYPE
+        equals: USER
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: TIME
+        description: >-
+          - 시간
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEM' by a dash description row
+      - key: VALUE
+        description: >-
+          - 값 (온도 또는 열원)
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ITEM' by a dash description row
+
+sdkRules:
+  - id: db-hsfc-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-hsfc-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 10_DB_Construction_Stage.md line 1132
+  table: 11-2. 파라미터

@@ -1,0 +1,111 @@
+# /ope/MEMB
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: ope-memb
+endpoint: /ope/MEMB
+name: Member Assignment
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 15_OPE.md
+    section: "13. `/ope/MEMB` — Member Assignment"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-07-30
+    - product: gen
+      ref: db-read-sweep-2026-07-30
+
+operations:
+  - method: POST
+    surface:
+      exportName: assignMembers
+      modulePath: [ope]
+      argumentTypeName: MemberAssignmentArgument
+      documentation: |-
+        docs/manual/15_OPE.md #13 — /ope/MEMB — Member Assignment.
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: ASSIGN_TYPE
+    description: >-
+      배정 타입 · 수동: "MANUAL" / 자동: "AUTO"
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: SELECTION_TYPE
+    description: >-
+      선택 타입 · 전체: "ALL"(ASSIGN_TYPE="AUTO"일 때만 가능) / 선택: "SELECTION"
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: ELEM_LIST
+    description: >-
+      대상 요소 목록 (SELECTION_TYPE="ALL"이면 무시됨)
+    type: array
+    items:
+      type: integer
+    requirement: conditional
+    condition: "SELECTION_TYPE=\"ALL\"이면 무시됨"
+    appliesWhen:
+      - path: SELECTION_TYPE
+        equals: SELECTION
+    provenanceNote: >-
+      The request key is ELEM_LIST and the response key for the same list is
+      AELEM. That is the official spelling in both directions and the manual
+      flags it in its own callout, so it is not recorded as a defect; a caller
+      reading back what it just posted has to expect the other name.
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    # RESOLVED: the manual states the condition negatively - "ignored when
+    # SELECTION_TYPE=ALL" - and the value set that turns it around is stated
+    # elsewhere in the same section: SELECTION_TYPE's own row documents exactly
+    # two values, 전체 "ALL" and 선택 "SELECTION". With two values, "not ALL" is
+    # "SELECTION", so the appliesWhen is written positively while the condition
+    # keeps the manual's sentence. The section's Python Example agrees: it sends
+    # ELEM_LIST in the SELECTION call and omits it from the ALL call.
+    # RESOLVED: the Value 타입 cell says only Array, but the element type is
+    # stated elsewhere in the same section - the Python Example sends
+    # "ELEM_LIST": [640, 692] and the POST Response Body echoes the same pair as
+    # "AELEM": [640, 692]. They are element numbers, so the items are integers.
+  - key: ALLOW_SINGLE
+    description: >-
+      단일요소 부재 허용 여부
+    type: boolean
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+
+extraction:
+  source: 15_OPE.md line 1815
+  table: Parameters

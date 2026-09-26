@@ -1,0 +1,116 @@
+# /db/BODF — Self-Weight
+#
+# Sources: docs/manual/06_DB_Static_Loads.md #2 in Dennis5882/MIDAS-API and
+# the Gen/Civil live smoke run recorded in docs/live_verification_notes.md.
+# No SDK implementation was consulted to author this contract.
+contractVersion: 1
+id: db-bodf
+endpoint: /db/BODF
+name: Self-Weight
+surface:
+  className: SelfWeight
+  exportName: selfWeight
+  modulePath: [db, staticLoads]
+  payloadTypeName: SelfWeightPayload
+summary: Apply self-weight to the specified load case.
+
+products: [gen, civil]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 06_DB_Static_Loads.md
+    section: 2. /db/BODF — Self-Weight
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: gen
+      ref: db-write-sweep-2026-07-22
+    - product: civil
+      ref: db-write-sweep-2026-07-22
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/BODF/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: unknown
+    notes: >-
+      The live DELETE finding documents this per-id route as the only form that
+      deletes a selection rather than emptying the full table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire self-weight table.
+    request:
+      wrapper: assign
+      itemSchema: none
+    response:
+      wrapper: unknown
+    notes: >-
+      The manual's documented DELETE form uses an Assign body. The documented
+      ids do not limit its deletion scope; see the live DELETE finding.
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: unknown
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: unknown
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: unknown
+
+fields:
+  - key: LCNAME
+    description: Load Case Name
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: GROUP_NAME
+    description: Load Group Name
+    type: string
+    requirement: optional
+    documentedDefault: ""
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: FV
+    description: Self-Weight Factor [X, Y, Z]
+    type: array
+    items:
+      type: number
+    minItems: 3
+    maxItems: 3
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+
+extraction:
+  source: 06_DB_Static_Loads.md line 173
+  table: Parameters

@@ -1,0 +1,2860 @@
+# /db/MVHL
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then written
+# by hand: scripts/promote_contract.py refuses this endpoint, because its common
+# Specifications table states requiredness for both branches of
+# VEHICLE_LOAD_NUM without naming the branch. What that field means, and which
+# fields each branch really needs, was measured live on 2026-09-03 - see
+# docs/live_verification_notes.md and MD-16.
+contractVersion: 1
+id: db-mvhl
+endpoint: /db/MVHL
+name: Vehicles
+surface:
+  className: Vehicles
+  exportName: vehicles
+  modulePath: [db, movingLoads]
+  payloadTypeName: VehiclePayload
+  nestedTypes:
+    - {path: VEH_DEFAULT, name: VehicleDefaultParams, namespace: DbMovingLoadsTypes}
+    - {path: LOAD_ITEMS, name: VehicleLoadItem, namespace: DbMovingLoadsTypes}
+    - {path: VEH_EUROCODE, name: VehicleEurocodeParams, namespace: DbMovingLoadsTypes}
+    - {path: VEH_KSCE_LSD15, name: VehicleKsceLsd15Params, namespace: DbMovingLoadsTypes}
+    - {path: VEH_KSCE_LSD15.POINT_ITEMS, name: VehicleKsceLsd15PointItem, namespace: DbMovingLoadsTypes}
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 08_DB_Moving_Loads.md
+    section: 10. /db/MVHL – Vehicles
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-write-sweep-2026-08-17
+    - product: gen
+      ref: db-write-sweep-2026-08-17
+    - product: civil
+      ref: mvhl-load-num-branches-2026-09-03
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/MVHL/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: unstable
+    notes: >-
+      The server renumbers a POSTed record. Keys 10-14, 20 and 21 landed at ids
+      4-10 in one 2026-09-03 run, while the response echoed the key sent. Read
+      the table back and match on a field you set before deleting by id.
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: MVLD_CODE
+    description: >-
+      Moving Load Code (Integer)
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: VEHICLE_LOAD_NAME
+    description: >-
+      Vehicular Load Name (user-assigned)
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: VEHICLE_LOAD_NUM
+    description: >-
+      Vehicular Load Number. This is the branch selector, not a count: 1 selects
+      a standard DB vehicle and 2 a user-defined one, and the variants below say
+      which fields each needs.
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: false
+    omissionEffect: >-
+      Rejected with `Wrong Field`, the same answer the server gives an
+      unrecognised value. Measured against a live product on 2026-09-03.
+    enum: [1, 2]
+    provenance: live_verified
+    # RESOLVED: the manual states no value set for this field; the two values are
+    # measured against a live product on 2026-09-03, where 3 and omission both
+    # answered Wrong Field and 1 and 2 each stored the branch the chapter's
+    # own KSCE-LSD15 examples show. The chapter documents the pair only by
+    # example, never as an enum
+  - key: VEHICLE_TYPE_NAME
+    description: >-
+      Vehicular Type Name (predefined vehicle name)
+    type: string
+    requirement: required
+    appliesWhen:
+      - path: VEHICLE_LOAD_NUM
+        equals: 1
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: false
+    omissionEffect: >-
+      Under VEHICLE_LOAD_NUM 1 the record is rejected with `[Error] Vehicle Load
+      Data (Name:...) contains errors.(Item:Length of Vehicular Load Type(0 ~ 40
+      characters))`. Under VEHICLE_LOAD_NUM 2 the field does not apply and is
+      discarded if sent. Measured against a live product on 2026-09-03.
+    provenance: manual
+    # RESOLVED: the value is not validated. `"NOT-A-VEHICLE"` was accepted and stored
+    # verbatim - measured against a live product on 2026-09-03 - and this name
+    # is what selects which standard vehicle's axle loads the analysis uses,
+    # so a typo here is silent. No enum is transcribed: the set is per
+    # STANDARD_CODE and the chapter never lists it
+  - key: STANDARD_CODE
+    description: >-
+      Standard Code - the standard within the record's MVLD_CODE country, such
+      as Australia's "ROAD TRAFFIC". It does not select the VEH_* object; see
+      the variants below.
+    type: string
+    requirement: required
+    appliesWhen:
+      - path: VEHICLE_LOAD_NUM
+        equals: 1
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: true
+    omissionEvidence: >-
+      Omitted from a VEHICLE_LOAD_NUM 1 HL-93TRK record under MVLD_CODE 2 and
+      stored without it. docs/live_verification_notes.md, "/db/MVHL: the finding
+      was real, the reading was not" (2026-09-03), against a Civil NX document
+      confirmed empty first; verification record
+      mvhl-load-num-branches-2026-09-03. This confirms by a write what
+      VehiclePayload's docstring already recorded from a read: a real production
+      Eurocode model's predefined Load Model 1 vehicle carries no STANDARD_CODE
+      key at all.
+    provenance: manual
+    # RESOLVED: the value is enum-checked but not cross-checked. `"NOT-A-CODE"` answers
+    # Wrong Field, while `"KS-RB"` was accepted and stored on an MVLD_CODE 2
+    # (AASHTO LRFD) HL-93TRK vehicle - measured against a live product on
+    # 2026-09-03. The chapter's footnote lists fifteen values and says they
+    # are the 주요 (principal) ones, so no enum is transcribed from a list its
+    # own text does not close
+    # RESOLVED: required for standard vehicles only, as VEHICLE_TYPE_NAME is. Both
+    # of the chapter's user-defined Request Example bodies (KSCE-LSD15 and
+    # China) send none, and each was stored with its VEH_* object - measured
+    # against a live product on 2026-09-22 (Civil NX).
+    # The footnote's values are country names, and two of the section's own
+    # headings put one on an object: Australia's "AUSTRALIA" answers Wrong
+    # Field where its body's "ROAD TRAFFIC" stores, and South Africa's "NA"
+    # answers Wrong Field too. See MD-61
+  - key: USER_LOAD_TYPE
+    description: >-
+      User Load Type (when user-defined)
+    type: string
+    requirement: optional
+    appliesWhen:
+      - path: VEHICLE_LOAD_NUM
+        equals: 2
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      Omitted from a VEHICLE_LOAD_NUM 2 record and stored, the server supplying
+      "Truck/Lane". docs/live_verification_notes.md, "/db/MVHL: the finding was
+      real, the reading was not" (2026-09-03), against a Civil NX document
+      confirmed empty first; verification record
+      mvhl-load-num-branches-2026-09-03.
+    provenance: manual
+    # RESOLVED: under MVLD_CODE 2 the server ignores whatever is sent here and stores
+    # "Truck/Lane": `"Train"`, `"Lane"`, `"Truck"`, `"TruckLane"` and omission
+    # all produced the same record - measured against a live product on
+    # 2026-09-03. The KSCE-LSD15 article names Train and Lane as real modes,
+    # so the value is presumably honoured under the codes that have them;
+    # nobody has driven one
+  - key: VEH_DEFAULT
+    description: >-
+      Default Parameters. Used by AASHTO Standard/LRFD, PENNDOT, Korea (KS-RB)
+      and Taiwan only; every other country carries its own object instead - see
+      the variants below.
+    type: object
+    requirement: conditional
+    condition: >-
+      AASHTO Standard/LRFD·PENNDOT·Korea(KS-RB)·Taiwan 5개 코드만 `VEH_DEFAULT`를 쓰고,
+      나머지 국가는 각자 전용 객체를 씁니다
+    appliesWhen:
+      - path: MVLD_CODE
+        in: [1, 2, 6]
+    # RESOLVED: the common table marks VEH_DEFAULT Required, and the chapter's
+    # 2026-08-25 callout, quoted as `condition`, limits it to five codes. The
+    # MVLD_CODE values are the ones the section's AASHTO Standard (1), AASHTO
+    # LRFD (2) and KS-RB (6) Request Bodies send; PENNDOT and Taiwan have no
+    # body in the chapter, so their codes are missing from appliesWhen rather
+    # than guessed. Every other country's Request Example was stored without
+    # VEH_DEFAULT - measured against a live product on 2026-09-22 (Civil NX)
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    # RESOLVED: an empty object is not the same as omission, measured against a
+    # live product. Sending `VEH_DEFAULT: {}` makes the write a silent no-op -
+    # `{"message": ""}`, no error, and a following GET shows nothing saved -
+    # even though every one of its members is documented Optional. Recorded in
+    # live_crud_check.py's moving-load seed and refused by both SDKs through
+    # the db-mvhl-veh-default-not-empty rule below
+    properties:
+      - key: UNIFORM_LOAD
+        description: >-
+          Uniform Load
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: DYN_LOAD_ALLOWANCE
+        description: >-
+          Dynamic Load Allowance (%)
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: W1
+        description: >-
+          Width 1 (W1)
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: W2
+        description: >-
+          Width 2 (W2)
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: D1
+        description: >-
+          Distance 1 (D1)
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: D2
+        description: >-
+          Distance 2 (D2)
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: PL
+        description: >-
+          Point Load (PL)
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: PLM
+        description: >-
+          PLM
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: PLV
+        description: >-
+          PLV
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: CENT_F
+        description: >-
+          Add Centrifugal Force
+        type: boolean
+        requirement: optional
+        documentedDefault: false
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+  - key: LOAD_ITEMS
+    description: >-
+      User-defined axle-load items
+    type: array
+    items:
+      type: object
+    requirement: optional
+    appliesWhen:
+      - path: VEHICLE_LOAD_NUM
+        equals: 2
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: POINT_LOAD
+        description: >-
+          Point Load
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: POINT_DIST
+        description: >-
+          Point Distance
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+    # The Canada, Australia, China and Poland tables each list an Axle Load
+    # 배열 `"LOAD_ITEMS"` row among their object's members. It is this field:
+    # the common table places LOAD_ITEMS at the record root, and GET /info
+    # declares it there on both products and inside no VEH_* object.
+  - key: LOAD_ITEMS2
+    description: >-
+      추가 축하중 배열(China Type2 Heavy Vehicle용) · POINT_LOAD/POINT_DIST
+    type: array
+    items:
+      type: object
+    requirement: optional
+    condition: >-
+      User Defined - Train/Exceptional (China)
+    appliesWhen:
+      - path: VEHICLE_LOAD_NUM
+        equals: 2
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    # The China table's row 23 lists it among VEH_CN's members; GET /info
+    # declares it at the record root on both products, beside LOAD_ITEMS, and
+    # inside no VEH_* object.
+    properties:
+      - key: POINT_LOAD
+        description: >-
+          Point Load
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: POINT_DIST
+        description: >-
+          Point Distance
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+  - key: VEH_EUROCODE
+    description: >-
+      EUROCODE Moving Load Code
+    type: object
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: info_schema
+    properties:
+      - key: SUB_TYPE
+        description: >-
+          SUB_TYPE
+        type: integer
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+        # RESOLVED: declared by /info and absent from the manual - the
+        # whole manual was searched for VEH_EUROCODE, and section 10's
+        # Specifications table documents VEH_DEFAULT and no country object
+        # at all. This one was read off a real Eurocode "Load Model 1"
+        # vehicle (MVLD_CODE 11) on 2026-07-30, which used VEH_EUROCODE
+        # instead of VEH_DEFAULT and omitted STANDARD_CODE entirely; see
+        # docs/live_verification_notes.md. requirement stays `unstated`
+        # throughout: an /info schema declares no `required` array and the
+        # manual made no claim to normalise. Three load-model-specific
+        # arrays /info also declares - LOADCASES, VEHICLES and PERMIT_LOAD
+        # - are deliberately not transcribed: they are branch trees for
+        # LM1/LM2/LM3 and rail HSLM-A/B that no permitted source describes
+        # a gate for, the same treatment SECT_I's tree has. See MD-48.
+      - key: SEL_VEHICLE
+        description: >-
+          Select Vehicle
+        type: string
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: AMP
+        description: >-
+          Amplification
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: AMP2
+        description: >-
+          Amplification2
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: AMP_VALUES
+        description: >-
+          Amplification Value Array
+        type: array
+        items:
+          type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: TANDEM_ADJUST_VALUES
+        description: >-
+          Tandem System Adjustment Factor Array
+        type: array
+        items:
+          type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: TANDEM_LOADS
+        description: >-
+          Tandem System Axle Loads Array
+        type: array
+        items:
+          type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: UDL_ADJUST_VALUES
+        description: >-
+          UDL System Adjustment Factor Array
+        type: array
+        items:
+          type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: UDL_LOADS
+        description: >-
+          UDL System Uniformly Dist. Loads Array
+        type: array
+        items:
+          type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: USE_DYNAMIC_FACTOR2_0
+        description: >-
+          Use Dynamic Amplication Factor 2_0
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: USE_DYNAMIC_FACTOR2_1
+        description: >-
+          Use Dynamic Amplication Factor 2_1
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: USE_POINT_LOAD3_0
+        description: >-
+          Use Point Load 3_0
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: USE_POINT_LOAD3_1
+        description: >-
+          Use Point Load 3_1
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: VAR_SPACING
+        description: >-
+          Use Variable Axle Spacing
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: MAX_SPACING
+        description: >-
+          Max. Spacing
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: MIN_SPACING
+        description: >-
+          Min. Spacing
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: WHEEL_SPACING
+        description: >-
+          Wheel Spacing for Static Load
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: LM3_LOADCASE1
+        description: >-
+          LM3 Load Case1 Boolean
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: LM3_LOADCASE2
+        description: >-
+          LM3 Load Case2 Boolean
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: ADJUSTMENT
+        description: >-
+          Adjustment Factor
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: ADJUSTMENT2
+        description: >-
+          Adjustment2 Factor
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: AXLE_NUM
+        description: >-
+          Axle No.
+        type: integer
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: FOOTWAY
+        description: >-
+          Footway
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: INTERVAL
+        description: >-
+          Two Vehicle Interval
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: DYNAMIC_FACTOR
+        description: >-
+          Dynamic Amplification Factor
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: USER_INPUT
+        description: >-
+          User Input
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: DSPACE
+        description: >-
+          Space
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: W1
+        description: >-
+          W1
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: DD1
+        description: >-
+          DD1
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: D1
+        description: >-
+          D1
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: W2
+        description: >-
+          W2
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: DD2
+        description: >-
+          DD2
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: D2
+        description: >-
+          D2
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: PRESSURE_LOAD
+        description: >-
+          Pressure Load
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: V_LOAD_FACTOR
+        description: >-
+          Eccentricity of Lateral Displacement of Vertival Loads Factor
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: LONGI_DIST
+        description: >-
+          Consider Longitudinal Distrtibution of Point Loads
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: DIST_RAIL_SUPPORT
+        description: >-
+          Distance between Rail Support Points
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: ECCEN_VERT_LOAD
+        description: >-
+          Eccentricity of Lateral Displacement of Vertical Loads
+        type: boolean
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: ECCEN_VERT_LOAD_VALUE
+        description: >-
+          Eccentricity of Lateral Displacement of Vertical Loads Value
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: HSLMA_NUM
+        description: >-
+          HSLMA Number
+        type: integer
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: HSLMA_LENGTH
+        description: >-
+          HSLMA Length
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: HSLMA_SPACING
+        description: >-
+          HSLMA Spacing
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: HSLMA_FORCE
+        description: >-
+          HSLMA Force
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: HSLMB_NUM
+        description: >-
+          HSLMB Number
+        type: integer
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: HSLMB_FORCE
+        description: >-
+          HSLMB Force
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: HSLMB_DIST
+        description: >-
+          HSLMB Distance
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: PHI_DYN_EFF1
+        description: >-
+          PhiDynEff 1
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+      - key: PHI_DYN_EFF2
+        description: >-
+          PhiDynEff 2
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: info_schema
+
+variants:
+# Each VEH_* object is selected by the record's MVLD_CODE - the country - and
+# not by the STANDARD_CODE the section's headings name. Measured on Civil NX
+# 2026-09-22 (docs/live_verification_notes.md, "/db/MVHL: MVLD_CODE picks the
+# country object"): every printed country body stored under its own MVLD_CODE
+# with its model's /db/MVCD code selected, the KSCE-LSD15 and China
+# user-defined bodies with no STANDARD_CODE at all; Australia's heading value
+# "AUSTRALIA" answered Wrong Field where its body's "ROAD TRAFFIC" stored,
+# which is the name of that table's first group. STANDARD_CODE picks a
+# standard within the country. The codes are the ones each printed body sends;
+# 13, 8, 14, 16 and 3 stored, and Poland's 15 is unconfirmed (its body stored
+# nothing under any MVLD_CODE from 1 to 20). Rows under a table's group
+# heading carry it as `condition`; VEHICLE_LOAD_NUM is the only part of a
+# group the record states with a measured literal, so that is all appliesWhen
+# says, and a group's Required rows are conditional.
+  - when:
+      - path: MVLD_CODE
+        equals: 13
+    source:
+      table: "Parameters – VEH_KSCE_LSD15 (`STANDARD_CODE: \"KSCE-LSD15\"` 전용)"
+      line: 883
+    fields:
+      - key: VEH_KSCE_LSD15
+        description: >-
+          Carried instead of VEH_DEFAULT when MVLD_CODE is 13; its members are the rows of
+          the chapter's VEH_KSCE_LSD15 table.
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: LOAD_TYPE
+            description: >-
+              Load Type — 0=75% of Design Load / 1=25% of Design Load
+            type: integer
+            requirement: optional
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: LOADED_LENGTH
+            description: >-
+              Lane Loaded Length (User Defined Truck/Lane 전용)
+            type: number
+            requirement: optional
+            condition: >-
+              User Defined Truck/Lane 전용
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: 60
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: W1
+            description: >-
+              Distribution Load Not Exceeding Loaded Length
+            type: number
+            requirement: optional
+            documentedDefault: 12.7
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: W2
+            description: >-
+              Distribution Load Exceeding Loaded Length
+            type: number
+            requirement: optional
+            documentedDefault: 12.7
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: D1
+            description: >-
+              Spacing dD1 (User Defined Train 전용)
+            type: number
+            requirement: optional
+            condition: >-
+              User Defined Train 전용
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: D2
+            description: >-
+              Spacing dD2 (User Defined Train 전용)
+            type: number
+            requirement: optional
+            condition: >-
+              User Defined Train 전용
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: EXP
+            description: >-
+              Exponent to Calculate Distribution Load of W2
+            type: number
+            requirement: optional
+            documentedDefault: 0.1
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: DYN_LOAD_ALLOWANCE
+            description: >-
+              Dynamic Load Allowance (%)
+            type: number
+            requirement: optional
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: LENGTH_LANE
+            description: >-
+              Length of Lane Load · 0=1st Model / 1=2nd Model
+            type: integer
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: LENGTH_LANE_USER
+            description: >-
+              Length of Lane Load(User) — LENGTH_LANE: 0일 때
+            type: number
+            requirement: optional
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: CONVERT_DIST_LOAD
+            description: >-
+              Convert Point Load to Distributed Load
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: UNIFORM_LOAD_NUM
+            description: >-
+              Number of Uniform Load (Lane 전용) · N개면 N-1
+            type: number
+            requirement: optional
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: UNIFORM_LOAD_DIST
+            description: >-
+              Uniform Load Distance (Lane 전용)
+            type: number
+            requirement: optional
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: UNIFORM_LOAD_W
+            description: >-
+              Uniform Load (Lane 전용)
+            type: number
+            requirement: conditional
+            condition: >-
+              Lane 전용; Required
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: UNIFORM_LOAD_LOAD_LENGTH_L
+            description: >-
+              Uniform Load Length (Lane 전용)
+            type: number
+            requirement: conditional
+            condition: >-
+              Lane 전용; Required
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: POINT_ITEMS
+            description: >-
+              축하중 배열
+            type: array
+            items:
+              type: object
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            properties:
+              - key: POINT_LOAD
+                description: >-
+                  하중(Load)
+                type: number
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              - key: POINT_DIST
+                description: >-
+                  간격(Spacing)
+                type: number
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              - key: POINT_DIST2
+                description: >-
+                  등분포 환산 길이 — CONVERT_DIST_LOAD: true일 때
+                type: number
+                requirement: optional
+                documentedDefault: 0
+                documentedOptional: true
+                safeToOmit: unverified
+                provenance: manual
+  - when:
+      - path: MVLD_CODE
+        equals: 8
+    source:
+      table: "VEH_CA (Canada, STANDARD_CODE: \"CANADA\")"
+      line: 977
+    fields:
+      - key: VEH_CA
+        description: >-
+          Carried instead of VEH_DEFAULT when MVLD_CODE is 8; its members are the rows of
+          the chapter's VEH_CA table.
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: DYNA
+            description: >-
+              Dynamic Load Allowance settings.
+            type: object
+            requirement: optional
+            condition: >-
+              표준 차량 공통
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 1
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual flags it in its own callout style but not in its
+            # own path syntax - these four rows write the nesting as Korean prose
+            # inside the Key cell, `"DYNA_FACTOR"`(`DYNA` 하위), where two rows
+            # later the same table writes `PERMIT_LOAD.IMPACT_FACTOR`. The
+            # section's own Python example sends `"VEH_CA": {"DYN_LOAD_ALLOWANCE":
+            # 0, "DYNA": {"DYNA_FACTOR": 0}}`, which is what this nesting follows.
+            # Registered as MD-17.
+            properties:
+              - key: DYNA_FACTOR
+                description: >-
+                  Dynamic Load Allowance Option · Auto: 0 · User: 1
+                type: integer
+                requirement: optional
+                documentedDefault: 0
+                documentedOptional: true
+                safeToOmit: unverified
+                provenance: manual
+              - key: DYNA_FACT_1_AXLE
+                description: >-
+                  Dynamic Load Factor - one axle only
+                type: number
+                requirement: optional
+                documentedDefault: 0
+                documentedOptional: true
+                safeToOmit: unverified
+                provenance: manual
+              - key: DYNA_FACT_2_AXLE
+                description: >-
+                  Dynamic Load Factor - two axles, or axles 1, 2 and 3
+                type: number
+                requirement: optional
+                documentedDefault: 0
+                documentedOptional: true
+                safeToOmit: unverified
+                provenance: manual
+              - key: DYNA_FACT_3_AXLE
+                description: >-
+                  Dynamic Load Factor - three or more axles, excluding the 1-2-3
+                  combination
+                type: number
+                requirement: optional
+                documentedDefault: 0
+                documentedOptional: true
+                safeToOmit: unverified
+                provenance: manual
+          - key: DYN_LOAD_ALLOWANCE
+            description: >-
+              Dynamic Load Allowance. Not in the Specifications table; the section's own
+              Python example sends it.
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: UNIFORM_LOAD
+            description: >-
+              Uniform Distribution Load (User Defined Vehicle - Truck/Lane)
+            type: number
+            requirement: optional
+            condition: >-
+              User Defined Vehicle - Truck/Lane 추가
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: PERMIT_LOAD
+            description: >-
+              Permit Load (VEH_CA와 같은 구조)
+            type: object
+            requirement: conditional
+            condition: >-
+              User Defined Vehicle - Permit Truck 추가; Required
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            properties:
+              - key: IMPACT_FACTOR
+                description: >-
+                  Impact Factor
+                type: number
+                requirement: optional
+                documentedDefault: 0
+                documentedOptional: true
+                safeToOmit: unverified
+                provenance: manual
+              - key: AXLE_TYPES
+                description: >-
+                  Axle Types 배열
+                type: array
+                items:
+                  type: object
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+                properties:
+                  - key: AXLE_TYPE
+                    description: >-
+                      Axle Type
+                    type: string
+                    requirement: unstated
+                    documentedDefault: null
+                    documentedOptional: null
+                    safeToOmit: unverified
+                    provenance: manual
+                  - key: EVENLY_DIST_LOAD
+                    description: >-
+                      Evenly Distance Load
+                    type: boolean
+                    requirement: unstated
+                    documentedDefault: null
+                    documentedOptional: null
+                    safeToOmit: unverified
+                    provenance: manual
+                  - key: SYMMETRIC_VEHICLE
+                    description: >-
+                      Symmetric Vehicle
+                    type: boolean
+                    requirement: unstated
+                    documentedDefault: null
+                    documentedOptional: null
+                    safeToOmit: unverified
+                    provenance: manual
+                  - key: POINT_ITEMS
+                    description: >-
+                      Point Loads
+                    type: array
+                    items:
+                      type: object
+                    requirement: unstated
+                    documentedDefault: null
+                    documentedOptional: null
+                    safeToOmit: unverified
+                    provenance: manual
+                    properties:
+                      - key: POINT_LOAD
+                        description: >-
+                          Point Load
+                        type: number
+                        requirement: unstated
+                        documentedDefault: null
+                        documentedOptional: null
+                        safeToOmit: unverified
+                        provenance: manual
+                      - key: POINT_DIST
+                        description: >-
+                          Point Distance
+                        type: number
+                        requirement: unstated
+                        documentedDefault: null
+                        documentedOptional: null
+                        safeToOmit: unverified
+                        provenance: manual
+              - key: PERMIT_LOADS
+                description: >-
+                  Permit Load 배열
+                type: array
+                items:
+                  type: object
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+                properties:
+                  - key: AXLE_TYPE
+                    description: >-
+                      Axle Type
+                    type: string
+                    requirement: unstated
+                    documentedDefault: null
+                    documentedOptional: null
+                    safeToOmit: unverified
+                    provenance: manual
+                  - key: SPACING
+                    description: >-
+                      Spacing
+                    type: number
+                    requirement: unstated
+                    documentedDefault: null
+                    documentedOptional: null
+                    safeToOmit: unverified
+                    provenance: manual
+                  - key: EQUAL_J_NVSIDX
+                    description: >-
+                      j == nVsIdx
+                    type: boolean
+                    requirement: unstated
+                    documentedDefault: null
+                    documentedOptional: null
+                    safeToOmit: unverified
+                    provenance: manual
+  - when:
+      - path: MVLD_CODE
+        equals: 14
+    source:
+      table: "VEH_AU (Australia, STANDARD_CODE: \"AUSTRALIA\")"
+      line: 1009
+    fields:
+      - key: VEH_AU
+        description: >-
+          Carried instead of VEH_DEFAULT when MVLD_CODE is 14; its members are the rows of
+          the chapter's VEH_AU table.
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: DYN_LOAD_ALLOWANCE
+            description: >-
+              Dynamic Load Allowance
+            type: number
+            requirement: optional
+            condition: >-
+              AS 5100.2 - Road Traffic / Rail Traffic Load
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 1
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: FATIGUE
+            description: >-
+              Fatigue Option ("M1600 without UDL" 전용)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: DYN_LOAD_ALLOWANCE2
+            description: >-
+              Dynamic Load Allowance — All Other Effects
+            type: number
+            requirement: optional
+            condition: >-
+              AS 5100.2 - Rail Traffic Load
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 1
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: INCRE_LENGTH
+            description: >-
+              Increment of Distance
+            type: number
+            requirement: conditional
+            condition: >-
+              AS 5100.2 - Rail Traffic Load; Required
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 1
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: W2
+            description: >-
+              Uniform Distribution Load("L44 Lane Load", 재하길이 150m 초과 시)
+            type: number
+            requirement: optional
+            condition: >-
+              AS 5100.2 - Heavy Load Platform & Rating Vehicles
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 1
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: VAR_SPACING
+            description: >-
+              Variable Spacing(D6~D7) Option
+            type: boolean
+            requirement: optional
+            condition: >-
+              User Defined - Truck/Lane
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: UNIFORM_LOAD
+            description: >-
+              Uniform Distribution Load(FATIGUE=true 시)
+            type: number
+            requirement: optional
+            condition: >-
+              User Defined - Truck/Lane
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: W1
+            description: >-
+              Uniform Distribution Load
+            type: number
+            requirement: optional
+            condition: >-
+              User Defined - Train
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: D1
+            description: >-
+              Loaded Length
+            type: number
+            requirement: optional
+            condition: >-
+              User Defined - Train
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: GROUP_NUM
+            description: >-
+              Group Number
+            type: integer
+            requirement: conditional
+            condition: >-
+              User Defined - Rail Traffic Load; Required
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: PERMIT_LOAD
+            description: >-
+              Permit Load (VEH_CA와 같은 구조)
+            type: object
+            requirement: conditional
+            condition: >-
+              User Defined - Permit Truck; Required
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            properties:
+              - key: IMPACT_FACTOR
+                description: >-
+                  Impact Factor
+                type: number
+                requirement: optional
+                documentedDefault: 0
+                documentedOptional: true
+                safeToOmit: unverified
+                provenance: manual
+              - key: AXLE_TYPES
+                description: >-
+                  Axle Types 배열
+                type: array
+                items:
+                  type: object
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+                properties:
+                  - key: AXLE_TYPE
+                    description: >-
+                      Axle Type
+                    type: string
+                    requirement: unstated
+                    documentedDefault: null
+                    documentedOptional: null
+                    safeToOmit: unverified
+                    provenance: manual
+                  - key: EVENLY_DIST_LOAD
+                    description: >-
+                      Evenly Distance Load
+                    type: boolean
+                    requirement: unstated
+                    documentedDefault: null
+                    documentedOptional: null
+                    safeToOmit: unverified
+                    provenance: manual
+                  - key: SYMMETRIC_VEHICLE
+                    description: >-
+                      Symmetric Vehicle
+                    type: boolean
+                    requirement: unstated
+                    documentedDefault: null
+                    documentedOptional: null
+                    safeToOmit: unverified
+                    provenance: manual
+                  - key: POINT_ITEMS
+                    description: >-
+                      Point Loads
+                    type: array
+                    items:
+                      type: object
+                    requirement: unstated
+                    documentedDefault: null
+                    documentedOptional: null
+                    safeToOmit: unverified
+                    provenance: manual
+                    properties:
+                      - key: POINT_LOAD
+                        description: >-
+                          Point Load
+                        type: number
+                        requirement: unstated
+                        documentedDefault: null
+                        documentedOptional: null
+                        safeToOmit: unverified
+                        provenance: manual
+                      - key: POINT_DIST
+                        description: >-
+                          Point Distance
+                        type: number
+                        requirement: unstated
+                        documentedDefault: null
+                        documentedOptional: null
+                        safeToOmit: unverified
+                        provenance: manual
+              - key: PERMIT_LOADS
+                description: >-
+                  Permit Load 배열
+                type: array
+                items:
+                  type: object
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+                properties:
+                  - key: AXLE_TYPE
+                    description: >-
+                      Axle Type
+                    type: string
+                    requirement: unstated
+                    documentedDefault: null
+                    documentedOptional: null
+                    safeToOmit: unverified
+                    provenance: manual
+                  - key: SPACING
+                    description: >-
+                      Spacing
+                    type: number
+                    requirement: unstated
+                    documentedDefault: null
+                    documentedOptional: null
+                    safeToOmit: unverified
+                    provenance: manual
+                  - key: EQUAL_J_NVSIDX
+                    description: >-
+                      j == nVsIdx
+                    type: boolean
+                    requirement: unstated
+                    documentedDefault: null
+                    documentedOptional: null
+                    safeToOmit: unverified
+                    provenance: manual
+  - when:
+      - path: MVLD_CODE
+        equals: 16
+    source:
+      table: "VEH_ZA (South Africa, STANDARD_CODE: \"NA\"/\"NB\"/\"NC\")"
+      line: 1049
+    fields:
+      - key: VEH_ZA
+        description: >-
+          Carried instead of VEH_DEFAULT when MVLD_CODE is 16; its members are the rows of
+          the chapter's VEH_ZA table.
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: INCRE_LENGTH
+            description: >-
+              Unit Length for Loaded Length Increment Option
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: INCRE_LENGTH_VALUE
+            description: >-
+              Increment Length
+            type: number
+            requirement: optional
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: UNIT_NUM
+            description: >-
+              Number of Unit (36 또는 24)
+            type: number
+            requirement: conditional
+            condition: >-
+              NB Type; Required(표준)/Integer,Required(User)
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual flags it in its own callout style nowhere, so
+            # this is read from the cell itself: the Required column holds
+            # `Required(표준)/Integer,Required(User)`, which jams a Value Type into
+            # the requiredness column. Both halves say Required, so the field is
+            # required under either vehicle kind; the stray `Integer` contradicts
+            # the row's own Value Type of `Number` and is not transcribed.
+            # Registered as MD-17.
+            # The row sits under the table's NB Type group, and the section's NA
+            # Type Request Body sends no UNIT_NUM, so it is required for NB Type
+            # vehicles rather than for every VEH_ZA - which no field in the record
+            # names as a literal the contract could gate on.
+          - key: OPPOSITE
+            description: >-
+              Consider Load Area Giving Opposite Contribution
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: W1
+            description: >-
+              Uniform Distribution Load(재하길이 이하)
+            type: number
+            requirement: conditional
+            condition: >-
+              User Defined - NA Type 추가; Required
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: W2
+            description: >-
+              Uniform Distribution Load(재하길이 초과)
+            type: number
+            requirement: conditional
+            condition: >-
+              User Defined - NA Type 추가; Required
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: W3
+            description: >-
+              Uniform Distribution Load(재하길이 초과, 추가)
+            type: number
+            requirement: conditional
+            condition: >-
+              User Defined - NA Type 추가; Required
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: LOADED_LENGTH
+            description: >-
+              Loaded Length
+            type: number
+            requirement: conditional
+            condition: >-
+              User Defined - NA Type 추가; Required
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: PA
+            description: >-
+              Axle Load(Pa)
+            type: number
+            requirement: optional
+            condition: >-
+              User Defined - NA Type 추가
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: PB
+            description: >-
+              Axle Load(Pb)
+            type: number
+            requirement: conditional
+            condition: >-
+              User Defined - NB Type 추가; Required
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: D1
+            description: >-
+              Distance between Axle Load(End)
+            type: number
+            requirement: optional
+            condition: >-
+              User Defined - NB Type 추가
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: D2
+            description: >-
+              Distance between Axle Load(Middle)
+            type: number
+            requirement: optional
+            condition: >-
+              User Defined - NB Type 추가
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: DELTA
+            description: >-
+              Factor to Calculate D3~D6
+            type: number
+            requirement: optional
+            condition: >-
+              User Defined - NB Type 추가
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: PRESSURE_LOAD
+            description: >-
+              Uniform Distribution Load
+            type: number
+            requirement: conditional
+            condition: >-
+              User Defined - NC Type 추가; Required
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: NUM_LOAD_ARRAY
+            description: >-
+              Number of Load [a,b,c]
+            type: array
+            items:
+              type: integer
+            requirement: conditional
+            condition: >-
+              User Defined - NC Type 추가; Required
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: POINT_DIST_ARRAY
+            description: >-
+              Different Discrete Lengths
+            type: array
+            items:
+              type: object
+            requirement: conditional
+            condition: >-
+              User Defined - NC Type 추가; Required
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: PERMIT_LOAD
+            description: >-
+              Permit Load (VEH_CA와 같은 구조)
+            type: object
+            requirement: conditional
+            condition: >-
+              User Defined - Permit Truck 추가; Required
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            properties:
+              - key: IMPACT_FACTOR
+                description: >-
+                  Impact Factor
+                type: number
+                requirement: optional
+                documentedDefault: 0
+                documentedOptional: true
+                safeToOmit: unverified
+                provenance: manual
+              - key: AXLE_TYPES
+                description: >-
+                  Axle Types 배열
+                type: array
+                items:
+                  type: object
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+                properties:
+                  - key: AXLE_TYPE
+                    description: >-
+                      Axle Type
+                    type: string
+                    requirement: unstated
+                    documentedDefault: null
+                    documentedOptional: null
+                    safeToOmit: unverified
+                    provenance: manual
+                  - key: EVENLY_DIST_LOAD
+                    description: >-
+                      Evenly Distance Load
+                    type: boolean
+                    requirement: unstated
+                    documentedDefault: null
+                    documentedOptional: null
+                    safeToOmit: unverified
+                    provenance: manual
+                  - key: SYMMETRIC_VEHICLE
+                    description: >-
+                      Symmetric Vehicle
+                    type: boolean
+                    requirement: unstated
+                    documentedDefault: null
+                    documentedOptional: null
+                    safeToOmit: unverified
+                    provenance: manual
+                  - key: POINT_ITEMS
+                    description: >-
+                      Point Loads
+                    type: array
+                    items:
+                      type: object
+                    requirement: unstated
+                    documentedDefault: null
+                    documentedOptional: null
+                    safeToOmit: unverified
+                    provenance: manual
+                    properties:
+                      - key: POINT_LOAD
+                        description: >-
+                          Point Load
+                        type: number
+                        requirement: unstated
+                        documentedDefault: null
+                        documentedOptional: null
+                        safeToOmit: unverified
+                        provenance: manual
+                      - key: POINT_DIST
+                        description: >-
+                          Point Distance
+                        type: number
+                        requirement: unstated
+                        documentedDefault: null
+                        documentedOptional: null
+                        safeToOmit: unverified
+                        provenance: manual
+              - key: PERMIT_LOADS
+                description: >-
+                  Permit Load 배열
+                type: array
+                items:
+                  type: object
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+                properties:
+                  - key: AXLE_TYPE
+                    description: >-
+                      Axle Type
+                    type: string
+                    requirement: unstated
+                    documentedDefault: null
+                    documentedOptional: null
+                    safeToOmit: unverified
+                    provenance: manual
+                  - key: SPACING
+                    description: >-
+                      Spacing
+                    type: number
+                    requirement: unstated
+                    documentedDefault: null
+                    documentedOptional: null
+                    safeToOmit: unverified
+                    provenance: manual
+                  - key: EQUAL_J_NVSIDX
+                    description: >-
+                      j == nVsIdx
+                    type: boolean
+                    requirement: unstated
+                    documentedDefault: null
+                    documentedOptional: null
+                    safeToOmit: unverified
+                    provenance: manual
+  - when:
+      - path: MVLD_CODE
+        equals: 3
+    source:
+      table: "VEH_CN (China, STANDARD_CODE는 JTG/JTJ/CJJ/TB 등 원문 표 참고)"
+      line: 1092
+    fields:
+      - key: VEH_CN
+        description: >-
+          Carried instead of VEH_DEFAULT when MVLD_CODE is 3; its members are the rows of
+          the chapter's VEH_CN table.
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: IMPACT_COEF
+            description: >-
+              Impact Factor (z); Subway 전용 행에서는 Impact Factor Reduction Coefficient
+            type: number
+            requirement: optional
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: CROWD_WIDTH
+            description: >-
+              Width
+            type: number
+            requirement: optional
+            condition: >-
+              표준 차량 공통
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 1
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: DD
+            description: >-
+              Distance Between Center of Vehicles
+            type: number
+            requirement: optional
+            condition: >-
+              표준 차량 공통
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 1
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: TRUCK_TYPE
+            description: >-
+              Truck/Lane Type · Crawler:1 · Lane1:0 · GC:2 · Lane2:5
+            type: integer
+            enum: [0, 1, 2, 5]
+            requirement: conditional
+            condition: >-
+              User Defined - Truck/Lane 공통; Required
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: P_
+            description: >-
+              Axle Load(P), Lane1 전용
+            type: number
+            requirement: optional
+            condition: >-
+              User Defined - Truck/Lane 공통
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: QM
+            description: >-
+              Distribution Load 1(Qm), Lane1 전용
+            type: number
+            requirement: optional
+            condition: >-
+              User Defined - Truck/Lane 공통
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: QQ
+            description: >-
+              Distribution Load 2(Qq)/Uniform Load(qk), Lane1·2
+            type: number
+            requirement: optional
+            condition: >-
+              User Defined - Truck/Lane 공통
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: PA
+            description: >-
+              Axle Load(Pk) L≤, Lane2 전용
+            type: number
+            requirement: optional
+            condition: >-
+              User Defined - Truck/Lane 공통
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: PB
+            description: >-
+              Axle Load(Pk) L≥, Lane2 전용
+            type: number
+            requirement: optional
+            condition: >-
+              User Defined - Truck/Lane 공통
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: D1
+            description: >-
+              Loaded Length(L≤) (Lane2 전용); Spacing dD1 (Train Type1·3 전용); Loaded Length
+              (Crowd Type2)
+            type: number
+            requirement: optional
+            condition: >-
+              User Defined - Truck/Lane 공통 / User Defined - Train/Exceptional / User
+              Defined - Crowd
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: D2
+            description: >-
+              Loaded Length(L≥) (Lane2 전용); Spacing dD2 (Train Type1·3 전용); Loaded Length
+              (Crowd Type2)
+            type: number
+            requirement: optional
+            condition: >-
+              User Defined - Truck/Lane 공통 / User Defined - Train/Exceptional / User
+              Defined - Crowd
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: W_TRAILER
+            description: >-
+              Uniform Distribution Load(dW1), Crawler 전용
+            type: number
+            requirement: optional
+            condition: >-
+              User Defined - Truck/Lane 공통
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: D_TRAILER
+            description: >-
+              Loaded Length(dD1), Crawler 전용
+            type: number
+            requirement: optional
+            condition: >-
+              User Defined - Truck/Lane 공통
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: TRAIN_TYPE
+            description: >-
+              Train/Exceptional Type · Type1:1 · Type2:2 · Type3:3 · Subway:4
+            type: integer
+            enum: [1, 2, 3, 4]
+            requirement: conditional
+            condition: >-
+              User Defined - Train/Exceptional; Required
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: W1
+            description: >-
+              Distribution Load dW1, Type1·3 전용
+            type: number
+            requirement: optional
+            condition: >-
+              User Defined - Train/Exceptional
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: W2
+            description: >-
+              Distribution Load dW2, Type1·3 전용
+            type: number
+            requirement: optional
+            condition: >-
+              User Defined - Train/Exceptional
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: FD
+            description: >-
+              Distance to Front of Heavy Vehicle, Type2 전용
+            type: number
+            requirement: optional
+            condition: >-
+              User Defined - Train/Exceptional
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: BD
+            description: >-
+              Distance to Rear of Heavy Vehicle, Type2 전용
+            type: number
+            requirement: optional
+            condition: >-
+              User Defined - Train/Exceptional
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: P_SUBWAY
+            description: >-
+              Axle Load[P1~P4], Subway 전용
+            type: array
+            items:
+              type: number
+            requirement: optional
+            condition: >-
+              User Defined - Train/Exceptional
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: D_SUBWAY
+            description: >-
+              Axle Distance[D1~D3], Subway 전용
+            type: array
+            items:
+              type: number
+            requirement: optional
+            condition: >-
+              User Defined - Train/Exceptional
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: CARRIAGE_DIST
+            description: >-
+              Distance between Carriages(dD), Subway 전용
+            type: number
+            requirement: optional
+            condition: >-
+              User Defined - Train/Exceptional
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: NUM_CARRIAGE
+            description: >-
+              Number of Carriage(1~15), Subway 전용
+            type: number
+            requirement: conditional
+            condition: >-
+              User Defined - Train/Exceptional (Subway 전용); Required
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: P_OPPOSITE
+            description: >-
+              Axle load for Negative Influence Line(Po), Subway 전용
+            type: number
+            requirement: optional
+            condition: >-
+              User Defined - Train/Exceptional
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: VEHICLE_LOAD_USER_NUM
+            description: >-
+              Crowd Load Type1
+            type: integer
+            requirement: conditional
+            condition: >-
+              User Defined - Crowd; Required
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: W_CROWD
+            description: >-
+              Uniform Distribution Load(Type1)
+            type: number
+            requirement: optional
+            condition: >-
+              User Defined - Crowd
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: W_PRES_1
+            description: >-
+              Distribution Load dW(Type2)
+            type: number
+            requirement: optional
+            condition: >-
+              User Defined - Crowd
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: W_PRES_2
+            description: >-
+              Distribution Load dW(Type2)
+            type: number
+            requirement: optional
+            condition: >-
+              User Defined - Crowd
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: DB
+            description: >-
+              Width(Type2)
+            type: number
+            requirement: optional
+            condition: >-
+              User Defined - Crowd
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+  - when:
+      - path: MVLD_CODE
+        equals: 15
+    source:
+      table: "VEH_PL (Poland, STANDARD_CODE는 원문 표 참고)"
+      line: 1141
+    fields:
+      - key: VEH_PL
+        description: >-
+          Carried instead of VEH_DEFAULT when MVLD_CODE is 15; its members are the rows of
+          the chapter's VEH_PL table.
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: SEL_VEHICLE
+            description: >-
+              Select Vehicle (표준) · Vehicle S:0 · K:1 · 2S:2 · Walkway:3; Military Load
+              Class에서는 표준 차량 선택
+            type: string
+            requirement: required
+            condition: >-
+              PN-85/S-10030 Road Bridge / Military Load Class 공통 (표준)
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 1
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: SUB_TYPE
+            description: >-
+              Load Type (User) · Truck/Lane에서는 Vehicle S:0 · K:1 · 2S:2 · Walkway:3;
+              Military Load Class에서는 Tracked:0 · Wheeled:1
+            type: integer
+            requirement: required
+            condition: >-
+              PN-85/S-10030 Road Bridge & User Truck/Lane / Military Load Class 공통 (User)
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: PRESSURE_LOAD
+            description: >-
+              Uniform Distribution Pressure Load(K·S 차량용); 표준 차량에서는 Read Only, User 기본값 0
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: DSPACE
+            description: >-
+              Horizontal Distance(2S 차량 전용); 표준 차량에서는 Read Only, User 기본값 0
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: DYNAMIC_AMP_FACTOR
+            description: >-
+              Dynamic Amplification Factor Option
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: USER_INPUT
+            description: >-
+              Factor Type · Auto:false · User Input:true
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: AMP
+            description: >-
+              Factor Value
+            type: number
+            requirement: optional
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: NOSE_TAIL_DIST
+            description: >-
+              Nose to Tail Distance
+            type: number
+            requirement: optional
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: NUM_VEHICLE
+            description: >-
+              Number of Vehicle
+            type: number
+            requirement: optional
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: TOTAL_LOAD
+            description: >-
+              Total Load(P), Tracked Vehicle 전용
+            type: number
+            requirement: optional
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: TRACKED_LENGTH
+            description: >-
+              Tracked Length(D), Tracked Vehicle 전용
+            type: number
+            requirement: optional
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: WHEEL_SPACING
+            description: >-
+              Wheel Spacing
+            type: number
+            requirement: optional
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: PERMIT_LOAD
+            description: >-
+              Permit Load (VEH_CA와 같은 구조)
+            type: object
+            requirement: conditional
+            condition: >-
+              User Defined - Permit Truck; Required
+            appliesWhen:
+              - path: VEHICLE_LOAD_NUM
+                equals: 2
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            properties:
+              - key: IMPACT_FACTOR
+                description: >-
+                  Impact Factor
+                type: number
+                requirement: optional
+                documentedDefault: 0
+                documentedOptional: true
+                safeToOmit: unverified
+                provenance: manual
+              - key: AXLE_TYPES
+                description: >-
+                  Axle Types 배열
+                type: array
+                items:
+                  type: object
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+                properties:
+                  - key: AXLE_TYPE
+                    description: >-
+                      Axle Type
+                    type: string
+                    requirement: unstated
+                    documentedDefault: null
+                    documentedOptional: null
+                    safeToOmit: unverified
+                    provenance: manual
+                  - key: EVENLY_DIST_LOAD
+                    description: >-
+                      Evenly Distance Load
+                    type: boolean
+                    requirement: unstated
+                    documentedDefault: null
+                    documentedOptional: null
+                    safeToOmit: unverified
+                    provenance: manual
+                  - key: SYMMETRIC_VEHICLE
+                    description: >-
+                      Symmetric Vehicle
+                    type: boolean
+                    requirement: unstated
+                    documentedDefault: null
+                    documentedOptional: null
+                    safeToOmit: unverified
+                    provenance: manual
+                  - key: POINT_ITEMS
+                    description: >-
+                      Point Loads
+                    type: array
+                    items:
+                      type: object
+                    requirement: unstated
+                    documentedDefault: null
+                    documentedOptional: null
+                    safeToOmit: unverified
+                    provenance: manual
+                    properties:
+                      - key: POINT_LOAD
+                        description: >-
+                          Point Load
+                        type: number
+                        requirement: unstated
+                        documentedDefault: null
+                        documentedOptional: null
+                        safeToOmit: unverified
+                        provenance: manual
+                      - key: POINT_DIST
+                        description: >-
+                          Point Distance
+                        type: number
+                        requirement: unstated
+                        documentedDefault: null
+                        documentedOptional: null
+                        safeToOmit: unverified
+                        provenance: manual
+              - key: PERMIT_LOADS
+                description: >-
+                  Permit Load 배열
+                type: array
+                items:
+                  type: object
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+                properties:
+                  - key: AXLE_TYPE
+                    description: >-
+                      Axle Type
+                    type: string
+                    requirement: unstated
+                    documentedDefault: null
+                    documentedOptional: null
+                    safeToOmit: unverified
+                    provenance: manual
+                  - key: SPACING
+                    description: >-
+                      Spacing
+                    type: number
+                    requirement: unstated
+                    documentedDefault: null
+                    documentedOptional: null
+                    safeToOmit: unverified
+                    provenance: manual
+                  - key: EQUAL_J_NVSIDX
+                    description: >-
+                      j == nVsIdx
+                    type: boolean
+                    requirement: unstated
+                    documentedDefault: null
+                    documentedOptional: null
+                    safeToOmit: unverified
+                    provenance: manual
+
+manualDefects:
+  - describes: requiredness
+    manualSays: >-
+      The common Specifications table marks `VEHICLE_TYPE_NAME` and
+      `STANDARD_CODE` Required and `USER_LOAD_TYPE` Optional, with no reference
+      to `VEHICLE_LOAD_NUM` - the field that decides which of them apply.
+    actual: >-
+      `VEHICLE_TYPE_NAME` is required only under `VEHICLE_LOAD_NUM: 1`;
+      omitting it there is refused with `(Item:Length of Vehicular Load Type(0
+      ~ 40 characters))`, and under `2` it is discarded if sent.
+      `STANDARD_CODE` is not required under either branch - it was omitted and
+      the record stored without it. `USER_LOAD_TYPE` is not an input at all
+      under `MVLD_CODE: 2`: "Train", "Lane", "Truck", "TruckLane" and omission
+      all stored "Truck/Lane". The chapter already carries the information, in
+      the KSCE-LSD15 section's paired Standard and User Defined examples; what
+      is missing is any statement that this is a branch, in the one table that
+      presents itself as covering every code.
+    evidence: >-
+      docs/live_verification_notes.md, "/db/MVHL: the finding was real, the
+      reading was not" (2026-09-03), against a Civil NX document confirmed
+      empty first. Registered as MD-16.
+  - describes: field_name
+    manualSays: >-
+      Four rows of the `VEH_CA` table give their Key as
+      `"DYNA_FACTOR"`(`DYNA` 하위) - the parent named in Korean prose inside the
+      Key cell, quotes included.
+    actual: >-
+      The chapter has a path syntax and uses it two rows later
+      (`PERMIT_LOAD.IMPACT_FACTOR`), so these four should read
+      `DYNA.DYNA_FACTOR` and so on. As transcribed they parse into keys with
+      the quote characters still attached, plus a spurious `DYNA` scalar. The
+      section's own Python example settles the shape: `"VEH_CA":
+      {"DYN_LOAD_ALLOWANCE": 0, "DYNA": {"DYNA_FACTOR": 0}}`. Registered as
+      MD-17.
+    evidence: >-
+      The section's own Request Example, 08_DB_Moving_Loads.md, against which
+      the four rows were re-nested by hand in this contract's CANADA variant.
+  - describes: behaviour
+    manualSays: >-
+      Nothing. `VEH_DEFAULT` is Required and every one of its ten members is
+      Optional, which reads as "send the object, fill in what you need".
+    actual: >-
+      Sending `VEH_DEFAULT: {}` makes the whole write a silent no-op:
+      `{"message": ""}`, no error object, and a following GET shows nothing was
+      saved. Every member being omissible does not make the empty object
+      equivalent to a populated one.
+    evidence: >-
+      docs/live_verification_notes.md; recorded in scripts/live_crud_check.py's
+      moving-load seed, whose docstring carries the warning, and covered by the
+      db-mvhl-veh-default-not-empty rule below.
+  - describes: field_value
+    manualSays: >-
+      Each country table's heading names the STANDARD_CODE that selects its
+      object - `VEH_KSCE_LSD15 (STANDARD_CODE: "KSCE-LSD15" 전용)`, `VEH_AU
+      (Australia, STANDARD_CODE: "AUSTRALIA")`, `VEH_ZA (South Africa,
+      STANDARD_CODE: "NA"/"NB"/"NC")` - and the China and Poland headings
+      defer the values to the official article's table.
+    actual: >-
+      The record's MVLD_CODE selects the object; STANDARD_CODE picks a
+      standard within the country, and is not sent at all by the chapter's
+      user-defined bodies, whose objects were stored. "AUSTRALIA" answers
+      `Wrong Field` where the Australia body's own "ROAD TRAFFIC" - its
+      table's first group - is stored, and "NA" answers `Wrong Field` too.
+      A record whose MVLD_CODE is not the model's /db/MVCD code answers `{"message":
+      ""}` and stores nothing. Registered as MD-61.
+    evidence: >-
+      docs/live_verification_notes.md, "/db/MVHL: MVLD_CODE picks the country
+      object" (2026-09-22): scripts/live_manual_feedback.py cases c6 and c7 on
+      Civil NX, against a document confirmed empty first, each country in its
+      own document with that country's /db/MVCD code selected.
+
+sdkRules:
+  - id: db-mvhl-veh-default-not-empty
+    kind: reject_request
+    appliesTo: [POST, PUT]
+    fields: [VEH_DEFAULT]
+    rejects: empty_value
+    reason: >-
+      An empty VEH_DEFAULT is accepted and silently saves nothing. The failure
+      is invisible to the caller - success-shaped response, no error key - so
+      both SDKs refuse the request rather than let a modelling script believe
+      it defined a vehicle.
+    alternative: >-
+      Send the parameters the vehicle needs, or omit VEH_DEFAULT entirely and
+      carry the MVLD_CODE's own VEH_* object instead.
+  - id: db-mvhl-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-mvhl-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 08_DB_Moving_Loads.md line 844
+  table: Parameters – 공통
+  structuralTables:
+    - heading: "Parameters – VEH_DEFAULT (공통 필드)"
+      line: 859
+      paths: [VEH_DEFAULT]
+      note: >-
+        The heading names the parent and the rows are its members.
+    - heading: "Parameters – LOAD_ITEMS (사용자 정의 차량)"
+      line: 874
+      paths: [LOAD_ITEMS]
+      note: >-
+        The heading names the parent and the rows are its members.
+    - heading: "Parameters – VEH_KSCE_LSD15 (`STANDARD_CODE: \"KSCE-LSD15\"` 전용)"
+      line: 883
+      paths: [VEH_KSCE_LSD15]
+      note: >-
+        The MVLD_CODE 13 variant. The heading's STANDARD_CODE is not what
+        selects the object (MD-61); the section's user-defined body sends none.
+    - heading: "VEH_CA (Canada, STANDARD_CODE: \"CANADA\")"
+      line: 977
+      paths: [VEH_CA, LOAD_ITEMS]
+      note: >-
+        The MVLD_CODE 8 variant, its group rows gated on VEHICLE_LOAD_NUM. Its
+        LOAD_ITEMS row is the record-root array.
+    - heading: "VEH_AU (Australia, STANDARD_CODE: \"AUSTRALIA\")"
+      line: 1009
+      paths: [VEH_AU, LOAD_ITEMS]
+      note: >-
+        The MVLD_CODE 14 variant. "AUSTRALIA" answers Wrong Field (MD-61). Its
+        LOAD_ITEMS row is the record-root array.
+    - heading: "VEH_ZA (South Africa, STANDARD_CODE: \"NA\"/\"NB\"/\"NC\")"
+      line: 1049
+      paths: [VEH_ZA]
+      note: >-
+        The MVLD_CODE 16 variant. "NA" answers Wrong Field (MD-61).
+    - heading: "VEH_CN (China, STANDARD_CODE는 JTG/JTJ/CJJ/TB 등 원문 표 참고)"
+      line: 1092
+      paths: [VEH_CN, LOAD_ITEMS, LOAD_ITEMS2]
+      note: >-
+        The MVLD_CODE 3 variant. The heading defers its STANDARD_CODE values
+        to the official article, and none is needed: the object follows
+        MVLD_CODE. Its LOAD_ITEMS and LOAD_ITEMS2 rows are record-root arrays.
+    - heading: "VEH_PL (Poland, STANDARD_CODE는 원문 표 참고)"
+      line: 1141
+      paths: [VEH_PL, LOAD_ITEMS]
+      note: >-
+        The MVLD_CODE 15 variant, the code the section's body sends; that body
+        stored nothing on Civil NX 2026-09-22 under any MVLD_CODE from 1 to 20,
+        so the code is the manual's and unconfirmed. Its LOAD_ITEMS row is the
+        record-root array.
+  # The chapter names nine country objects and tables five of them. VEH_BS,
+  # VEH_EUROCODE, VEH_RU and VEH_IN are named in the 2026-08-25 callout with
+  # no table at all - its own words are that the sources are too large and
+  # only representative modes are documented - so this contract declares no
+  # field for them. A record under one of those codes carries an object this
+  # contract does not describe; that is a gap in the manual, not a claim that
+  # the object does not exist.

@@ -1,0 +1,346 @@
+# /db/MVLDch – Moving Load Cases – China
+#
+# Sources: docs/manual/08_DB_Moving_Loads.md #13 plus paired Civil/Gen route
+# and /info verification in docs/live_verification_notes.md. Neither SDK was
+# used to establish the contract facts below.
+contractVersion: 1
+id: db-mvldch
+endpoint: /db/MVLDch
+name: Moving Load Cases – China
+surface:
+  className: MovingLoadCaseChina
+  exportName: movingLoadCaseChina
+  modulePath: [db, movingLoads]
+  payloadTypeName: MovingLoadCaseChinaPayload
+  nestedTypes:
+    - {path: SUB_LOAD_ITEMS, name: MovingLoadCaseChinaSubLoadItem, namespace: DbMovingLoadsTypes}
+    - {path: AUTO_OPTIMIZE_ITEMS, name: MovingLoadCaseChinaOptimizeItem, namespace: DbMovingLoadsTypes}
+summary: >-
+  Defines China moving-load cases. The request has distinct general-load and
+  moving-load-optimization payload branches selected by OPT_AUTO_OPTIMIZE.
+
+products: [gen, civil]
+productsEvidence: >-
+  Both products answered the paired route sweep; Gen NX also returned a full
+  /info schema for this endpoint.
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 08_DB_Moving_Loads.md
+    section: 13. /db/MVLDch – Moving Load Cases – China
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: gen
+      ref: db-mvldch-product-support-2026-07-29
+    - product: civil
+      ref: db-mvldch-product-support-2026-07-29
+
+operations:
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: unknown
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: unknown
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: unknown
+  - method: DELETE
+    variant: per_id
+    path: /db/MVLDch/{id}
+    risk: destructive
+    mitigation: none
+    request:
+      wrapper: none
+    response:
+      wrapper: unknown
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    request:
+      wrapper: assign
+      itemSchema: none
+    response:
+      wrapper: unknown
+    notes: >-
+      The documented bare-endpoint DELETE form ignores ids and empties the
+      table; use the per-id route for a selected case.
+
+fields:
+  - key: LCNAME
+    description: Load case name.
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: DESC
+    description: Description.
+    type: string
+    requirement: optional
+    documentedDefault: ""
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: OPT_AUTO_OPTIMIZE
+    description: Moving-load optimization.
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: BRIDGE_TYPE
+    description: Bridge type.
+    type: integer
+    enum: [0, 1, 2]
+    enumNote: 0=Old Urban, 1=Highway/New Urban, 2=JTG B01-2014.
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: SCALE_FACTOR_O
+    description: Scale factors for an old urban bridge.
+    type: array
+    items:
+      type: number
+    minItems: 8
+    maxItems: 8
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: SCALE_FACTOR_N
+    description: Scale factors for a highway or new urban bridge.
+    type: array
+    items:
+      type: number
+    minItems: 8
+    maxItems: 8
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: SCALE_FACTOR_JTG
+    description: Scale factors for JTG B01-2014.
+    type: array
+    items:
+      type: number
+    minItems: 8
+    maxItems: 8
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: LOADING_EFFECT
+    description: Combination option.
+    type: integer
+    enum: [0, 1]
+    enumNote: 0=Combined, 1=Independent.
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+
+variants:
+  - when:
+      - path: OPT_AUTO_OPTIMIZE
+        equals: false
+    source:
+      table: General Load(OPT_AUTO_OPTIMIZE=false)
+      line: 1605
+    fields:
+      - key: SUB_LOAD_ITEMS
+        description: Sub-load cases.
+        type: array
+        items:
+          type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: VEHICLE_TYPE
+            description: Vehicle type.
+            type: string
+            enum: [VL, VC]
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: VEHICLE_CLASS
+            description: Vehicle class name.
+            type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: SCALE_FACTOR
+            description: Scale factor.
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: MIN_NUM_LOADED_LANES
+            description: Minimum number of loaded lanes.
+            type: integer
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: MAX_NUM_LOADED_LANES
+            description: Maximum number of loaded lanes.
+            type: integer
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: SELECTED_LANES
+            description: Selected lanes.
+            type: array
+            items:
+              type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+  - when:
+      - path: OPT_AUTO_OPTIMIZE
+        equals: true
+    source:
+      table: Moving Load Optimization(OPT_AUTO_OPTIMIZE=true)
+      line: 1613
+    fields:
+      - key: MIN_VEHICLE_DIST
+        description: Minimum vehicle distance.
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: LOADED_LANE_NAME
+        description: Loaded lane name.
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: MIN_NUM_VEHICLE
+        description: Minimum number of vehicles.
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: MAX_NUM_VEHICLE
+        description: Maximum number of vehicles.
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: AUTO_OPTIMIZE_ITEMS
+        description: Assigned vehicles.
+        type: array
+        items:
+          type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: VEHICLE_TYPE
+            description: Vehicle type.
+            type: string
+            enum: [VL, VC]
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: VEHICLE_NAME
+            description: Vehicle class name.
+            type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: SCALE_FACTOR
+            description: Scale factor.
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+
+sdkRules:
+  - id: mvldch-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The documented bare-endpoint DELETE body ignores named ids and empties the
+      whole table. The per-id route is the selective-delete form for /db resources.
+    riskRef: db-delete-body-empties-table
+    alternative: Use whole_table only when deleting every moving-load case is intended.
+  - id: mvldch-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: Emptying all China moving-load cases is destructive.
+    riskRef: db-delete-body-empties-table
+    alternative: Use per_id DELETE for selected moving-load cases.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+manualDefects:
+  - describes: behaviour
+    manualSays: DELETE /db/MVLDch with an ID-keyed Assign body deletes the named case.
+    actual: >-
+      The bare-endpoint DELETE body ignores ids and empties the table; the
+      undocumented /db/MVLDch/{id} path is the selective-delete form.
+    evidence: docs/live_verification_notes.md.
+
+extraction:
+  source: 08_DB_Moving_Loads.md line 1595
+  table: Parameters

@@ -1,0 +1,136 @@
+# /DESIGN/RC/KDS-41-20-2022/BRD-REPORT
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: design-rc-kds-41-20-2022-brd-report
+endpoint: /DESIGN/RC/KDS-41-20-2022/BRD-REPORT
+name: RC Brace Design Report
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 26_Design_RC_KDS41202022.md
+    section: "47. `DESIGN/RC/KDS-41-20-2022/BRD-REPORT` — RC Brace Design Report (RC 가새 설계 리포트)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-08-10
+    - product: gen
+      ref: db-read-sweep-2026-08-10
+
+operations:
+  - method: POST
+    surface:
+      exportName: exportBraceDesignReport
+      modulePath: [design, rcKds, designForces]
+      argumentTypeName: RcColumnBraceDesignReportArgument
+      documentation: |-
+        docs/manual/26_Design_RC_KDS41202022.md #47 — BRD-REPORT — RC Brace
+        Design Report. Response: ``{"SUCCESS": bool, "FILE_PATH": str,
+        "MESSAGE": str}``.
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: Argument
+    description: >-
+      Argument 래퍼
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: REPORT_TYPE
+    description: >-
+      리포트 타입 ("MEMB"/"PROP")
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    enum: [MEMB, PROP]
+    safeToOmit: unverified
+    provenance: manual
+  - key: CURRENT_MODE_MEMB
+    description: >-
+      출력 모드 (부재별) — "Graphic"/"Detail"/"Summary"/"PMCurve"
+    type: string
+    requirement: conditional
+    condition: MEMB
+    documentedDefault: null
+    documentedOptional: false
+    enum: [Graphic, Detail, Summary, PMCurve]
+    safeToOmit: unverified
+    provenance: manual
+  - key: CURRENT_MODE_PROP
+    description: >-
+      출력 모드 (단면별) — "Graphic"/"Summary"
+    type: string
+    requirement: conditional
+    condition: PROP
+    documentedDefault: null
+    documentedOptional: false
+    enum: [Graphic, Summary]
+    safeToOmit: unverified
+    provenance: manual
+  - key: ELEMS
+    description: >-
+      요소 지정 (ELEMS/SECTIONS 중 하나)
+    type: object
+    requirement: conditional
+    condition: "oneOf: exactly one of \"ELEMS\", \"SECTIONS\" is required"
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: SECTIONS
+    description: >-
+      단면 번호 목록
+    type: array
+    items:
+      type: integer
+    requirement: conditional
+    condition: "oneOf: exactly one of \"ELEMS\", \"SECTIONS\" is required"
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: EXPORT_PATH
+    description: >-
+      저장 디렉터리 경로
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: OUTPUT_NAME
+    description: >-
+      출력 파일 기본 이름
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+
+extraction:
+  source: 26_Design_RC_KDS41202022.md line 8364
+  table: 파라미터

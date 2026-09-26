@@ -1,0 +1,288 @@
+# /db/TDMT
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-tdmt
+endpoint: /db/TDMT
+name: Time Dependent Material – Creep/Shrinkage
+surface:
+  className: TimeDependentMaterialCreepShrinkage
+  exportName: timeDependentMaterialCreepShrinkage
+  modulePath: [db, properties, material]
+  payloadTypeName: TimeDependentMaterialCreepShrinkagePayload
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 04_DB_Properties.md
+    section: "6. `/db/TDMT`"
+    url: https://support.midasuser.com/hc/en-us/articles/35808006330009
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-write-sweep-2026-07-29
+    - product: gen
+      ref: db-write-sweep-2026-07-29
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/TDMT/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: NAME
+    description: >-
+      Time Dependent Material Name
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: CODE
+    description: >-
+      Code Name
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: STR
+    description: >-
+      Compression Strength
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: HU
+    description: >-
+      Relative Humidity (CEB-FIP 2010/1990: 40~99%; 1978: 40~100%)
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: MSIZE
+    description: >-
+      Notional Size of Member
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: CTYPE
+    description: >-
+      Type of Cement
+    type: string
+    requirement: optional
+    documentedDefault: RS
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: AGE
+    description: >-
+      Concrete Age
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: TYPEOFAFFR
+    description: >-
+      Type of Aggregate • 0: Basalt/dense limestone • 1: Quartzite • 2:
+      Limestone • 3: Sandstone
+    type: integer
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's TimeDependentMaterialCreepShrinkage case
+      completed a live create-read-update-delete round trip on gen and civil
+      without this field in its payload. That is evidence the call is accepted,
+      not that the resulting model is what an engineer wanted.
+    provenance: manual
+  - key: VOL
+    description: >-
+      Volume/Surface Ratio
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's TimeDependentMaterialCreepShrinkage case
+      completed a live create-read-update-delete round trip on gen and civil
+      without this field in its payload. That is evidence the call is accepted,
+      not that the resulting model is what an engineer wanted.
+    provenance: manual
+  - key: CMETHOD
+    description: >-
+      Curing Method • Moist: "MOIST" • Steam: "STEAM"
+    type: string
+    requirement: optional
+    documentedDefault: MOIST
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's TimeDependentMaterialCreepShrinkage case
+      completed a live create-read-update-delete round trip on gen and civil
+      without this field in its payload. That is evidence the call is accepted,
+      not that the resulting model is what an engineer wanted.
+    provenance: manual
+  - key: TCODE
+    description: >-
+      Type of Code
+    type: integer
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's confirmed TimeDependentMaterialCreepShrinkage
+      European-code case completed create/read/update/read/delete on Gen and
+      Civil without this field. The public SDK sends no endpoint-specific
+      normalization for this record.
+    provenance: live_verified
+    provenanceNote: >-
+      Confirmed live 2026-07-30 against a real PSC bridge model whose
+      concrete (C40/50) uses CODE="EUROPEAN", and declared by GET
+      /info/db/TDMT on both products. requirement stays `unstated`: the
+      manual documents no EUROPEAN branch at all, so there is no
+      requiredness claim to normalise and no documented condition for an
+      `appliesWhen` to translate. See docs/live_verification_notes.md and
+      MD-47.
+  - key: bSILICA
+    description: >-
+      SilicaFume
+    type: boolean
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's confirmed TimeDependentMaterialCreepShrinkage
+      European-code case completed create/read/update/read/delete on Gen and
+      Civil without this field. The public SDK sends no endpoint-specific
+      normalization for this record.
+    provenance: live_verified
+    provenanceNote: >-
+      See TCODE above; the two arrived together, from the same model and the
+      same /info schema.
+
+manualDefects:
+  - describes: field_name
+    manualSays: >-
+      Section 6's "Specifications (공통 키 + CEB-FIP)" table documents ten keys
+      across two code branches - CEB-FIP (`MSIZE`, `TYPEOFAFFR`) and ACI
+      (`VOL`, `CMETHOD`) - and its `CODE` value table lists 33 codes.
+    actual: >-
+      `CODE="EUROPEAN"` is a third branch with two dedicated fields, `TCODE`
+      and `bSILICA`, and the Specifications table names neither. Both were
+      read off a real PSC bridge model's C40/50 concrete on 2026-07-30 and
+      both are declared by `GET /info/db/TDMT` on Civil NX and Gen NX. The
+      gap is wider than these two: /info declares roughly seventy fields here,
+      spanning JSCE, GB, JTG and other codes the table lists in `CODE` and
+      then documents no fields for. Only the EUROPEAN pair is contracted,
+      because only that pair has been seen in real data; the rest stays an
+      open gap rather than a transcription of /info.
+    evidence: >-
+      docs/live_verification_notes.md, the 2026-07-30 cross-check entry, and
+      GET /info/db/TDMT on both products captured 2026-09-03. Found by
+      validate_contracts.py's field-parity check: both fields had been in
+      TimeDependentMaterialCreepShrinkagePayload since 2026-07-30 and in no
+      contract. Registered as MD-47.
+
+sdkRules:
+  - id: db-tdmt-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-tdmt-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 04_DB_Properties.md line 458
+  table: Specifications (공통 키 + CEB-FIP)

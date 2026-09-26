@@ -1,0 +1,818 @@
+# /DESIGN/RC/KDS-41-20-2022/REBB
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: design-rc-kds-41-20-2022-rebb
+endpoint: /DESIGN/RC/KDS-41-20-2022/REBB
+name: Modify Beam Rebar Data
+surface:
+  className: ModifyBeamRebarData
+  exportName: modifyBeamRebarData
+  modulePath: [design, rcKds, rebar]
+  payloadTypeName: ModifyBeamRebarDataPayload
+  nestedTypes:
+    - {path: Assign.ITEMS, name: RcBeamRebarItem, namespace: DesignRcKdsRebarTypes}
+    - {path: Assign.ITEMS.BAR_SECTOR_I, name: RcBeamRebarSector, namespace: DesignRcKdsRebarTypes}
+    - {path: Assign.ITEMS.BAR_SECTOR_I.SHEAR_BAR, name: RcBeamShearBarSpec, namespace: DesignRcKdsRebarTypes}
+    - {path: Assign.ITEMS.BAR_SECTOR_I.vMAIN_BAR_BOT, name: RcBeamMainBarLayerEntry, namespace: DesignRcKdsRebarTypes}
+    - {path: Assign.ITEMS.BAR_SECTOR_I.vMAIN_BAR_TOP, name: RcBeamMainBarLayerEntry, namespace: DesignRcKdsRebarTypes}
+    - {path: Assign.ITEMS.BAR_SECTOR_J, name: RcBeamRebarSector, namespace: DesignRcKdsRebarTypes}
+    - {path: Assign.ITEMS.BAR_SECTOR_J.SHEAR_BAR, name: RcBeamShearBarSpec, namespace: DesignRcKdsRebarTypes}
+    - {path: Assign.ITEMS.BAR_SECTOR_J.vMAIN_BAR_BOT, name: RcBeamMainBarLayerEntry, namespace: DesignRcKdsRebarTypes}
+    - {path: Assign.ITEMS.BAR_SECTOR_J.vMAIN_BAR_TOP, name: RcBeamMainBarLayerEntry, namespace: DesignRcKdsRebarTypes}
+    - {path: Assign.ITEMS.BAR_SECTOR_M, name: RcBeamRebarSector, namespace: DesignRcKdsRebarTypes}
+    - {path: Assign.ITEMS.BAR_SECTOR_M.SHEAR_BAR, name: RcBeamShearBarSpec, namespace: DesignRcKdsRebarTypes}
+    - {path: Assign.ITEMS.BAR_SECTOR_M.vMAIN_BAR_BOT, name: RcBeamMainBarLayerEntry, namespace: DesignRcKdsRebarTypes}
+    - {path: Assign.ITEMS.BAR_SECTOR_M.vMAIN_BAR_TOP, name: RcBeamMainBarLayerEntry, namespace: DesignRcKdsRebarTypes}
+    - {path: Assign.ITEMS.ELEMS, name: NodeElemsSelector, namespace: PostBaseTypes}
+
+products: [gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 26_Design_RC_KDS41202022.md
+    section: "35. `DESIGN/RC/KDS-41-20-2022/REBB` — Modify Beam Rebar Data (보 철근 데이터 수정)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_gen
+  records:
+    - product: gen
+      ref: db-read-sweep-2026-07-26
+
+operations:
+  - method: DELETE
+    risk: destructive
+    mitigation: none
+    request:
+      wrapper: none
+    response:
+      wrapper: unknown
+    notes: >-
+      The manual shows a bodyless DELETE at this endpoint, but does not
+      state the deletion scope or response shape.
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: Assign
+    description: >-
+      단면 번호 문자열을 키로 갖는 맵
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: ITEMS
+        description: >-
+          콘크리트 보 철근 항목 (min 1)
+        type: array
+        items:
+          type: object
+        minItems: 1
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: CREATE_SUB_SECTION
+            description: >-
+              서브 단면 생성 여부
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(1)', not
+            # by naming a path
+          - key: ID
+            description: >-
+              서브 단면 ID (읽기 전용)
+            type: integer
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(2)', not
+            # by naming a path
+          - key: ELEMS
+            description: >-
+              요소 번호 입력 (CREATE_SUB_SECTION=true 일 때 필수)
+            type: object
+            requirement: conditional
+            condition: CREATE_SUB_SECTION=true
+            appliesWhen:
+              - path: Assign.ITEMS.CREATE_SUB_SECTION
+                equals: true
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(3)', not
+            # by naming a path
+            properties:
+              - key: KEYS
+                description: >-
+                  요소 ID 배열
+                type: array
+                items:
+                  type: integer
+                requirement: optional
+                documentedDefault: null
+                documentedOptional: true
+                safeToOmit: unverified
+                provenance: manual
+              - key: TO
+                description: >-
+                  ID 범위 (예: "1to160")
+                type: string
+                requirement: optional
+                documentedDefault: null
+                documentedOptional: true
+                safeToOmit: unverified
+                provenance: manual
+              - key: STRUCTURE_GROUP_NAME
+                description: >-
+                  구조 그룹 이름
+                type: string
+                requirement: optional
+                documentedDefault: null
+                documentedOptional: true
+                safeToOmit: unverified
+                provenance: manual
+          - key: BAR_SECTOR_I
+            description: >-
+              I단 구간 철근
+            type: object
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(4)', not
+          # by naming a path
+          # RESOLVED: this object's members follow the section's own Request
+          # Example, Response Body and Python example, on the section's explicit
+          # instruction (실제 전송 시에는 아래 예제 형식을 그대로 따르는 것이 안전합니다). The Parameters table
+          # and JSON Schema give a different rendering for the same data -
+          # MAIN_BAR_TOP/BOT as {LAYER1, LAYER2} objects and a SKIN_BAR object. See
+          # MD-29.
+            properties:
+              - key: vMAIN_BAR_TOP
+                description: >-
+                  상단 주철근 (레이어별)
+                type: array
+                items:
+                  type: object
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              # RESOLVED: the array item is the layer, so its members are the two stated
+              # elsewhere in the same section - the layer rows 레이어 내 철근 규격 (NAME) and
+              # 레이어 내 철근 개수 (NUM). No layer-number field is transcribed: the schema
+              # rendering carries the layer in the key (LAYER1/LAYER2) and the array
+              # rendering carries it in the position, and no row of this section names
+              # one as a property. The Request Example sends this array empty, so it
+              # shows no item. See MD-29.
+                properties:
+                  - key: NAME
+                    description: >-
+                      레이어 내 철근 규격 · 19종 (D4 ~ D57)
+                    type: string
+                    requirement: required
+                    documentedDefault: null
+                    documentedOptional: false
+                    safeToOmit: unverified
+                    provenance: manual
+                  # RESOLVED: the manual types this String (enum) and states the value set
+                  # only as a count and a range - 19종 (D4 ~ D57) - so no enum is
+                  # transcribed. Same reading as the sibling REBC section.
+                  - key: NUM
+                    description: >-
+                      레이어 내 철근 개수
+                    type: integer
+                    requirement: required
+                    documentedDefault: null
+                    documentedOptional: false
+                    safeToOmit: unverified
+                    provenance: manual
+              - key: vMAIN_BAR_BOT
+                description: >-
+                  하단 주철근 (레이어별)
+                type: array
+                items:
+                  type: object
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              # RESOLVED: the array item is the layer, so its members are the two stated
+              # elsewhere in the same section - the layer rows 레이어 내 철근 규격 (NAME) and
+              # 레이어 내 철근 개수 (NUM). No layer-number field is transcribed: the schema
+              # rendering carries the layer in the key (LAYER1/LAYER2) and the array
+              # rendering carries it in the position, and no row of this section names
+              # one as a property. The Request Example sends this array empty, so it
+              # shows no item. See MD-29.
+                properties:
+                  - key: NAME
+                    description: >-
+                      레이어 내 철근 규격 · 19종 (D4 ~ D57)
+                    type: string
+                    requirement: required
+                    documentedDefault: null
+                    documentedOptional: false
+                    safeToOmit: unverified
+                    provenance: manual
+                  # RESOLVED: the manual types this String (enum) and states the value set
+                  # only as a count and a range - 19종 (D4 ~ D57) - so no enum is
+                  # transcribed. Same reading as the sibling REBC section.
+                  - key: NUM
+                    description: >-
+                      레이어 내 철근 개수
+                    type: integer
+                    requirement: required
+                    documentedDefault: null
+                    documentedOptional: false
+                    safeToOmit: unverified
+                    provenance: manual
+              - key: SHEAR_BAR
+                description: >-
+                  스터럽(전단철근)
+                type: object
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+                properties:
+                  - key: NAME
+                    description: >-
+                      스터럽 규격
+                    type: string
+                    requirement: required
+                    documentedDefault: null
+                    documentedOptional: false
+                    safeToOmit: unverified
+                    provenance: manual
+                  # RESOLVED: the manual types this String (enum) and states the value set
+                  # only as a count and a range - 19종 (D4 ~ D57) - so no enum is
+                  # transcribed. Same reading as the sibling REBC section.
+                  - key: LEG
+                    description: >-
+                      다리 수
+                    type: integer
+                    requirement: required
+                    documentedDefault: null
+                    documentedOptional: false
+                    safeToOmit: unverified
+                    provenance: manual
+                  - key: DIST
+                    description: >-
+                      철근 간격 @
+                    type: number
+                    requirement: required
+                    documentedDefault: null
+                    documentedOptional: false
+                    safeToOmit: unverified
+                    provenance: manual
+              - key: SKIN_BAR_NAME
+                description: >-
+                  표피철근 규격
+                type: string
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: manual
+              # RESOLVED: the table gives a SKIN_BAR object with 규격 and 개수 members and
+              # the section's Request Example sends these two flat keys instead.
+              # Requirement is unstated rather than carried over: the table's 선택 marks
+              # the object, its 필수 marks the members of that object, and neither is a
+              # claim about a key the table never names. See MD-29.
+              - key: SKIN_BAR_NUM
+                description: >-
+                  표피철근 개수
+                type: integer
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: manual
+          - key: BAR_SECTOR_M
+            description: >-
+              중앙(M) 구간 철근
+            type: object
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(5)', not
+          # by naming a path
+          # RESOLVED: this object's members follow the section's own Request
+          # Example, Response Body and Python example, on the section's explicit
+          # instruction (실제 전송 시에는 아래 예제 형식을 그대로 따르는 것이 안전합니다). The Parameters table
+          # and JSON Schema give a different rendering for the same data -
+          # MAIN_BAR_TOP/BOT as {LAYER1, LAYER2} objects and a SKIN_BAR object. See
+          # MD-29.
+            properties:
+              - key: vMAIN_BAR_TOP
+                description: >-
+                  상단 주철근 (레이어별)
+                type: array
+                items:
+                  type: object
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              # RESOLVED: the array item is the layer, so its members are the two stated
+              # elsewhere in the same section - the layer rows 레이어 내 철근 규격 (NAME) and
+              # 레이어 내 철근 개수 (NUM). No layer-number field is transcribed: the schema
+              # rendering carries the layer in the key (LAYER1/LAYER2) and the array
+              # rendering carries it in the position, and no row of this section names
+              # one as a property. The Request Example sends this array empty, so it
+              # shows no item. See MD-29.
+                properties:
+                  - key: NAME
+                    description: >-
+                      레이어 내 철근 규격 · 19종 (D4 ~ D57)
+                    type: string
+                    requirement: required
+                    documentedDefault: null
+                    documentedOptional: false
+                    safeToOmit: unverified
+                    provenance: manual
+                  # RESOLVED: the manual types this String (enum) and states the value set
+                  # only as a count and a range - 19종 (D4 ~ D57) - so no enum is
+                  # transcribed. Same reading as the sibling REBC section.
+                  - key: NUM
+                    description: >-
+                      레이어 내 철근 개수
+                    type: integer
+                    requirement: required
+                    documentedDefault: null
+                    documentedOptional: false
+                    safeToOmit: unverified
+                    provenance: manual
+              - key: vMAIN_BAR_BOT
+                description: >-
+                  하단 주철근 (레이어별)
+                type: array
+                items:
+                  type: object
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              # RESOLVED: the array item is the layer, so its members are the two stated
+              # elsewhere in the same section - the layer rows 레이어 내 철근 규격 (NAME) and
+              # 레이어 내 철근 개수 (NUM). No layer-number field is transcribed: the schema
+              # rendering carries the layer in the key (LAYER1/LAYER2) and the array
+              # rendering carries it in the position, and no row of this section names
+              # one as a property. The Request Example sends this array empty, so it
+              # shows no item. See MD-29.
+                properties:
+                  - key: NAME
+                    description: >-
+                      레이어 내 철근 규격 · 19종 (D4 ~ D57)
+                    type: string
+                    requirement: required
+                    documentedDefault: null
+                    documentedOptional: false
+                    safeToOmit: unverified
+                    provenance: manual
+                  # RESOLVED: the manual types this String (enum) and states the value set
+                  # only as a count and a range - 19종 (D4 ~ D57) - so no enum is
+                  # transcribed. Same reading as the sibling REBC section.
+                  - key: NUM
+                    description: >-
+                      레이어 내 철근 개수
+                    type: integer
+                    requirement: required
+                    documentedDefault: null
+                    documentedOptional: false
+                    safeToOmit: unverified
+                    provenance: manual
+              - key: SHEAR_BAR
+                description: >-
+                  스터럽(전단철근)
+                type: object
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+                properties:
+                  - key: NAME
+                    description: >-
+                      스터럽 규격
+                    type: string
+                    requirement: required
+                    documentedDefault: null
+                    documentedOptional: false
+                    safeToOmit: unverified
+                    provenance: manual
+                  # RESOLVED: the manual types this String (enum) and states the value set
+                  # only as a count and a range - 19종 (D4 ~ D57) - so no enum is
+                  # transcribed. Same reading as the sibling REBC section.
+                  - key: LEG
+                    description: >-
+                      다리 수
+                    type: integer
+                    requirement: required
+                    documentedDefault: null
+                    documentedOptional: false
+                    safeToOmit: unverified
+                    provenance: manual
+                  - key: DIST
+                    description: >-
+                      철근 간격 @
+                    type: number
+                    requirement: required
+                    documentedDefault: null
+                    documentedOptional: false
+                    safeToOmit: unverified
+                    provenance: manual
+              - key: SKIN_BAR_NAME
+                description: >-
+                  표피철근 규격
+                type: string
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: manual
+              # RESOLVED: the table gives a SKIN_BAR object with 규격 and 개수 members and
+              # the section's Request Example sends these two flat keys instead.
+              # Requirement is unstated rather than carried over: the table's 선택 marks
+              # the object, its 필수 marks the members of that object, and neither is a
+              # claim about a key the table never names. See MD-29.
+              - key: SKIN_BAR_NUM
+                description: >-
+                  표피철근 개수
+                type: integer
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: manual
+          - key: BAR_SECTOR_J
+            description: >-
+              J단 구간 철근
+            type: object
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          # RESOLVED: the manual nests this under 'ITEMS' by numbering it '(6)', not
+          # by naming a path
+          # RESOLVED: this object's members follow the section's own Request
+          # Example, Response Body and Python example, on the section's explicit
+          # instruction (실제 전송 시에는 아래 예제 형식을 그대로 따르는 것이 안전합니다). The Parameters table
+          # and JSON Schema give a different rendering for the same data -
+          # MAIN_BAR_TOP/BOT as {LAYER1, LAYER2} objects and a SKIN_BAR object. See
+          # MD-29.
+            properties:
+              - key: vMAIN_BAR_TOP
+                description: >-
+                  상단 주철근 (레이어별)
+                type: array
+                items:
+                  type: object
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              # RESOLVED: the array item is the layer, so its members are the two stated
+              # elsewhere in the same section - the layer rows 레이어 내 철근 규격 (NAME) and
+              # 레이어 내 철근 개수 (NUM). No layer-number field is transcribed: the schema
+              # rendering carries the layer in the key (LAYER1/LAYER2) and the array
+              # rendering carries it in the position, and no row of this section names
+              # one as a property. The Request Example sends this array empty, so it
+              # shows no item. See MD-29.
+                properties:
+                  - key: NAME
+                    description: >-
+                      레이어 내 철근 규격 · 19종 (D4 ~ D57)
+                    type: string
+                    requirement: required
+                    documentedDefault: null
+                    documentedOptional: false
+                    safeToOmit: unverified
+                    provenance: manual
+                  # RESOLVED: the manual types this String (enum) and states the value set
+                  # only as a count and a range - 19종 (D4 ~ D57) - so no enum is
+                  # transcribed. Same reading as the sibling REBC section.
+                  - key: NUM
+                    description: >-
+                      레이어 내 철근 개수
+                    type: integer
+                    requirement: required
+                    documentedDefault: null
+                    documentedOptional: false
+                    safeToOmit: unverified
+                    provenance: manual
+              - key: vMAIN_BAR_BOT
+                description: >-
+                  하단 주철근 (레이어별)
+                type: array
+                items:
+                  type: object
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              # RESOLVED: the array item is the layer, so its members are the two stated
+              # elsewhere in the same section - the layer rows 레이어 내 철근 규격 (NAME) and
+              # 레이어 내 철근 개수 (NUM). No layer-number field is transcribed: the schema
+              # rendering carries the layer in the key (LAYER1/LAYER2) and the array
+              # rendering carries it in the position, and no row of this section names
+              # one as a property. The Request Example sends this array empty, so it
+              # shows no item. See MD-29.
+                properties:
+                  - key: NAME
+                    description: >-
+                      레이어 내 철근 규격 · 19종 (D4 ~ D57)
+                    type: string
+                    requirement: required
+                    documentedDefault: null
+                    documentedOptional: false
+                    safeToOmit: unverified
+                    provenance: manual
+                  # RESOLVED: the manual types this String (enum) and states the value set
+                  # only as a count and a range - 19종 (D4 ~ D57) - so no enum is
+                  # transcribed. Same reading as the sibling REBC section.
+                  - key: NUM
+                    description: >-
+                      레이어 내 철근 개수
+                    type: integer
+                    requirement: required
+                    documentedDefault: null
+                    documentedOptional: false
+                    safeToOmit: unverified
+                    provenance: manual
+              - key: SHEAR_BAR
+                description: >-
+                  스터럽(전단철근)
+                type: object
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+                properties:
+                  - key: NAME
+                    description: >-
+                      스터럽 규격
+                    type: string
+                    requirement: required
+                    documentedDefault: null
+                    documentedOptional: false
+                    safeToOmit: unverified
+                    provenance: manual
+                  # RESOLVED: the manual types this String (enum) and states the value set
+                  # only as a count and a range - 19종 (D4 ~ D57) - so no enum is
+                  # transcribed. Same reading as the sibling REBC section.
+                  - key: LEG
+                    description: >-
+                      다리 수
+                    type: integer
+                    requirement: required
+                    documentedDefault: null
+                    documentedOptional: false
+                    safeToOmit: unverified
+                    provenance: manual
+                  - key: DIST
+                    description: >-
+                      철근 간격 @
+                    type: number
+                    requirement: required
+                    documentedDefault: null
+                    documentedOptional: false
+                    safeToOmit: unverified
+                    provenance: manual
+              - key: SKIN_BAR_NAME
+                description: >-
+                  표피철근 규격
+                type: string
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: manual
+              # RESOLVED: the table gives a SKIN_BAR object with 규격 and 개수 members and
+              # the section's Request Example sends these two flat keys instead.
+              # Requirement is unstated rather than carried over: the table's 선택 marks
+              # the object, its 필수 marks the members of that object, and neither is a
+              # claim about a key the table never names. See MD-29.
+              - key: SKIN_BAR_NUM
+                description: >-
+                  표피철근 개수
+                type: integer
+                requirement: unstated
+                documentedDefault: null
+                documentedOptional: null
+                safeToOmit: unverified
+                provenance: manual
+          - key: MAIN_BAR_DC_TOP
+            description: >-
+              상단 피복 거리 dT
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          # RESOLVED: the Parameters table numbers this row and calls it `DT`; the
+          # section's Request Example, Response Body and Python example all send
+          # `MAIN_BAR_DC_TOP` for the same quantity, and the section instructs the
+          # reader to follow them. The requiredness is the table's, which states it
+          # for this quantity under its other name. See MD-29.
+          - key: MAIN_BAR_DC_BOT
+            description: >-
+              하단 피복 거리 dB
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          # RESOLVED: the Parameters table numbers this row and calls it `DB`; the
+          # section's Request Example, Response Body and Python example all send
+          # `MAIN_BAR_DC_BOT` for the same quantity, and the section instructs the
+          # reader to follow them. The requiredness is the table's, which states it
+          # for this quantity under its other name. See MD-29.
+          - key: bSAME_SIZE_TOP_BOT
+            description: >-
+              상·하단 철근 규격 동일 적용
+            type: boolean
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          # RESOLVED: named by the section's Request Example, Response Body and
+          # Python example, and by no table row or schema property, so it is
+          # recorded with requirement unstated - the manual makes no requiredness
+          # claim about it at all. Same shape as MD-10. See MD-29.
+          - key: bSAME_SIZE_IMJ
+            description: >-
+              I·M·J 구간 철근 규격 동일 적용
+            type: boolean
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          # RESOLVED: named by the section's Request Example, Response Body and
+          # Python example, and by no table row or schema property, so it is
+          # recorded with requirement unstated - the manual makes no requiredness
+          # claim about it at all. Same shape as MD-10. See MD-29.
+          - key: bSAME_SIZE_LAYER
+            description: >-
+              레이어 간 철근 규격 동일 적용
+            type: boolean
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          # RESOLVED: named by the section's Request Example, Response Body and
+          # Python example, and by no table row or schema property, so it is
+          # recorded with requirement unstated - the manual makes no requiredness
+          # claim about it at all. Same shape as MD-10. See MD-29.
+
+variants:
+  - when:
+      - path: CREATE_SUB_SECTION
+        equals: true
+    source:
+      table: CREATE_SUB_SECTION == true 일 때 — ELEMS (KEYS / TO / STRUCTURE_GROUP_NAME 중 택1)
+      line: 6402
+    fields:
+      - key: KEYS
+        description: >-
+          요소 ID 배열
+        type: array
+        items:
+          type: integer
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: TO
+        description: >-
+          ID 범위 (예: "1to160")
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: STRUCTURE_GROUP_NAME
+        description: >-
+          구조 그룹 이름
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+
+manualDefects:
+  - describes: field_name
+    manualSays: >-
+      The JSON Schema and Parameters tables give each `BAR_SECTOR_*` a
+      `MAIN_BAR_TOP` / `MAIN_BAR_BOT` pair of `{LAYER1, LAYER2}` objects and a
+      `SKIN_BAR` object, and name the item's cover distances `DT` and `DB`.
+      They name no `bSAME_SIZE_*` field at all.
+    actual: >-
+      The section's own Request Body, Response Body and Python example all send
+      `vMAIN_BAR_TOP` / `vMAIN_BAR_BOT` arrays, flat `SKIN_BAR_NAME` /
+      `SKIN_BAR_NUM`, `MAIN_BAR_DC_TOP` / `MAIN_BAR_DC_BOT`, and three
+      `bSAME_SIZE_*` booleans - and the section states outright which to
+      believe: 실제 전송 시에는 아래 예제 형식을 그대로 따르는 것이 안전합니다. This
+      contract follows the examples. Both SDKs already did, with the same
+      reasoning written into `RcBeamRebarSector`'s docstring.
+    evidence: >-
+      docs/manual/26_Design_RC_KDS41202022.md section 35's JSON Schema and
+      파라미터 tables against the POST/PUT Request Body, GET Response Body and
+      Python example printed below them in the same section, and against that
+      section's own 예제 표기 차이 callout. The same rendering was independently
+      confirmed live at the chapter-24 sibling `/db/REBB`, whose contract is
+      built from `GET /info/db/REBB` and carries `vMAIN_BAR_TOP`,
+      `SKIN_BAR_NAME` and the three `bSAME_SIZE_*` flags - corroboration only,
+      not the source: a sibling endpoint is not a permitted source and nothing
+      here is taken from it. Registered as MD-29.
+
+extraction:
+  source: 26_Design_RC_KDS41202022.md line 6373
+  table: Root / Item
+  note: >-
+    The field list below is complete and follows the section's worked examples
+    rather than its tables, so nothing is left under `unmergedTables`. See
+    MD-29.
+  structuralTables:
+    - heading: BAR_SECTOR_I/M/J 구간 객체 (세 구간 동일)
+      line: 6388
+      paths:
+        - Assign.ITEMS.BAR_SECTOR_I
+        - Assign.ITEMS.BAR_SECTOR_M
+        - Assign.ITEMS.BAR_SECTOR_J
+      note: >-
+        Hand-resolved rather than registered, for two reasons. Three of its
+        rows key more than one property at once - `"LAYER1"` / `"LAYER2"`,
+        `"NAME"` / `"LEG"` / `"DIST"` and `"NAME"` / `"NUM"` - and two
+        unnumbered rows state the members of LAYER1/LAYER2 rather than of the
+        sector, so merged as parsed it produced ten flat siblings where the
+        schema has a two-level tree. And the rendering it describes is the one
+        the section tells the reader not to send.
+    - heading: "CREATE_SUB_SECTION == true 일 때 — ELEMS (KEYS / TO /
+        STRUCTURE_GROUP_NAME 중 택1)"
+      line: 6402
+      paths:
+        - Assign.ITEMS.ELEMS

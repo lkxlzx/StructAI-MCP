@@ -1,0 +1,29 @@
+# Source: 18_POST_PreProcess.md section 5. No SDK source was used.
+contractVersion: 1
+id: post-material
+endpoint: /post/TABLE
+name: Material Table
+summary: Material properties and thermal properties.
+products: [gen, civil]
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 18_POST_PreProcess.md
+    section: "5. Material Table"
+verification:
+  status: manual_only
+risk: read_only
+surface:
+  exportName: getMaterialTable
+  modulePath: [preProcess]
+  tableType: MATERIAL
+  factory: fixed
+  optionNames: [tableName]
+  documentation: |-
+    docs/manual/18_POST_PreProcess.md #5 — Material Table.
+tableTypes:
+  - value: MATERIAL
+    description: Material properties
+    head: [Index, ID, Name, Type, Standard, Code, DB, UseMassDensity, Elasticity, Poisson, Thermal, Density, MassDensity, Standard2, Code2, DB2, Elasticity2, Poisson2, Thermal2, Density2, MassDensity2, PlasticMatl., Sp.Heat, HeatCo., MaterialType, ShearMod._xy, Elasticity_y, Thermal_y, ShearMod._xz, Poisson_xz, Elasticity_z, Thermal_z, ShearMod._yz, Poisson_yz]
+    provenance: manual

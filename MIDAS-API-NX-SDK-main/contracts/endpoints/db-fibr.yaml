@@ -1,0 +1,356 @@
+# /db/FIBR
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-fibr
+endpoint: /db/FIBR
+name: Fiber Division of Section
+surface:
+  className: FiberDivision
+  exportName: fiberDivision
+  modulePath: [db, properties, section]
+  payloadTypeName: FiberDivisionPayload
+  nestedTypes:
+    - {path: FIBR_BASE, name: FiberDivisionBaseItem, namespace: DbPropertiesSectionTypes}
+    - {path: FIMP_COLOR, name: FiberDivisionColor, namespace: DbPropertiesSectionTypes}
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 04_DB_Properties.md
+    section: "29. `/db/FIBR`"
+    url: https://support.midasuser.com/hc/en-us/articles/35944476555801
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-07-26
+    - product: gen
+      ref: db-read-sweep-2026-07-26
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/FIBR/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: NAME
+    description: >-
+      Fiber Division Name
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: SECT_KEY
+    description: >-
+      Assigned Section ID
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: ASSIGN_TYPE
+    description: >-
+      Assign Type
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: FIMP_NAME
+    description: >-
+      Inelastic Material Properties Name (6 elements)
+    type: array
+    items:
+      type: string
+    minItems: 6
+    maxItems: 6
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: FIMP_COLOR
+    description: >-
+      Inelastic Material Properties Color (6 elements)
+    type: array
+    items:
+      type: object
+    minItems: 6
+    maxItems: 6
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    # RESOLVED: row (1) of the table is numbered under FIMP_COLOR and its Key
+    # cell names three keys at once (MD-48); the section's own Request
+    # Example nests them in each element, `"FIMP_COLOR": [{"R": 255, "G": 0,
+    # "B": 0}, ...]`, and GET /info declares them there on both products. The
+    # parser read them as record-root fields, which is where this contract
+    # published them until 2026-09-22.
+    properties:
+      - key: R
+        description: >-
+          Color components
+        type: integer
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: G
+        description: >-
+          Color components
+        type: integer
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: B
+        description: >-
+          Color components
+        type: integer
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+  - key: FIBR_BASE
+    description: >-
+      Fiber Division Base Data
+    type: array
+    items:
+      type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: FIBR_BASE_KEY
+        description: >-
+          Fiber Base Key
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'FIBR_BASE' by numbering it '(1)', not
+        # by naming a path
+      - key: REBAR_NAME
+        description: >-
+          Rebar Name
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'FIBR_BASE' by numbering it '(2)', not
+        # by naming a path
+      - key: AREA
+        description: >-
+          Area
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'FIBR_BASE' by numbering it '(3)', not
+        # by naming a path
+      - key: CENTER_Y
+        description: >-
+          Center Y
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'FIBR_BASE' by numbering it '(4)', not
+        # by naming a path
+      - key: CENTER_Z
+        description: >-
+          Center Z
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'FIBR_BASE' by numbering it '(5)', not
+        # by naming a path
+      - key: FIBER_MATL_ID
+        description: >-
+          Fiber Material ID(FIMP_NAME/FIMP_COLOR 배열의 몇 번째 재료인지)
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'FIBR_BASE' by numbering it '(6)', not
+        # by naming a path
+      - key: AREA_CONSIDER_REBAR
+        description: >-
+          Area Consider Rebar
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'FIBR_BASE' by numbering it '(7)', not
+        # by naming a path
+      - key: OPT_IS_REBAR
+        description: >-
+          Is Rebar
+        type: boolean
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'FIBR_BASE' by numbering it '(8)', not
+        # by naming a path
+      - key: POINT_Y
+        description: >-
+          Fiber 외곽 다각형 Point Y 목록
+        type: array
+        items:
+          type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'FIBR_BASE' by numbering it '(9)', not
+        # by naming a path
+      - key: POINT_Z
+        description: >-
+          Fiber 외곽 다각형 Point Z 목록
+        type: array
+        items:
+          type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'FIBR_BASE' by numbering it '(10)',
+        # not by naming a path
+  - key: OPT_MONITORED_FIBER
+    description: >-
+      Monitored Fiber 사용 여부
+    type: boolean
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: MONITORED_FIBER
+    description: >-
+      Monitored Fiber(FIBR_BASE 각 항목에 대응하는 0/1 플래그 배열)
+    type: array
+    items:
+      type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+
+sdkRules:
+  - id: db-fibr-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-fibr-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 04_DB_Properties.md line 2186
+  table: Specifications

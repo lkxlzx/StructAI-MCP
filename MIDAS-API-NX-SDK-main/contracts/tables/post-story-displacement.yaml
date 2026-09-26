@@ -1,0 +1,28 @@
+contractVersion: 1
+id: post-story-displacement
+endpoint: /post/TABLE
+name: Story Displacement
+products: [gen, civil]
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 21_POST_StoryTables.md
+    section: "2. Story Displacement"
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getStoryDisplacementTable
+  modulePath: [story]
+  tableType: STORY_DISPLACEMENT_COMB
+  factory: variable
+  optionNames: [components, constructionStage, loadCaseNames, nodeElements, stageSteps, styles, tableName, unit]
+  documentation: |-
+    docs/manual/21_POST_StoryTables.md #2 — Story Displacement.
+
+    table_type: TABLE_TYPE_STORY_DISPLACEMENT_X/_Y (single-direction) or
+    TABLE_TYPE_STORY_DISPLACEMENT_COMB (combined).
+tableTypes:
+  - {value: STORY_DISPLACEMENT_X, provenance: manual}
+  - {value: STORY_DISPLACEMENT_Y, provenance: manual}
+  - {value: STORY_DISPLACEMENT_COMB, provenance: manual}

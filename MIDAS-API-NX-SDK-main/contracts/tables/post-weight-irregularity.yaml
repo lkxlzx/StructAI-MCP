@@ -1,0 +1,43 @@
+contractVersion: 1
+id: post-weight-irregularity
+endpoint: /post/TABLE
+name: Weight Irregularity Check
+products: [gen, civil]
+source:
+  manual: {status: documented, repo: Dennis5882/MIDAS-API, chapterFile: 21_POST_StoryTables.md, section: "17. Weight Irregularity Check"}
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getWeightIrregularityTable
+  modulePath: [story]
+  tableType: WEIGHT_IRREGULARITY_X
+  factory: variable
+  optionNames: [calculationMethod, components, constructionStage, loadCaseNames, nodeElements, stageSteps, styles, tableName, unit]
+  documentation: |-
+    docs/manual/21_POST_StoryTables.md #17 — Weight Irregularity Check.
+
+    table_type: TABLE_TYPE_WEIGHT_IRREGULARITY_X or _Y.
+    set_calculation_method: story-drift calculation basis — optional. Unlike
+    every other story table's per-table setting, this one is NOT wrapped in
+    "ADDITIONAL"; it sits directly under "Argument" per the manual.
+  nestedTypes:
+    - {path: SET_CALCULATION_METHOD, name: WeightIrregularityCalculationMethod, namespace: PostStoryTypes}
+tableTypes: [{value: WEIGHT_IRREGULARITY_X, provenance: manual}, {value: WEIGHT_IRREGULARITY_Y, provenance: manual}]
+requestFields:
+  # 21_POST_StoryTables.md #17, "`SET_CALCULATION_METHOD` - 층간변위 산정방식 설정", rows 1 to 1-1.
+  # Unlike every other story table this sits directly under "Argument", not
+  # inside ADDITIONAL.
+  additional:
+    - key: SET_CALCULATION_METHOD
+      description: 산정방식 설정
+      type: object
+      requirement: optional
+      provenance: manual
+      properties:
+        - key: STORY_DRIFT_METHOD
+          description: 층간변위 산정방식
+          type: string
+          enum: ["Drift at the Center of Mass", "Max. Drift of Outer Extreme Points", "Max. Drift of All Vertical Elements"]
+          requirement: optional
+          documentedDefault: ""
+          provenance: manual

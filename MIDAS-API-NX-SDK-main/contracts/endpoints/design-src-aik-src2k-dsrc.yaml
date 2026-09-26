@@ -1,0 +1,72 @@
+# /DESIGN/SRC/AIK-SRC2K/DSRC
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: design-src-aik-src2k-dsrc
+endpoint: /DESIGN/SRC/AIK-SRC2K/DSRC
+name: SRC Design Code
+surface:
+  className: SrcDesignCode
+  exportName: srcDesignCode
+  modulePath: [design, srcAiksrc2k]
+  payloadTypeName: SrcDesignCodePayload
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 27_Design_SRC_AIKSRC2K.md
+    section: "1. `DESIGN/SRC/AIK-SRC2K/DSRC` — SRC Design Code (SRC 설계 코드)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-write-sweep-2026-08-11
+    - product: gen
+      ref: db-write-sweep-2026-08-11
+
+operations:
+  - method: DELETE
+    risk: destructive
+    mitigation: none
+    request:
+      wrapper: none
+    response:
+      wrapper: unknown
+    notes: >-
+      The manual shows a bodyless DELETE at this endpoint, but does not
+      state the deletion scope or response shape.
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: DGNCODE
+    description: >-
+      설계 코드 — 가능값: AIK-SRC2K
+    type: string
+    enum: [AIK-SRC2K]
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+
+extraction:
+  source: 27_Design_SRC_AIKSRC2K.md line 111
+  table: 파라미터

@@ -1,0 +1,44 @@
+contractVersion: 1
+id: post-solid-strain-global
+endpoint: /post/TABLE
+name: Solid Strain Global
+summary: Global plastic or total solid strain values.
+products: [gen, civil]
+source: {manual: {status: documented, repo: Dennis5882/MIDAS-API, chapterFile: 20_POST_AnalysisResult_2.md, section: "25. Solid Strain (Global)"}}
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getSolidStrainGlobalTable
+  modulePath: [result1]
+  tableType: SOLID_GLOB_PLAST_STRAIN
+  factory: variable
+  optionNames: [components, constructionStage, loadCaseNames, nodeElements, stageSteps, styles, tableName, unit]
+  documentation: |-
+    docs/manual/20_POST_AnalysisResult_2.md #25 — Solid Strain (Global).
+
+    table_type: TABLE_TYPE_SOLID_STRAIN_GLOBAL_PLASTIC (default) or _TOTAL.
+    Nonlinear/construction-stage results — pass opt_cs=True and stage_step,
+    e.g. stage_step=["nl_001"].
+  nestedTypes:
+    - {path: NODE_FLAG, name: NodeFlag, namespace: PostBaseTypes}
+tableTypes:
+  - value: SOLID_GLOB_PLAST_STRAIN
+    description: Global plastic solid strain
+    head: [Index, Elem, Load, Step, Node, Strain-XX, Strain-YY, Strain-ZZ, Strain-XY, Strain-YZ, Strain-XZ, Strain-P1, Strain-P2, Strain-P3, Max-Shear]
+    provenance: manual
+  - value: SOLID_GLOB_TOTAL_STRAIN
+    description: Global total solid strain
+    head: [Index, Elem, Load, Step, Node, Strain-XX, Strain-YY, Strain-ZZ, Strain-XY, Strain-YZ, Strain-XZ, Strain-P1, Strain-P2, Strain-P3, Max-Shear]
+    provenance: manual
+requestFields:
+  # 20_POST_AnalysisResult_2.md, common section: NODE_FLAG applies to sections
+  # 3, 4, 5, 6, 7, 10, 11, 14, 15, 18, 19, 22, 23, 24 and 25, this one among them.
+  additional:
+    - key: NODE_FLAG
+      description: 요소 중심(Cent)/절점(Node)별 출력 여부
+      type: object
+      requirement: optional
+      provenance: manual
+      properties:
+        - {key: CENTER, description: 요소 중심(Cent) 출력 여부, type: boolean, requirement: optional, documentedDefault: false, provenance: manual}
+        - {key: NODES, description: 절점(Node)별 출력 여부, type: boolean, requirement: optional, documentedDefault: false, provenance: manual}

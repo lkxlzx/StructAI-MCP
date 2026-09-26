@@ -1,0 +1,88 @@
+# /DESIGN/RC/DRC
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: design-rc-drc
+endpoint: /DESIGN/RC/DRC
+name: RC Design Code
+surface:
+  className: RcDesignCodeSelection
+  exportName: rcDesignCodeSelection
+  modulePath: [design, rcKds, setup]
+  payloadTypeName: RcDesignCodeSelectionPayload
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 26_Design_RC_KDS41202022.md
+    section: "0. `DESIGN/RC/DRC` — RC Design Code (RC 설계 코드 선택)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-08-07
+    - product: gen
+      ref: db-read-sweep-2026-08-07
+
+operations:
+  - method: DELETE
+    risk: destructive
+    mitigation: none
+    request:
+      wrapper: none
+    response:
+      wrapper: unknown
+    notes: >-
+      The manual shows a bodyless DELETE at this endpoint, but does not
+      state the deletion scope or response shape.
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: Assign
+    description: >-
+      Assign 래퍼 (ID 문자열 키, 1개)
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: DGNCODE
+    description: >-
+      RC 설계 코드 · 현재 "KDS 41 20 : 2022" 1개 값만 지원
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    enum: ["KDS 41 20 : 2022"]
+    safeToOmit: unverified
+    provenance: manual
+
+extraction:
+  source: 26_Design_RC_KDS41202022.md line 166
+  table: 파라미터

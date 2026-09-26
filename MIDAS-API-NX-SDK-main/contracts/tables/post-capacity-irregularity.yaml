@@ -1,0 +1,40 @@
+contractVersion: 1
+id: post-capacity-irregularity
+endpoint: /post/TABLE
+name: Capacity Irregularity Check
+products: [gen, civil]
+source:
+  manual: {status: documented, repo: Dennis5882/MIDAS-API, chapterFile: 21_POST_StoryTables.md, section: "14. Capacity Irregularity Check (Weak Story)"}
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getCapacityIrregularityTable
+  modulePath: [story]
+  tableType: CAPACITY_IRREGULARITY
+  factory: fixed
+  optionNames: [additional, components, constructionStage, loadCaseNames, nodeElements, stageSteps, styles, tableName, unit]
+  documentation: |-
+    docs/manual/21_POST_StoryTables.md #14 — Capacity Irregularity Check (Weak Story).
+
+    Per-story shear strength vs. upper-story shear strength, for two angles
+    (Angle1/Angle2).
+    additional: SET_ANGLE — Required; sets Angle1 (Angle2 = Angle1 + 90°).
+  nestedTypes:
+    - {path: ADDITIONAL, name: CapacityIrregularityAdditional, namespace: PostStoryTypes}
+tableTypes: [{value: CAPACITY_IRREGULARITY, provenance: manual}]
+requestFields:
+  # 21_POST_StoryTables.md #14, "`ADDITIONAL` - 강도 산정 각도 설정", rows 1 to 1-1-1.
+  additional:
+    - key: ADDITIONAL
+      description: 세부 설정 객체
+      type: object
+      requirement: optional
+      provenance: manual
+      properties:
+        - key: SET_ANGLE
+          description: 각도 설정
+          type: object
+          requirement: required
+          provenance: manual
+          properties:
+            - {key: ANGLE, description: "Angle1 입력 각도(°) - Angle2 = Angle1 + 90°", type: number, requirement: required, provenance: manual}

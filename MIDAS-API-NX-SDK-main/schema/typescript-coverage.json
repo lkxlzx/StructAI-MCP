@@ -1,0 +1,2007 @@
+{
+  "source": "docs/coverage.json",
+  "coverageRowCount": 400,
+  "coveredRowCount": 400,
+  "rows": [
+    {
+      "endpoint": "/doc/NEW",
+      "canonicalEndpoint": "/doc/NEW",
+      "surface": "doc"
+    },
+    {
+      "endpoint": "/doc/OPEN",
+      "canonicalEndpoint": "/doc/OPEN",
+      "surface": "doc"
+    },
+    {
+      "endpoint": "/doc/CLOSE",
+      "canonicalEndpoint": "/doc/CLOSE",
+      "surface": "doc"
+    },
+    {
+      "endpoint": "/doc/SAVE",
+      "canonicalEndpoint": "/doc/SAVE",
+      "surface": "doc"
+    },
+    {
+      "endpoint": "/doc/SAVEAS",
+      "canonicalEndpoint": "/doc/SAVEAS",
+      "surface": "doc"
+    },
+    {
+      "endpoint": "/doc/STAGAS",
+      "canonicalEndpoint": "/doc/STAGAS",
+      "surface": "doc"
+    },
+    {
+      "endpoint": "/doc/IMPORT",
+      "canonicalEndpoint": "/doc/IMPORT",
+      "surface": "doc"
+    },
+    {
+      "endpoint": "/doc/IMPORTMXT",
+      "canonicalEndpoint": "/doc/IMPORTMXT",
+      "surface": "doc"
+    },
+    {
+      "endpoint": "/doc/EXPORT",
+      "canonicalEndpoint": "/doc/EXPORT",
+      "surface": "doc"
+    },
+    {
+      "endpoint": "/doc/EXPORTMXT",
+      "canonicalEndpoint": "/doc/EXPORTMXT",
+      "surface": "doc"
+    },
+    {
+      "endpoint": "/doc/ANAL",
+      "canonicalEndpoint": "/doc/ANAL",
+      "surface": "doc"
+    },
+    {
+      "endpoint": "/db/PJCF",
+      "canonicalEndpoint": "/db/PJCF",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/UNIT",
+      "canonicalEndpoint": "/db/UNIT",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/STYP",
+      "canonicalEndpoint": "/db/STYP",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/STYP-M1",
+      "canonicalEndpoint": "/db/STYP-M1",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/GRUP",
+      "canonicalEndpoint": "/db/GRUP",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/BNGR",
+      "canonicalEndpoint": "/db/BNGR",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/LDGR",
+      "canonicalEndpoint": "/db/LDGR",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/TDGR",
+      "canonicalEndpoint": "/db/TDGR",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/NPLN",
+      "canonicalEndpoint": "/db/NPLN",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/CO_M",
+      "canonicalEndpoint": "/db/CO_M",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/CO_S",
+      "canonicalEndpoint": "/db/CO_S",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/CO_T",
+      "canonicalEndpoint": "/db/CO_T",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/CO_F",
+      "canonicalEndpoint": "/db/CO_F",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/SPAN",
+      "canonicalEndpoint": "/db/SPAN",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/STOR",
+      "canonicalEndpoint": "/db/STOR",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/NODE",
+      "canonicalEndpoint": "/db/NODE",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/ELEM",
+      "canonicalEndpoint": "/db/ELEM",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/SKEW",
+      "canonicalEndpoint": "/db/SKEW",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/MADO",
+      "canonicalEndpoint": "/db/MADO",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/SBDO",
+      "canonicalEndpoint": "/db/SBDO",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/DOEL",
+      "canonicalEndpoint": "/db/DOEL",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/MATL",
+      "canonicalEndpoint": "/db/MATL",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/MATL-M1",
+      "canonicalEndpoint": "/db/MATL-M1",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/IMFM",
+      "canonicalEndpoint": "/db/IMFM",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/IMFM-M1",
+      "canonicalEndpoint": "/db/IMFM-M1",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/TDMF",
+      "canonicalEndpoint": "/db/TDMF",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/TDMT",
+      "canonicalEndpoint": "/db/TDMT",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/TDME",
+      "canonicalEndpoint": "/db/TDME",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/EDMP",
+      "canonicalEndpoint": "/db/EDMP",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/TMAT",
+      "canonicalEndpoint": "/db/TMAT",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/EPMT",
+      "canonicalEndpoint": "/db/EPMT",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/EPMT-M1",
+      "canonicalEndpoint": "/db/EPMT-M1",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/SECT",
+      "canonicalEndpoint": "/db/SECT",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/THIK",
+      "canonicalEndpoint": "/db/THIK",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/TSGR",
+      "canonicalEndpoint": "/db/TSGR",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/SECF",
+      "canonicalEndpoint": "/db/SECF",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/RPSC",
+      "canonicalEndpoint": "/db/RPSC",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/STRPSSM",
+      "canonicalEndpoint": "/db/STRPSSM",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/PSSF",
+      "canonicalEndpoint": "/db/PSSF",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/VBEM",
+      "canonicalEndpoint": "/db/VBEM",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/VSEC",
+      "canonicalEndpoint": "/db/VSEC",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/EWSF",
+      "canonicalEndpoint": "/db/EWSF",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/IEHC",
+      "canonicalEndpoint": "/db/IEHC",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/IEHG",
+      "canonicalEndpoint": "/db/IEHG",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/IEHG-BEAM-M1",
+      "canonicalEndpoint": "/db/IEHG-BEAM-M1",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/IEHG-TRUSS-M1",
+      "canonicalEndpoint": "/db/IEHG-TRUSS-M1",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/IEHG-GL-M1",
+      "canonicalEndpoint": "/db/IEHG-GL-M1",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/IEHG-PSS-M1",
+      "canonicalEndpoint": "/db/IEHG-PSS-M1",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/FIMP",
+      "canonicalEndpoint": "/db/FIMP",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/FIBR",
+      "canonicalEndpoint": "/db/FIBR",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/GRDP",
+      "canonicalEndpoint": "/db/GRDP",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/ESSF",
+      "canonicalEndpoint": "/db/ESSF",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/MATD",
+      "canonicalEndpoint": "/db/MATD",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/CONS",
+      "canonicalEndpoint": "/db/CONS",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/NSPR",
+      "canonicalEndpoint": "/db/NSPR",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/GSTP",
+      "canonicalEndpoint": "/db/GSTP",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/GSPR",
+      "canonicalEndpoint": "/db/GSPR",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/SSPS",
+      "canonicalEndpoint": "/db/SSPS",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/ELNK",
+      "canonicalEndpoint": "/db/ELNK",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/RIGD",
+      "canonicalEndpoint": "/db/RIGD",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/NLLP",
+      "canonicalEndpoint": "/db/NLLP",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/NLNK",
+      "canonicalEndpoint": "/db/NLNK",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/NLNK-M1",
+      "canonicalEndpoint": "/db/NLNK-M1",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/CGLP",
+      "canonicalEndpoint": "/db/CGLP",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/FRLS",
+      "canonicalEndpoint": "/db/FRLS",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/OFFS",
+      "canonicalEndpoint": "/db/OFFS",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/PRLS",
+      "canonicalEndpoint": "/db/PRLS",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/MLFC",
+      "canonicalEndpoint": "/db/MLFC",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/SDVI",
+      "canonicalEndpoint": "/db/SDVI",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/SDVE",
+      "canonicalEndpoint": "/db/SDVE",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/SDST",
+      "canonicalEndpoint": "/db/SDST",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/SDHY",
+      "canonicalEndpoint": "/db/SDHY",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/SDIS",
+      "canonicalEndpoint": "/db/SDIS",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/MCON",
+      "canonicalEndpoint": "/db/MCON",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/PZEF",
+      "canonicalEndpoint": "/db/PZEF",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/CLDR",
+      "canonicalEndpoint": "/db/CLDR",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/DRLS",
+      "canonicalEndpoint": "/db/DRLS",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/STLD",
+      "canonicalEndpoint": "/db/STLD",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/BODF",
+      "canonicalEndpoint": "/db/BODF",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/CNLD",
+      "canonicalEndpoint": "/db/CNLD",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/BMLD",
+      "canonicalEndpoint": "/db/BMLD",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/SDSP",
+      "canonicalEndpoint": "/db/SDSP",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/NMAS",
+      "canonicalEndpoint": "/db/NMAS",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/LTOM",
+      "canonicalEndpoint": "/db/LTOM",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/NBOF",
+      "canonicalEndpoint": "/db/NBOF",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/PSLT",
+      "canonicalEndpoint": "/db/PSLT",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/PRES",
+      "canonicalEndpoint": "/db/PRES",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/PNLD",
+      "canonicalEndpoint": "/db/PNLD",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/PNLA",
+      "canonicalEndpoint": "/db/PNLA",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/FBLD",
+      "canonicalEndpoint": "/db/FBLD",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/FBLA",
+      "canonicalEndpoint": "/db/FBLA",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/FMLD",
+      "canonicalEndpoint": "/db/FMLD",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/POSP",
+      "canonicalEndpoint": "/db/POSP",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/EPST",
+      "canonicalEndpoint": "/db/EPST",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/EPSE",
+      "canonicalEndpoint": "/db/EPSE",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/POSL",
+      "canonicalEndpoint": "/db/POSL",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/SWIND",
+      "canonicalEndpoint": "/db/SWIND",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/SSEIS",
+      "canonicalEndpoint": "/db/SSEIS",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/ETMP",
+      "canonicalEndpoint": "/db/ETMP",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/GTMP",
+      "canonicalEndpoint": "/db/GTMP",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/BTMP",
+      "canonicalEndpoint": "/db/BTMP",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/STMP",
+      "canonicalEndpoint": "/db/STMP",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/NTMP",
+      "canonicalEndpoint": "/db/NTMP",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/TDNT",
+      "canonicalEndpoint": "/db/TDNT",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/TDNA",
+      "canonicalEndpoint": "/db/TDNA",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/TDCS",
+      "canonicalEndpoint": "/db/TDCS",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/TDPL",
+      "canonicalEndpoint": "/db/TDPL",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/PRST",
+      "canonicalEndpoint": "/db/PRST",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/PTNS",
+      "canonicalEndpoint": "/db/PTNS",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/EXLD",
+      "canonicalEndpoint": "/db/EXLD",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/MVCD",
+      "canonicalEndpoint": "/db/MVCD",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/LLAN",
+      "canonicalEndpoint": "/db/LLAN",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/LLANch",
+      "canonicalEndpoint": "/db/LLANch",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/LLANid",
+      "canonicalEndpoint": "/db/LLANid",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/LLANtr",
+      "canonicalEndpoint": "/db/LLANtr",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/LLANop",
+      "canonicalEndpoint": "/db/LLANop",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/SLAN",
+      "canonicalEndpoint": "/db/SLAN",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/SLANch",
+      "canonicalEndpoint": "/db/SLANch",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/SLANop",
+      "canonicalEndpoint": "/db/SLANop",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/MVHL",
+      "canonicalEndpoint": "/db/MVHL",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/MVHLtr",
+      "canonicalEndpoint": "/db/MVHLtr",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/MVLD",
+      "canonicalEndpoint": "/db/MVLD",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/MVLDch",
+      "canonicalEndpoint": "/db/MVLDch",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/MVLDid",
+      "canonicalEndpoint": "/db/MVLDid",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/MVLDbs",
+      "canonicalEndpoint": "/db/MVLDbs",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/MVLDeu",
+      "canonicalEndpoint": "/db/MVLDeu",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/MVLDpl",
+      "canonicalEndpoint": "/db/MVLDpl",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/MVLDtr",
+      "canonicalEndpoint": "/db/MVLDtr",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/CRGR",
+      "canonicalEndpoint": "/db/CRGR",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/CJFG",
+      "canonicalEndpoint": "/db/CJFG",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/MVHC",
+      "canonicalEndpoint": "/db/MVHC",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/SINF",
+      "canonicalEndpoint": "/db/SINF",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/MLSP",
+      "canonicalEndpoint": "/db/MLSP",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/MLSR",
+      "canonicalEndpoint": "/db/MLSR",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/DYLA",
+      "canonicalEndpoint": "/db/DYLA",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/IMPF",
+      "canonicalEndpoint": "/db/IMPF",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/DYFG",
+      "canonicalEndpoint": "/db/DYFG",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/DYNF",
+      "canonicalEndpoint": "/db/DYNF",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/SPFC",
+      "canonicalEndpoint": "/db/SPFC",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/SPLC",
+      "canonicalEndpoint": "/db/SPLC",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/THGC",
+      "canonicalEndpoint": "/db/THGC",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/THGC-M1",
+      "canonicalEndpoint": "/db/THGC-M1",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/THOO-M1",
+      "canonicalEndpoint": "/db/THOO-M1",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/THIS",
+      "canonicalEndpoint": "/db/THIS",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/THIS-M1",
+      "canonicalEndpoint": "/db/THIS-M1",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/THFC",
+      "canonicalEndpoint": "/db/THFC",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/THGA",
+      "canonicalEndpoint": "/db/THGA",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/THNL",
+      "canonicalEndpoint": "/db/THNL",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/THSL",
+      "canonicalEndpoint": "/db/THSL",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/THMS",
+      "canonicalEndpoint": "/db/THMS",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/STAG",
+      "canonicalEndpoint": "/db/STAG",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/CSCS",
+      "canonicalEndpoint": "/db/CSCS",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/TMLD",
+      "canonicalEndpoint": "/db/TMLD",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/STBK",
+      "canonicalEndpoint": "/db/STBK",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/CMCS",
+      "canonicalEndpoint": "/db/CMCS",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/CRPC",
+      "canonicalEndpoint": "/db/CRPC",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/ETFC",
+      "canonicalEndpoint": "/db/ETFC",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/CCFC",
+      "canonicalEndpoint": "/db/CCFC",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/HECB",
+      "canonicalEndpoint": "/db/HECB",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/HSPT",
+      "canonicalEndpoint": "/db/HSPT",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/HSFC",
+      "canonicalEndpoint": "/db/HSFC",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/HAHS",
+      "canonicalEndpoint": "/db/HAHS",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/HPCE",
+      "canonicalEndpoint": "/db/HPCE",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/HSTG",
+      "canonicalEndpoint": "/db/HSTG",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/SMPT",
+      "canonicalEndpoint": "/db/SMPT",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/SMLC",
+      "canonicalEndpoint": "/db/SMLC",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/PLCB",
+      "canonicalEndpoint": "/db/PLCB",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/LDSQ",
+      "canonicalEndpoint": "/db/LDSQ",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/WVLD",
+      "canonicalEndpoint": "/db/WVLD",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/IELC",
+      "canonicalEndpoint": "/db/IELC",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/IFGS",
+      "canonicalEndpoint": "/db/IFGS",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/EFCT",
+      "canonicalEndpoint": "/db/EFCT",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/INMF",
+      "canonicalEndpoint": "/db/INMF",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/ACTL",
+      "canonicalEndpoint": "/db/ACTL",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/ACTL-M1",
+      "canonicalEndpoint": "/db/ACTL-M1",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/PDEL",
+      "canonicalEndpoint": "/db/PDEL",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/BUCK",
+      "canonicalEndpoint": "/db/BUCK",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/EIGV",
+      "canonicalEndpoint": "/db/EIGV",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/EIGV-M1",
+      "canonicalEndpoint": "/db/EIGV-M1",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/HHCT",
+      "canonicalEndpoint": "/db/HHCT",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/HHCT-M1",
+      "canonicalEndpoint": "/db/HHCT-M1",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/MVCT",
+      "canonicalEndpoint": "/db/MVCT",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/MVCTch",
+      "canonicalEndpoint": "/db/MVCTch",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/MVCTid",
+      "canonicalEndpoint": "/db/MVCTid",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/MVCTbs",
+      "canonicalEndpoint": "/db/MVCTbs",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/MVCTtr",
+      "canonicalEndpoint": "/db/MVCTtr",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/SMCT",
+      "canonicalEndpoint": "/db/SMCT",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/NLCT",
+      "canonicalEndpoint": "/db/NLCT",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/NLCT-M1",
+      "canonicalEndpoint": "/db/NLCT-M1",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/STCT",
+      "canonicalEndpoint": "/db/STCT",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/STCT-M1",
+      "canonicalEndpoint": "/db/STCT-M1",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/BCCT",
+      "canonicalEndpoint": "/db/BCCT",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/BCGD-M1",
+      "canonicalEndpoint": "/db/BCGD-M1",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/BCGA-M1",
+      "canonicalEndpoint": "/db/BCGA-M1",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/LCOM-GEN",
+      "canonicalEndpoint": "/db/LCOM-GEN",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/LCOM-CONC",
+      "canonicalEndpoint": "/db/LCOM-CONC",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/LCOM-STEEL",
+      "canonicalEndpoint": "/db/LCOM-STEEL",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/LCOM-SRC",
+      "canonicalEndpoint": "/db/LCOM-SRC",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/LCOM-STLCOMP",
+      "canonicalEndpoint": "/db/LCOM-STLCOMP",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/LCOM-SEISMIC",
+      "canonicalEndpoint": "/db/LCOM-SEISMIC",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/CUTL",
+      "canonicalEndpoint": "/db/CUTL",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/CLWP",
+      "canonicalEndpoint": "/db/CLWP",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/GSBG",
+      "canonicalEndpoint": "/db/GSBG",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/GCMB",
+      "canonicalEndpoint": "/db/GCMB",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/CAMB",
+      "canonicalEndpoint": "/db/CAMB",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/ULFC",
+      "canonicalEndpoint": "/db/ULFC",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/POGD",
+      "canonicalEndpoint": "/db/POGD",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/POGD-M1",
+      "canonicalEndpoint": "/db/POGD-M1",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/IEPI",
+      "canonicalEndpoint": "/db/IEPI",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/PHGE",
+      "canonicalEndpoint": "/db/PHGE",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/POLC",
+      "canonicalEndpoint": "/db/POLC",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/POLC-M1",
+      "canonicalEndpoint": "/db/POLC-M1",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/DCON",
+      "canonicalEndpoint": "/db/DCON",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/DSTL",
+      "canonicalEndpoint": "/db/DSTL",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/RCHK",
+      "canonicalEndpoint": "/db/RCHK",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/LENG",
+      "canonicalEndpoint": "/db/LENG",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/MEMB",
+      "canonicalEndpoint": "/db/MEMB",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/DCTL",
+      "canonicalEndpoint": "/db/DCTL",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/LTSR",
+      "canonicalEndpoint": "/db/LTSR",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/MBTP",
+      "canonicalEndpoint": "/db/MBTP",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/WMAK",
+      "canonicalEndpoint": "/db/WMAK",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/REBB",
+      "canonicalEndpoint": "/db/REBB",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/REBC",
+      "canonicalEndpoint": "/db/REBC",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/REBW",
+      "canonicalEndpoint": "/db/REBW",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/db/REBR",
+      "canonicalEndpoint": "/db/REBR",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/ope/PROJECTSTATUS",
+      "canonicalEndpoint": "/ope/PROJECTSTATUS",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/ope/DIVIDEELEM",
+      "canonicalEndpoint": "/ope/DIVIDEELEM",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/ope/SECTPROP",
+      "canonicalEndpoint": "/ope/SECTPROP",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/ope/USLC",
+      "canonicalEndpoint": "/ope/USLC",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/ope/LINEBMLD",
+      "canonicalEndpoint": "/ope/LINEBMLD",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/ope/AUTOMESH",
+      "canonicalEndpoint": "/ope/AUTOMESH",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/ope/SSPS",
+      "canonicalEndpoint": "/ope/SSPS",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/ope/EDMP",
+      "canonicalEndpoint": "/ope/EDMP",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/ope/STOR",
+      "canonicalEndpoint": "/ope/STOR",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/ope/STORY_PARAM",
+      "canonicalEndpoint": "/ope/STORY_PARAM",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/ope/STORY_IRR_PARAM",
+      "canonicalEndpoint": "/ope/STORY_IRR_PARAM",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/ope/STORYPROP",
+      "canonicalEndpoint": "/ope/STORYPROP",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/ope/MEMB",
+      "canonicalEndpoint": "/ope/MEMB",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/ope/GUSTFACTOR",
+      "canonicalEndpoint": "/ope/GUSTFACTOR",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/ope/LCOM-GEN",
+      "canonicalEndpoint": "/ope/LCOM-GEN",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/ope/LCOM-CONC",
+      "canonicalEndpoint": "/ope/LCOM-CONC",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/ope/LCOM-STEEL",
+      "canonicalEndpoint": "/ope/LCOM-STEEL",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/ope/LCOM-SRC",
+      "canonicalEndpoint": "/ope/LCOM-SRC",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/ope/GSBG",
+      "canonicalEndpoint": "/ope/GSBG",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/view/SELECT",
+      "canonicalEndpoint": "/view/SELECT",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/view/CAPTURE",
+      "canonicalEndpoint": "/view/CAPTURE",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/view/PRECAPTURE",
+      "canonicalEndpoint": "/view/PRECAPTURE",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/view/ANGLE",
+      "canonicalEndpoint": "/view/ANGLE",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/view/ACTIVE",
+      "canonicalEndpoint": "/view/ACTIVE",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/view/DISPLAY",
+      "canonicalEndpoint": "/view/DISPLAY",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/view/RESULTGRAPHIC",
+      "canonicalEndpoint": "/view/RESULTGRAPHIC",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/post/PM",
+      "canonicalEndpoint": "/post/PM",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/post/STEELCODECHECK",
+      "canonicalEndpoint": "/post/STEELCODECHECK",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/post/BEAMDESIGNFORCES",
+      "canonicalEndpoint": "/post/TABLE",
+      "surface": "table"
+    },
+    {
+      "endpoint": "/post/COLUMNDESIGNFORCES",
+      "canonicalEndpoint": "/post/TABLE",
+      "surface": "table"
+    },
+    {
+      "endpoint": "/post/BRACEDESIGNFORCES",
+      "canonicalEndpoint": "/post/TABLE",
+      "surface": "table"
+    },
+    {
+      "endpoint": "/post/WALLDESIGNFORCES",
+      "canonicalEndpoint": "/post/TABLE",
+      "surface": "table"
+    },
+    {
+      "endpoint": "/post/STEELMEMBERDESIGNFORCES",
+      "canonicalEndpoint": "/post/TABLE",
+      "surface": "table"
+    },
+    {
+      "endpoint": "/post/SRCBEAMDESIGNFORCES",
+      "canonicalEndpoint": "/post/TABLE",
+      "surface": "table"
+    },
+    {
+      "endpoint": "/post/SRCCOLUMNDESIGNFORCES",
+      "canonicalEndpoint": "/post/TABLE",
+      "surface": "table"
+    },
+    {
+      "endpoint": "/post/COLDFORMEDSTEELMEMBERDESIGNFORCES",
+      "canonicalEndpoint": "/post/TABLE",
+      "surface": "table"
+    },
+    {
+      "endpoint": "/post/TABLE (Pre-Process Table types)",
+      "canonicalEndpoint": "/post/TABLE",
+      "surface": "table"
+    },
+    {
+      "endpoint": "/post/TABLE (Analysis Result Table types)",
+      "canonicalEndpoint": "/post/TABLE",
+      "surface": "table"
+    },
+    {
+      "endpoint": "/post/TABLE (Analysis Story Table types)",
+      "canonicalEndpoint": "/post/TABLE",
+      "surface": "table"
+    },
+    {
+      "endpoint": "/DESIGN/STEEL/DSTL",
+      "canonicalEndpoint": "/DESIGN/STEEL/DSTL",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/STEEL/KDS-41-30-2022/DCO",
+      "canonicalEndpoint": "/DESIGN/STEEL/KDS-41-30-2022/DCO",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/STEEL/KDS-41-30-2022/DCTL",
+      "canonicalEndpoint": "/DESIGN/STEEL/KDS-41-30-2022/DCTL",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/STEEL/KDS-41-30-2022/LLRF",
+      "canonicalEndpoint": "/DESIGN/STEEL/KDS-41-30-2022/LLRF",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/STEEL/KDS-41-30-2022/LCTB",
+      "canonicalEndpoint": "/DESIGN/STEEL/KDS-41-30-2022/LCTB",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/STEEL/KDS-41-30-2022/SRDF",
+      "canonicalEndpoint": "/DESIGN/STEEL/KDS-41-30-2022/SRDF",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/STEEL/KDS-41-30-2022/SERV",
+      "canonicalEndpoint": "/DESIGN/STEEL/KDS-41-30-2022/SERV",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/STEEL/KDS-41-30-2022/EQCT",
+      "canonicalEndpoint": "/DESIGN/STEEL/KDS-41-30-2022/EQCT",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/STEEL/KDS-41-30-2022/ULCT",
+      "canonicalEndpoint": "/DESIGN/STEEL/KDS-41-30-2022/ULCT",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/STEEL/KDS-41-30-2022/SUEQ",
+      "canonicalEndpoint": "/DESIGN/STEEL/KDS-41-30-2022/SUEQ",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/STEEL/KDS-41-30-2022/CRCM",
+      "canonicalEndpoint": "/DESIGN/STEEL/KDS-41-30-2022/CRCM",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/STEEL/KDS-41-30-2022/HCBM",
+      "canonicalEndpoint": "/DESIGN/STEEL/KDS-41-30-2022/HCBM",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/STEEL/KDS-41-30-2022/LENG",
+      "canonicalEndpoint": "/DESIGN/STEEL/KDS-41-30-2022/LENG",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/STEEL/KDS-41-30-2022/KFAC",
+      "canonicalEndpoint": "/DESIGN/STEEL/KDS-41-30-2022/KFAC",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/STEEL/KDS-41-30-2022/LTSR",
+      "canonicalEndpoint": "/DESIGN/STEEL/KDS-41-30-2022/LTSR",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/STEEL/KDS-41-30-2022/CMFT",
+      "canonicalEndpoint": "/DESIGN/STEEL/KDS-41-30-2022/CMFT",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/STEEL/KDS-41-30-2022/FMAG",
+      "canonicalEndpoint": "/DESIGN/STEEL/KDS-41-30-2022/FMAG",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/STEEL/KDS-41-30-2022/CBFT",
+      "canonicalEndpoint": "/DESIGN/STEEL/KDS-41-30-2022/CBFT",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/STEEL/KDS-41-30-2022/MBTP",
+      "canonicalEndpoint": "/DESIGN/STEEL/KDS-41-30-2022/MBTP",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/STEEL/KDS-41-30-2022/SLRS",
+      "canonicalEndpoint": "/DESIGN/STEEL/KDS-41-30-2022/SLRS",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/STEEL/KDS-41-30-2022/MLLR",
+      "canonicalEndpoint": "/DESIGN/STEEL/KDS-41-30-2022/MLLR",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/STEEL/KDS-41-30-2022/MEMB",
+      "canonicalEndpoint": "/DESIGN/STEEL/KDS-41-30-2022/MEMB",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/STEEL/KDS-41-30-2022/SMODI",
+      "canonicalEndpoint": "/DESIGN/STEEL/KDS-41-30-2022/SMODI",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/STEEL/KDS-41-30-2022/CODE-ANAL",
+      "canonicalEndpoint": "/DESIGN/STEEL/KDS-41-30-2022/CODE-ANAL",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/STEEL/KDS-41-30-2022/CODE-TABLE",
+      "canonicalEndpoint": "/DESIGN/STEEL/KDS-41-30-2022/CODE-TABLE",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/STEEL/KDS-41-30-2022/CODE-REPORT",
+      "canonicalEndpoint": "/DESIGN/STEEL/KDS-41-30-2022/CODE-REPORT",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/STEEL/KDS-41-30-2022/DREULT",
+      "canonicalEndpoint": "/DESIGN/STEEL/KDS-41-30-2022/DREULT",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/STEEL/KDS-41-30-2022/TABLE",
+      "canonicalEndpoint": "/DESIGN/STEEL/KDS-41-30-2022/TABLE",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/RC/DRC",
+      "canonicalEndpoint": "/DESIGN/RC/DRC",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/DCO",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/DCO",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/DCTL",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/DCTL",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/LLRF",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/LLRF",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/LCTB",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/LCTB",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/SRDF",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/SRDF",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/EQCT",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/EQCT",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/ULCT",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/ULCT",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/SUEQ",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/SUEQ",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/SDGN",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/SDGN",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/SCOL",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/SCOL",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/MBTP",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/MBTP",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/MEMB",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/MEMB",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/MATD",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/MATD",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/LENG",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/LENG",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/KFAC",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/KFAC",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/CMFT",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/CMFT",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/FMAG",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/FMAG",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/MLLR",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/MLLR",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/HCBM",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/HCBM",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/MRFT",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/MRFT",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/TRFT",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/TRFT",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/MCMB",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/MCMB",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/DFBA",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/DFBA",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/PMDM",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/PMDM",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/WMAK",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/WMAK",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/BEMW",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/BEMW",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/REXC",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/REXC",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/LMRR",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/LMRR",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/DCRM-BEAM",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/DCRM-BEAM",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/DCRM-COLUMN",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/DCRM-COLUMN",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/DCRM-BRACE",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/DCRM-BRACE",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/DCRM-WALL",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/DCRM-WALL",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/DCRE",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/DCRE",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/DCREM",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/DCREM",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/REBB",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/REBB",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/REBC",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/REBC",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/REBW",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/REBW",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/REBR",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/REBR",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/BD-ANAL",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/BD-ANAL",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/BD-TABLE",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/BD-TABLE",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/BD-REPORT",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/BD-REPORT",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/CD-ANAL",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/CD-ANAL",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/CD-TABLE",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/CD-TABLE",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/CD-REPORT",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/CD-REPORT",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/BRD-ANAL",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/BRD-ANAL",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/BRD-TABLE",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/BRD-TABLE",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/BRD-REPORT",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/BRD-REPORT",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/WD-ANAL",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/WD-ANAL",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/WD-TABLE",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/WD-TABLE",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/WD-REPORT",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/WD-REPORT",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/HCD-ANAL",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/HCD-ANAL",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/HCD-TABLE",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/HCD-TABLE",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/HCD-REPORT",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/HCD-REPORT",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/BC-ANAL",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/BC-ANAL",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/BC-TABLE",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/BC-TABLE",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/BC-REPORT",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/BC-REPORT",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/CC-ANAL",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/CC-ANAL",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/CC-TABLE",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/CC-TABLE",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/CC-REPORT",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/CC-REPORT",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/BRC-ANAL",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/BRC-ANAL",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/BRC-TABLE",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/BRC-TABLE",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/BRC-REPORT",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/BRC-REPORT",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/WC-ANAL",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/WC-ANAL",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/WC-TABLE",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/WC-TABLE",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/WC-REPORT",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/WC-REPORT",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/CDESIGN",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/CDESIGN",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/TABLE",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/TABLE",
+      "surface": "designTable"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/TABLE",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/TABLE",
+      "surface": "designTable"
+    },
+    {
+      "endpoint": "/DESIGN/RC/KDS-41-20-2022/TABLE",
+      "canonicalEndpoint": "/DESIGN/RC/KDS-41-20-2022/TABLE",
+      "surface": "designTable"
+    },
+    {
+      "endpoint": "/DESIGN/SRC/AIK-SRC2K/DSRC",
+      "canonicalEndpoint": "/DESIGN/SRC/AIK-SRC2K/DSRC",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/SRC/AIK-SRC2K/DCO",
+      "canonicalEndpoint": "/DESIGN/SRC/AIK-SRC2K/DCO",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/SRC/AIK-SRC2K/DCTL",
+      "canonicalEndpoint": "/DESIGN/SRC/AIK-SRC2K/DCTL",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/SRC/AIK-SRC2K/LLRF",
+      "canonicalEndpoint": "/DESIGN/SRC/AIK-SRC2K/LLRF",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/SRC/AIK-SRC2K/LCTB",
+      "canonicalEndpoint": "/DESIGN/SRC/AIK-SRC2K/LCTB",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/SRC/AIK-SRC2K/LENG",
+      "canonicalEndpoint": "/DESIGN/SRC/AIK-SRC2K/LENG",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/SRC/AIK-SRC2K/KFAC",
+      "canonicalEndpoint": "/DESIGN/SRC/AIK-SRC2K/KFAC",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/SRC/AIK-SRC2K/LTSR",
+      "canonicalEndpoint": "/DESIGN/SRC/AIK-SRC2K/LTSR",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/SRC/AIK-SRC2K/CMFT",
+      "canonicalEndpoint": "/DESIGN/SRC/AIK-SRC2K/CMFT",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/SRC/AIK-SRC2K/FMAG",
+      "canonicalEndpoint": "/DESIGN/SRC/AIK-SRC2K/FMAG",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/SRC/AIK-SRC2K/MLLR",
+      "canonicalEndpoint": "/DESIGN/SRC/AIK-SRC2K/MLLR",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/SRC/AIK-SRC2K/SUEQ",
+      "canonicalEndpoint": "/DESIGN/SRC/AIK-SRC2K/SUEQ",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/SRC/AIK-SRC2K/MBTP",
+      "canonicalEndpoint": "/DESIGN/SRC/AIK-SRC2K/MBTP",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/SRC/AIK-SRC2K/EQCT",
+      "canonicalEndpoint": "/DESIGN/SRC/AIK-SRC2K/EQCT",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/SRC/AIK-SRC2K/BC-ANAL",
+      "canonicalEndpoint": "/DESIGN/SRC/AIK-SRC2K/BC-ANAL",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/SRC/AIK-SRC2K/BC-TABLE",
+      "canonicalEndpoint": "/DESIGN/SRC/AIK-SRC2K/BC-TABLE",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/SRC/AIK-SRC2K/BC-REPORT",
+      "canonicalEndpoint": "/DESIGN/SRC/AIK-SRC2K/BC-REPORT",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/SRC/AIK-SRC2K/CC-ANAL",
+      "canonicalEndpoint": "/DESIGN/SRC/AIK-SRC2K/CC-ANAL",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/SRC/AIK-SRC2K/CC-TABLE",
+      "canonicalEndpoint": "/DESIGN/SRC/AIK-SRC2K/CC-TABLE",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/SRC/AIK-SRC2K/CC-REPORT",
+      "canonicalEndpoint": "/DESIGN/SRC/AIK-SRC2K/CC-REPORT",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/TEMP/DESIGN/SRC/AIK-SRC2K/OCHECK",
+      "canonicalEndpoint": "/TEMP/DESIGN/SRC/AIK-SRC2K/OCHECK",
+      "surface": "operation"
+    },
+    {
+      "endpoint": "/DESIGN/SRC/AIK-SRC2K/TABLE",
+      "canonicalEndpoint": "/DESIGN/SRC/AIK-SRC2K/TABLE",
+      "surface": "designTable"
+    },
+    {
+      "endpoint": "/DESIGN/SRC/AIK-SRC2K/TABLE",
+      "canonicalEndpoint": "/DESIGN/SRC/AIK-SRC2K/TABLE",
+      "surface": "designTable"
+    },
+    {
+      "endpoint": "/DESIGN/SRC/AIK-SRC2K/MATD",
+      "canonicalEndpoint": "/DESIGN/SRC/AIK-SRC2K/MATD",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/SRC/AIK-SRC2K/MCRD",
+      "canonicalEndpoint": "/DESIGN/SRC/AIK-SRC2K/MCRD",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/SRC/AIK-SRC2K/MEMB",
+      "canonicalEndpoint": "/DESIGN/SRC/AIK-SRC2K/MEMB",
+      "surface": "resource"
+    },
+    {
+      "endpoint": "/DESIGN/SRC/AIK-SRC2K/MRBD",
+      "canonicalEndpoint": "/DESIGN/SRC/AIK-SRC2K/MRBD",
+      "surface": "resource"
+    }
+  ]
+}

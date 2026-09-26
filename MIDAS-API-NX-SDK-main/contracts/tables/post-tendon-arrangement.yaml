@@ -1,0 +1,23 @@
+contractVersion: 1
+id: post-tendon-arrangement
+endpoint: /post/TABLE
+name: Tendon Arrangement
+summary: Tendon positions and average force properties for a tendon group and construction stage.
+products: [gen, civil]
+source: {manual: {status: documented, repo: Dennis5882/MIDAS-API, chapterFile: 20_POST_AnalysisResult_2.md, section: "32. Tendon Arrangement"}}
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getTendonArrangementTable
+  modulePath: [result1]
+  tableType: TNDN_ARRANGEMENT
+  factory: fixed
+  optionNames: [components, nodeElements, styles, tableName, unit]
+  documentation: |-
+    docs/manual/20_POST_AnalysisResult_2.md #32 — Tendon Arrangement.
+tableTypes:
+  - {value: TNDN_ARRANGEMENT, description: Tendon arrangement, head: [Index, Elem, Part, TendonNumber, Yp, Zp, AverageSin罐, AverageCos罐, AverageStress, AverageForce], provenance: manual}
+requestFields:
+  unsupported: [NODE_ELEMS]
+  additional:
+    - {key: ADDITIONAL, description: Required SET_TENDON_PARAMS object containing TENDON_GROUP and STAGE., type: object, requirement: required, provenance: manual}

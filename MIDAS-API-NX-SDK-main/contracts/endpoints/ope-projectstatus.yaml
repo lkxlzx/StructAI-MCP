@@ -1,0 +1,123 @@
+# /ope/PROJECTSTATUS
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: ope-projectstatus
+endpoint: /ope/PROJECTSTATUS
+name: Project Status
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 15_OPE.md
+    section: "1. `/ope/PROJECTSTATUS` — Project Status"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-07-30
+    - product: gen
+      ref: db-read-sweep-2026-07-30
+
+operations:
+  - method: GET
+    surface:
+      exportName: getProjectStatus
+      modulePath: [ope]
+      documentation: |-
+        docs/manual/15_OPE.md #1 — /ope/PROJECTSTATUS — Project Status.
+
+        GET-only, no request body; returns live counts of model/load data.
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: HEAD
+    description: >-
+      모델 데이터 현황 테이블 헤더 (Name, Count, LastNo.)
+    type: array
+    items:
+      type: string
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: manual
+  - key: DATA
+    description: >-
+      모델 데이터 현황 목록 (구조타입·노드·요소·재료·단면·지점 등)
+    type: array
+    items:
+      type: array
+      items:
+        type: string
+      description: >-
+        One positional row, its cells in the order HEAD names them:
+        Name, Count, LastNo.
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: manual
+    # RESOLVED: the Parameters table stops at Array [Array], but the inner
+    # element type is stated elsewhere in the same section - the Response JSON
+    # prints every row with every cell quoted, counts included:
+    # ["StructureType", "1", "0"] and ["StaticLoadCase", "9"]. A caller that
+    # expects a number for Count has to parse it, as the Python Example does
+    # (int(count)).
+  - key: HEAD_LOAD
+    description: >-
+      하중 데이터 현황 테이블 헤더 (Name, Count)
+    type: array
+    items:
+      type: string
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: manual
+  - key: DATA_LOAD
+    description: >-
+      하중 데이터 현황 목록 (하중케이스·자중·절점하중·보하중·스펙트럼·하중조합 등)
+    type: array
+    items:
+      type: array
+      items:
+        type: string
+      description: >-
+        One positional row, its cells in the order HEAD_LOAD names them:
+        Name, Count.
+    requirement: unstated
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: manual
+    # RESOLVED: the Parameters table stops at Array [Array], but the inner
+    # element type is stated elsewhere in the same section - the Response JSON
+    # prints every row with every cell quoted, counts included:
+    # ["StructureType", "1", "0"] and ["StaticLoadCase", "9"]. A caller that
+    # expects a number for Count has to parse it, as the Python Example does
+    # (int(count)).
+
+extraction:
+  source: 15_OPE.md line 97
+  table: Parameters
+  missingColumns:
+    - heading: Parameters
+      line: 97
+      columns: [Default]

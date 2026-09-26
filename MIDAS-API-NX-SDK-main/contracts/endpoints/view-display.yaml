@@ -1,0 +1,1277 @@
+# /view/DISPLAY
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: view-display
+endpoint: /view/DISPLAY
+name: Display
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 16_VIEW.md
+    section: "6. `/view/DISPLAY` — Display"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-07-30
+    - product: gen
+      ref: db-read-sweep-2026-07-30
+
+operations:
+  - method: POST
+    surface:
+      exportName: setDisplay
+      modulePath: [view]
+      argumentTypeName: DisplayArgument
+      documentation: |-
+        docs/manual/16_VIEW.md #6 — /view/DISPLAY — Display.
+      nestedTypes:
+        - {path: BOUNDARY, name: BoundaryDisplay, namespace: ViewTypes}
+        - {path: ELEMENT, name: ElementDisplay, namespace: ViewTypes}
+        - {path: LOAD, name: LoadDisplay, namespace: ViewTypes}
+        - {path: LOAD.CASE_SELECTION, name: LoadCaseSelection, namespace: ViewTypes}
+        - {path: LOAD.LOAD_VALUE, name: LoadValueFormat, namespace: ViewTypes}
+        - {path: MISC, name: MiscDisplay, namespace: ViewTypes}
+        - {path: NODE, name: NodeDisplay, namespace: ViewTypes}
+        - {path: PROPERTY, name: PropertyDisplay, namespace: ViewTypes}
+        - {path: VIEW, name: ViewDisplay, namespace: ViewTypes}
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: Argument
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: NODE
+        description: >-
+          절점 표시 옵션 그룹
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: NODE
+            description: >-
+              절점(Node) 표시
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: NODE_NUMBER
+            description: >-
+              절점 번호(Node Number)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: NODE_LOCAL_AXIS
+            description: >-
+              절점 국부좌표축(Node Local Axis)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: STORY_NAME
+            description: >-
+              층 이름(Story Name) ᴳ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+      - key: ELEMENT
+        description: >-
+          요소 표시 옵션 그룹
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: ELEM_NUMBER
+            description: >-
+              요소 번호(Element Number)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: ELEM_NUMBER_WITH_BORDER
+            description: >-
+              테두리 포함 요소 번호
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: ELEM_TYPE_NUMBER
+            description: >-
+              요소 타입 번호
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: ELEM_TYPE_NAME
+            description: >-
+              요소 타입 이름
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: WALL_ID
+            description: >-
+              벽체 ID(Wall ID) ᴳ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: GAP
+            description: >-
+              간극 요소(Gap)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: HOOK
+            description: >-
+              훅 요소(Hook)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: CABLE
+            description: >-
+              케이블(Cable)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: LOCAL_AXIS
+            description: >-
+              국부좌표축(Local Axis)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: LOCAL_AXIS_LABEL
+            description: >-
+              국부축 라벨 (Local Axis가 True일 때)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: LOCAL_DIRECTION
+            description: >-
+              국부 방향(Local Direction)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: SUB_DOMAIN_REBAR_DIRECTION
+            description: >-
+              서브도메인 철근 방향
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+      - key: PROPERTY
+        description: >-
+          특성 표시 옵션 그룹
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: MATERIAL_NUMBER
+            description: >-
+              재료 번호(Material Number) ˢ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: MATERIAL_NAME
+            description: >-
+              재료 이름(Material Name) ˢ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: PROPERTY_NUMBER
+            description: >-
+              특성 번호(Property Number) ˢ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: PROPERTY_NAME
+            description: >-
+              특성 이름(Property Name) ˢ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: SECTION_SHAPE
+            description: >-
+              단면 형상(Section Shape)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: TAPERED_SECTION_GROUP
+            description: >-
+              변단면 그룹(Tapered Section Group) ˢ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: TIME_DEPENDENT_MATERIAL_LINK
+            description: >-
+              시간의존재료 링크 ˢ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: INELASTIC_HINGE_NAME
+            description: >-
+              비탄성 힌지 이름 ˢ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: INELASTIC_HINGE_SYMBOL
+            description: >-
+              비탄성 힌지 기호 ˢ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: REINFORCEMENT_OF_SECTIONS
+            description: >-
+              단면 배근(Reinforcement of Sections)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: VIRTUAL_SECTION_LOCAL_AXIS
+            description: >-
+              가상 단면 국부축
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+      - key: GROUP_SELECTION
+        description: >-
+          경계 그룹 선택
+        type: array
+        items:
+          type: string
+        requirement: optional
+        documentedDefault: null
+        documentedDefaultNote: All
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: BOUNDARY
+        description: >-
+          경계조건 표시 옵션 그룹
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: SUPPORT
+            description: >-
+              지점(Support) ˢ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: SUPPORT_BY_DIRECTION
+            description: >-
+              방향별 지점 ˢ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: POINT_SPRING_SUPPORT
+            description: >-
+              점 스프링 지점 ˢ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: POINT_SPRING_SUPPORT_COMP_TENS
+            description: >-
+              점 스프링 지점(압축/인장) ˢ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: POINT_SPRING_SUPPORT_MULTI_LINEAR
+            description: >-
+              점 스프링 지점(다중선형) ˢ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: POINT_SPRING_SUPPORT_BY_DIRECTION
+            description: >-
+              방향별 점 스프링 지점 ˢ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: POINT_SPRING_SUPPORT_BY_DIRECTION_COMP_TENS
+            description: >-
+              방향별 점 스프링 지점(압축/인장) ˢ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: POINT_SPRING_SUPPORT_BY_DIRECTION_MULTI_LINEAR
+            description: >-
+              방향별 점 스프링 지점(다중선형) ˢ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: SURFACE_SPRING_SUPPORT_TYPE
+            description: >-
+              면 스프링 지점 타입
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: SURFACE_SPRING_SUPPORT_LINEAR
+            description: >-
+              면 스프링 지점(선형)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: SURFACE_SPRING_SUPPORT_COMP_TENS
+            description: >-
+              면 스프링 지점(압축/인장)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: GENERAL_SPRING_SUPPORT
+            description: >-
+              일반 스프링 지점
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: ELASTIC_LINK
+            description: >-
+              탄성 링크(Elastic Link)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: ELASTIC_LINK_LOCAL_AXIS
+            description: >-
+              탄성 링크 국부축 (Elastic Link가 True일 때)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: ELASTIC_LINK_TYPE
+            description: >-
+              탄성 링크 타입 (Elastic Link가 True일 때)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: ELASTIC_LINK_NUMBER
+            description: >-
+              탄성 링크 번호 (Elastic Link가 True일 때)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: GENERAL_LINK
+            description: >-
+              일반 링크(General Link) ˢ, ˢ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: GENERAL_LINK_NUMBER
+            description: >-
+              일반 링크 번호 ˢ, ˢ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: GENERAL_LINK_LOCAL_AXIS
+            description: >-
+              일반 링크 국부축 ˢ, ˢ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: GENERAL_LINK_TYPE
+            description: >-
+              일반 링크 타입 ˢ, ˢ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: CHANGE_GENERAL_LINK_PROPERTIES
+            description: >-
+              일반 링크 특성 변경
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: BEAM_END_RELEASE_SYMBOL
+            description: >-
+              보 단부 해제 기호 ˢ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: BEAM_END_RELEASE_DIGIT
+            description: >-
+              보 단부 해제 수치 ˢ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: BEAM_END_OFFSET_SYMBOL
+            description: >-
+              보 단부 오프셋 기호
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: BEAM_END_OFFSET_DIGIT
+            description: >-
+              보 단부 오프셋 수치
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: PLATE_END_RELEASE_SYMBOL
+            description: >-
+              판 단부 해제 기호 ˢ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: PLATE_END_RELEASE_DIGIT
+            description: >-
+              판 단부 해제 수치 ˢ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: RIGID_LINK
+            description: >-
+              강체 링크(Rigid Link)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: LINEAR_CONSTRAINTS
+            description: >-
+              선형 구속(Linear Constraints)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: REACTION_POSITION
+            description: >-
+              반력 위치(Reaction Position)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: STORY_DIAPHRAGM
+            description: >-
+              층 강막(Story Diaphragm) ᴳ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: DIAPHRAGM_DISCONNECT
+            description: >-
+              강막 분리(Diaphragm Disconnect) ᴳ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+      - key: LOAD
+        description: >-
+          하중 표시 옵션 그룹
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: CASE_SELECTION
+            description: >-
+              하중 케이스로 하중 선택
+            type: object
+            requirement: optional
+            documentedDefault: null
+            documentedDefaultNote: All
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            properties:
+              - key: TYPE
+                description: >-
+                  하중 케이스 타입 (정적하중: "ST")
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              - key: NAME
+                description: >-
+                  하중 케이스 이름
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+          - key: GROUP_SELECTION
+            description: >-
+              하중 그룹 선택
+            type: array
+            items:
+              type: string
+            requirement: optional
+            documentedDefault: null
+            documentedDefaultNote: All
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: LOAD_VALUE
+            description: >-
+              하중값(Load Value)
+            type: object
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            properties:
+              - key: FORMAT
+                description: >-
+                  표시 형식 ("Default" / "Fixed" / "Scientific")
+                type: string
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+              - key: PLACE
+                description: >-
+                  소수점 자리수
+                type: integer
+                requirement: required
+                documentedDefault: null
+                documentedOptional: false
+                safeToOmit: unverified
+                provenance: manual
+          - key: NODAL_BODY_FORCE
+            description: >-
+              절점 체적력(Nodal Body Force)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: NODAL_LOAD
+            description: >-
+              절점 하중(Nodal Load)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: SPECIFIED_DISPLACEMENT
+            description: >-
+              강제 변위(Specified Displacement)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: BEAM_LOAD
+            description: >-
+              보 하중(Beam Load)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: PRESTRESS_LOAD
+            description: >-
+              프리스트레스 하중
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: PRETENSION_LOAD
+            description: >-
+              프리텐션 하중
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: FLOOR_LOAD
+            description: >-
+              바닥 하중(Floor Load)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: FLOOR_LOAD_NAME
+            description: >-
+              바닥 하중 이름
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: FLOOR_LOAD_AREA
+            description: >-
+              바닥 하중 면적
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: LOADING_AREA_PLANE
+            description: >-
+              하중 재하 평면(Loading Area Plane) ᴳ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: FINISHING_MATERIAL_LOAD
+            description: >-
+              마감재 하중(Finishing Material Load) ᴳ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: PRESSURE_LOAD
+            description: >-
+              압력 하중(Pressure Load)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: AREA_PRESSURE_LOADS
+            description: >-
+              면적 압력 하중(Area Pressure Loads)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: PLANE_LOAD
+            description: >-
+              평면 하중(Plane Load)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: PLANE_LOAD_NAME
+            description: >-
+              평면 하중 이름
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: NODAL_TEMPERATURE
+            description: >-
+              절점 온도(Nodal Temperature)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: ELEMENT_TEMPERATURE
+            description: >-
+              요소 온도(Element Temperature)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: TEMPERATURE_GRADIENT
+            description: >-
+              온도 구배(Temperature Gradient)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: BEAM_SECTION_TEMPERATURE
+            description: >-
+              보 단면 온도
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: TENDON_PRESTRESS
+            description: >-
+              텐던 프리스트레스
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: WIND_LOAD
+            description: >-
+              풍하중(Wind Load) ᴳ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: AREA_WIND_PRESSURE
+            description: >-
+              면적 풍압(Area Wind Pressure) ᴳ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: AREA_WIND_PRESSURE_NAME
+            description: >-
+              면적 풍압 이름 ᴳ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: BEAM_WIND_PRESSURE
+            description: >-
+              보 풍압(Beam Wind Pressure) ᴳ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: NODAL_WIND_PRESSURE
+            description: >-
+              절점 풍압(Nodal Wind Pressure) ᴳ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: FUNCTION_WIND_PRESSURE
+            description: >-
+              함수 풍압(Function Wind Pressure) ᴳ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: FUNCTION_WIND_PRESSURE_NAME
+            description: >-
+              함수 풍압 이름 ᴳ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: SEISMIC_EARTH_PRESSURE
+            description: >-
+              지진 토압(Seismic Earth Pressure) ᴳ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: STATIC_EARTH_PRESSURE
+            description: >-
+              정적 토압(Static Earth Pressure) ᴳ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: SEISMIC_LOAD
+            description: >-
+              지진 하중(Seismic Load) ᴳ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: DYNAMIC_NODAL_LOAD
+            description: >-
+              동적 절점 하중
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: MULTIPLE_SUPPORT_EXCITATION
+            description: >-
+              다지점 지반가진(Multiple Support Excitation)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: MULTIPLE_SUPPORT_EXCITATION_FUNCTION_NAME
+            description: >-
+              다지점 지반가진 함수 이름
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: DIR_X
+            description: >-
+              X 방향 (가진 함수 이름이 True일 때)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: DIR_Y
+            description: >-
+              Y 방향 (가진 함수 이름이 True일 때)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: DIR_Z
+            description: >-
+              Z 방향 (가진 함수 이름이 True일 때)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+      - key: MISC
+        description: >-
+          기타 표시 옵션 그룹
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: NODAL_MASS
+            description: >-
+              절점 질량(Nodal Mass)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: LOAD_TO_MASS
+            description: >-
+              하중을 질량으로(Load to Mass)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: TENDON_PROFILE_NAMES
+            description: >-
+              텐던 프로파일 이름
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: TENDON_PROFILE_POINT
+            description: >-
+              텐던 프로파일 점
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: INITIAL_FORCES_FOR_GEOMETRIC_STIFFNESS
+            description: >-
+              기하강성 초기력
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: SETTLEMENT_GROUP
+            description: >-
+              침하 그룹(Settlement Group)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: SETTLEMENT_GROUP_VALUE
+            description: >-
+              침하 그룹 값 (Settlement Group이 True일 때)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: HEAT_OF_HYDRATION_VALUE
+            description: >-
+              수화열 값
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: HEAT_OF_HYDRATION_FUNC_NAME
+            description: >-
+              수화열 함수 이름
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: HEAT_OF_HYDRATION_ELEMENT_CONVECTION_BOUNDARY
+            description: >-
+              수화열 요소 대류 경계
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: HEAT_OF_HYDRATION_PRESCRIBED_TEMPERATURE
+            description: >-
+              수화열 지정 온도
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: HEAT_OF_HYDRATION_HEAT_SOURCE
+            description: >-
+              수화열 열원(Heat Source)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: HEAT_OF_HYDRATION_PIPE_COOLING_ELEMENT
+            description: >-
+              수화열 파이프 쿨링 요소
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: GRID_MODEL_LOAD_LINE
+            description: >-
+              그리드 모델 하중선(Grid Model Load Line) ᴶ
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+      - key: VIEW
+        description: >-
+          뷰 표시 옵션 그룹
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: UCS_AXIS
+            description: >-
+              UCS 축(UCS Axis)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: VIEWPORT_GIZMO
+            description: >-
+              동적 뷰 제어(Viewport Gizmo)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: VIEW_POINT
+            description: >-
+              뷰 포인트(View Point)
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: DESCRIPTION
+            description: >-
+              설명(Description)
+            type: string
+            requirement: optional
+            documentedDefault: ""
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+          - key: LABEL_ORIENTATION
+            description: >-
+              라벨 방향(Label Orientation)
+            type: integer
+            requirement: optional
+            documentedDefault: 0
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+
+extraction:
+  source: 16_VIEW.md line 830
+  table: "1) Node Display — `Argument.NODE` (Object, Optional)"
+  structuralTables:
+    - heading: "1) Node Display — `Argument.NODE` (Object, Optional)"
+      line: 830
+      paths:
+        - Argument
+    - heading: "2) Element Display — `Argument.ELEMENT` (Object, Optional)"
+      line: 840
+      paths:
+        - Argument
+    - heading: "3) Property Display — `Argument.PROPERTY` (Object, Optional)"
+      line: 858
+      paths:
+        - Argument
+    - heading: "4) Boundary Display — `Argument.GROUP_SELECTION` / `Argument.BOUNDARY`"
+      line: 875
+      paths:
+        - Argument
+    - heading: "5) Load Display — `Argument.LOAD` (Object, Optional)"
+      line: 914
+      paths:
+        - Argument
+    - heading: "6) Miscellaneous Display — `Argument.MISC` (Object, Optional)"
+      line: 963
+      paths:
+        - Argument
+    - heading: "7) View Display — `Argument.VIEW` (Object, Optional)"
+      line: 983
+      paths:
+        - Argument

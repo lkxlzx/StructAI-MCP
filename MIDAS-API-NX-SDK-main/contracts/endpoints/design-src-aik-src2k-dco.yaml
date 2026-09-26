@@ -1,0 +1,87 @@
+# /DESIGN/SRC/AIK-SRC2K/DCO
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: design-src-aik-src2k-dco
+endpoint: /DESIGN/SRC/AIK-SRC2K/DCO
+name: Design Code Option
+surface:
+  className: SrcDesignCodeOption
+  exportName: srcDesignCodeOption
+  modulePath: [design, srcAiksrc2k]
+  payloadTypeName: SrcDesignCodeOptionPayload
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 27_Design_SRC_AIKSRC2K.md
+    section: "2. `DESIGN/SRC/AIK-SRC2K/DCO` — Design Code Option (설계 코드 옵션)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-07-26
+    - product: gen
+      ref: db-read-sweep-2026-07-26
+
+operations:
+  - method: DELETE
+    risk: destructive
+    mitigation: none
+    request:
+      wrapper: none
+    response:
+      wrapper: unknown
+    notes: >-
+      The manual shows a bodyless DELETE at this endpoint, but does not
+      state the deletion scope or response shape.
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: DGNCODE
+    description: >-
+      설계 코드. — AIK-SRC2K=AIK-SRC2K
+    type: string
+    requirement: required
+    documentedDefault: AIK-SRC2K
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: SEISMIC
+    description: >-
+      내진설계 적용 여부.
+    type: boolean
+    requirement: required
+    documentedDefault: true
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+
+extraction:
+  source: 27_Design_SRC_AIKSRC2K.md line 232
+  table: 파라미터

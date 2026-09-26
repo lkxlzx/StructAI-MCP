@@ -1,0 +1,381 @@
+# /DESIGN/SRC/AIK-SRC2K/MATD
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: design-src-aik-src2k-matd
+endpoint: /DESIGN/SRC/AIK-SRC2K/MATD
+name: Modify SRC Material
+surface:
+  className: SrcModifyMaterial
+  exportName: srcModifyMaterial
+  modulePath: [design, srcAiksrc2k]
+  payloadTypeName: SrcModifyMaterialPayload
+  nestedTypes:
+    - {path: CONCRETE, name: SrcMaterialConcrete, namespace: DesignSrcAiksrc2kTypes}
+    - {path: REINFORCEMENT, name: SrcMaterialReinforcement, namespace: DesignSrcAiksrc2kTypes}
+    - {path: STEEL, name: SrcMaterialSteel, namespace: DesignSrcAiksrc2kTypes}
+
+products: [gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 27_Design_SRC_AIKSRC2K.md
+    section: "24. `DESIGN/SRC/AIK-SRC2K/MATD` — Modify SRC Material (SRC 재료 수정)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_gen
+  records:
+    - product: gen
+      ref: db-read-sweep-2026-07-26
+
+operations:
+  - method: DELETE
+    risk: destructive
+    mitigation: none
+    request:
+      wrapper: none
+    response:
+      wrapper: unknown
+    notes: >-
+      The manual shows a bodyless DELETE at this endpoint, but does not
+      state the deletion scope or response shape.
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: STEEL
+    description: >-
+      강재 재질 선택.
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: CODE
+        description: >-
+          강재 재질 코드 타입. — None=없음; Standard=표준
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'STEEL' with a tree marker rather than
+        # a path
+      - key: STANDARD_CODE
+        description: >-
+          CODE가 Standard일 때의 강재 표준 코드. 현재 KS22(S)만 지원됨. — KS22(S)=KS22(S)
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'STEEL' with a tree marker rather than
+        # a path
+      - key: GRADE
+        description: >-
+          CODE가 Standard일 때의 강재 등급. — SS235=SS235; SS275=SS275; SS315=SS315;
+          SS410=SS410; SS450=SS450; SS550=SS550; SM275=SM275; SM355=SM355;
+          SM420=SM420; SM460=SM460; SM275TMC=SM275TMC; SM355TMC=SM355TMC …(전체 68개)
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'STEEL' with a tree marker rather than
+        # a path
+      - key: NAME
+        description: >-
+          CODE가 None일 때의 사용자 정의 강재 이름.
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'STEEL' with a tree marker rather than
+        # a path
+      - key: ES
+        description: >-
+          탄성계수. CODE가 None일 때 사용자 입력. CODE가 Standard일 때 자동 입력.
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'STEEL' with a tree marker rather than
+        # a path
+      - key: FU
+        description: >-
+          인장강도. CODE가 None일 때 사용자 입력. CODE가 Standard일 때 자동 입력.
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'STEEL' with a tree marker rather than
+        # a path
+      - key: FY
+        description: >-
+          CODE=None일 때의 항복강도.
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'STEEL' with a tree marker rather than
+        # a path
+      - key: FY1
+        description: >-
+          항복강도 Fy1. CODE가 Standard일 때 자동 입력.
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'STEEL' with a tree marker rather than
+        # a path
+      - key: FY2
+        description: >-
+          항복강도 Fy2. CODE가 Standard일 때 자동 입력.
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'STEEL' with a tree marker rather than
+        # a path
+      - key: FY3
+        description: >-
+          항복강도 Fy3. CODE가 Standard일 때 자동 입력.
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'STEEL' with a tree marker rather than
+        # a path
+      - key: FY4
+        description: >-
+          항복강도 Fy4. CODE가 Standard일 때 자동 입력.
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'STEEL' with a tree marker rather than
+        # a path
+      - key: FY5
+        description: >-
+          항복강도 Fy5. CODE가 Standard일 때 자동 입력.
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'STEEL' with a tree marker rather than
+        # a path
+  - key: CONCRETE
+    description: >-
+      콘크리트 재질 선택.
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: CODE
+        description: >-
+          콘크리트 재질 코드 타입. — None=없음; Standard=표준
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'CONCRETE' with a tree marker
+        # rather than a path
+      - key: STANDARD_CODE
+        description: >-
+          CODE가 Standard일 때의 콘크리트 표준 코드. 현재 KS19(RC)만 지원됨. — KS19(RC)=KS19(RC)
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'CONCRETE' with a tree marker
+        # rather than a path
+      - key: NAME
+        description: >-
+          CODE가 None일 때의 사용자 정의 콘크리트 재질 이름.
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'CONCRETE' with a tree marker
+        # rather than a path
+      - key: GRADE
+        description: >-
+          CODE가 Standard일 때의 콘크리트 등급. — C15=C15; C18=C18; C21=C21; C24=C24; C27=C27;
+          C30=C30; C35=C35; C40=C40; C45=C45; C49=C49; C50=C50; C55=C55 …(전체 20개)
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'CONCRETE' with a tree marker
+        # rather than a path
+      - key: FC
+        description: >-
+          설계기준압축강도. CODE가 None일 때 사용자 입력. CODE가 Standard일 때 자동 입력.
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'CONCRETE' with a tree marker rather
+        # than a path
+  - key: REINFORCEMENT
+    description: >-
+      철근 재질 선택.
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: CODE
+        description: >-
+          철근 코드 타입. — None=없음; Standard=표준
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'REINFORCEMENT' with a tree marker
+        # rather than a path
+      - key: STANDARD_CODE
+        description: >-
+          CODE가 Standard일 때의 철근 표준 코드. 현재 KS19(RC)만 지원됨. — KS19(RC)=KS19(RC)
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'REINFORCEMENT' with a tree marker
+        # rather than a path
+      - key: MAIN_REBAR_NAME
+        description: >-
+          CODE가 None일 때의 사용자 정의 주철근 이름.
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'REINFORCEMENT' with a tree marker
+        # rather than a path
+      - key: MAIN_REBAR_GRADE
+        description: >-
+          CODE가 Standard일 때의 주철근 등급. — SD300=SD300; SD400=SD400; SD500=SD500;
+          SD600=SD600; SD700=SD700; SD400S=SD400S; SD500S=SD500S; SD600S=SD600S
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'REINFORCEMENT' with a tree marker
+        # rather than a path
+      - key: FYR
+        description: >-
+          주철근 항복강도. CODE가 None일 때 사용자 입력. CODE가 Standard일 때 자동 입력.
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'REINFORCEMENT' with a tree marker
+        # rather than a path
+      - key: SUB_REBAR_NAME
+        description: >-
+          CODE가 None일 때의 사용자 정의 보조철근 이름.
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'REINFORCEMENT' with a tree marker
+        # rather than a path
+      - key: SUB_REBAR_GRADE
+        description: >-
+          CODE가 Standard일 때의 보조철근 등급. — SD300=SD300; SD400=SD400; SD500=SD500;
+          SD600=SD600; SD700=SD700; SD400S=SD400S; SD500S=SD500S; SD600S=SD600S
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'REINFORCEMENT' with a tree marker
+        # rather than a path
+      - key: FYS
+        description: >-
+          보조철근 항복강도. CODE가 None일 때 사용자 입력. CODE가 Standard일 때 자동 입력.
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'REINFORCEMENT' with a tree marker
+        # rather than a path
+
+extraction:
+  source: 27_Design_SRC_AIKSRC2K.md line 5570
+  table: 파라미터

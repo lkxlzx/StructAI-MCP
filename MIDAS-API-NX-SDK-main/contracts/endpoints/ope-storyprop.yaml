@@ -1,0 +1,97 @@
+# /ope/STORYPROP
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: ope-storyprop
+endpoint: /ope/STORYPROP
+name: Story Properties
+
+products: [gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 15_OPE.md
+    section: "12. `/ope/STORYPROP` — Story Properties"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_gen
+  records:
+    - product: gen
+      ref: db-read-sweep-2026-08-27
+
+operations:
+  - method: POST
+    surface:
+      exportName: getStoryProperties
+      modulePath: [ope]
+      argumentTypeName: StoryPropertiesArgument
+      documentation: |-
+        docs/manual/15_OPE.md #12 — /ope/STORYPROP — Story Properties.
+
+        POST-only but functions as a query (unit/format-controlled report of
+        per-story weight, elevation, loaded height/width). See
+        StoryPropertiesArgument's docstring: the URL was ``/ope/STORPROP``
+        (missing a Y) until 2026-08-27 -- that was the actual defect behind
+        every historical 404, not a dead route.
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: FORCE_UNIT
+    description: >-
+      힘 단위 · "N"/"KN"/"KGF"/"TONF"/"LBF"/"KIPS"
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedDefaultNote: System
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: LENGTH_UNIT
+    description: >-
+      길이 단위 · "M"/"CM"/"MM"/"FT"/"IN"
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedDefaultNote: System
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: FORMAT
+    description: >-
+      응답 숫자 형식 · "Fixed"/"Scientific"
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedDefaultNote: System
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: PLACE
+    description: >-
+      응답 숫자 소수 자릿수(0~15)
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedDefaultNote: System
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+
+extraction:
+  source: 15_OPE.md line 1724
+  table: Parameters

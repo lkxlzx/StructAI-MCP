@@ -1,0 +1,161 @@
+# /DESIGN/RC/KDS-41-20-2022/BC-ANAL
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: design-rc-kds-41-20-2022-bc-anal
+endpoint: /DESIGN/RC/KDS-41-20-2022/BC-ANAL
+name: RC Beam Check Perform
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 26_Design_RC_KDS41202022.md
+    section: "54. `DESIGN/RC/KDS-41-20-2022/BC-ANAL` — RC Beam Check Perform (RC 보 검토 수행)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-08-10
+    - product: gen
+      ref: db-read-sweep-2026-08-10
+
+operations:
+  - method: POST
+    surface:
+      exportName: performBeamCheck
+      modulePath: [design, rcKds, checks]
+      argumentTypeName: PerformRcMemberCheckArgument
+      documentation: |-
+        docs/manual/26_Design_RC_KDS41202022.md #54 — BC-ANAL — RC Beam Check
+        Perform. Runs code-checking on RC beam members that already have rebar
+        assigned. Response: ``{"message": "success"}``.
+
+        ✅ **Re-verified 2026-07-25: ran clean 4/4 — on the same build that hung.**
+        An independent production tool (the QuickRebar NX web app) now ships
+        this call behind a user-triggered "recheck" button and ran it — plus
+        ``perform_column_check`` including ``PERFORM_TYPE: "ALL"`` — cleanly
+        4/4 with the app staying connected; ``PERFORM_TYPE: "ALL"`` re-checks a
+        whole model in roughly 2 seconds. This lifts the blanket "never call
+        this" rule — but see the caveat below before treating it as fixed.
+
+        ⚠️ CONFIRMED to hang on **Gen NX 2026 (v2.1), build 06/23/2026**,
+        reproduced on two independent real models once the full precondition
+        chain (member type + rebar + a KDS-recognized load combination +
+        confirmed-queryable analysis results) was satisfied. One attempt
+        silently locked just that element's check endpoints; another crashed the
+        app outright with a **"Failed to disconnect the work session"**
+        license-error dialog (unrecoverable — the program always dies once it
+        appears).
+
+        ⚠️ **The clean re-verification ran on that exact same build** — this was
+        not fixed by a vendor patch, so the real trigger is still unidentified
+        (model state, call sequence, and client/transport are all untested
+        candidates). Every test on both sides also used the **KDS 41 20:2022**
+        code specifically. Treat the defensive pattern as the actual mitigation,
+        not as hygiene: use a short timeout (the production tool uses 25s) and —
+        because a timed-out check may still have committed its results — read
+        ``get_beam_check_table`` regardless of whether this call returned. If
+        you only need results the user already computed in Gen NX's own GUI,
+        reading ``get_beam_check_table`` alone needs no perform call at all and
+        carries none of this risk. See docs/live_verification_notes.md.
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: Argument
+    description: >-
+      Argument 래퍼
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: PERFORM_TYPE
+    description: >-
+      수행 대상 타입 ("ALL"=전체, "ELEMS"=요소별, "SECTIONS"=단면별)
+    type: string
+    requirement: optional
+    documentedDefault: ALL
+    documentedOptional: true
+    enum: [ALL, ELEMS, SECTIONS]
+    safeToOmit: unverified
+    provenance: manual
+  - key: ELEMS
+    description: >-
+      요소 입력 (ELEMS / SECTIONS 중 하나)
+    type: object
+    requirement: conditional
+    condition: "oneOf: exactly one of \"ELEMS\", \"SECTIONS\" is required"
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: KEYS
+        description: >-
+          개별 ID
+        type: array
+        items:
+          type: integer
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ELEMS' by numbering it '3.1', not by
+        # naming a path
+      - key: TO
+        description: >-
+          ID 범위 (예 "1to160")
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ELEMS' by numbering it '3.2', not by
+        # naming a path
+      - key: STRUCTURE_GROUP_NAME
+        description: >-
+          구조 그룹 이름
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ELEMS' by numbering it '3.3', not by
+        # naming a path
+  - key: SECTIONS
+    description: >-
+      단면 번호 (ELEMS / SECTIONS 중 하나)
+    type: array
+    items:
+      type: integer
+    requirement: conditional
+    condition: "oneOf: exactly one of \"ELEMS\", \"SECTIONS\" is required"
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+
+extraction:
+  source: 26_Design_RC_KDS41202022.md line 9413
+  table: 파라미터

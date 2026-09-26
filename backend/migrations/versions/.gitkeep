@@ -1,0 +1,5 @@
+# Alembic revision scripts live here.
+#
+# The INITIAL schema is intentionally NOT a revision: it is delivered verbatim as
+# backend/sql/001_schema.sql (V2.1 §4) and applied by app.db.init_db. Generate
+# revisions in this directory only for changes made after that baseline.

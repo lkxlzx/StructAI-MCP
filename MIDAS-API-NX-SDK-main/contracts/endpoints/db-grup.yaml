@@ -1,0 +1,121 @@
+# /db/GRUP
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then
+# reviewed: products, methods, operation risk and verification status were
+# each checked against docs/coverage.json's live record rather than accepted
+# from the manual's framing. safeToOmit is answered `true` only where a
+# confirmed live payload actually omitted the field.
+contractVersion: 1
+id: db-grup
+endpoint: /db/GRUP
+name: Structure Group
+surface:
+  className: StructureGroup
+  exportName: structureGroup
+  modulePath: [db, project]
+  payloadTypeName: StructureGroupPayload
+
+products: [gen, civil]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 02_DB_Project_Structure.md
+    section: "5. `/db/GRUP` — Structure Group"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: gen
+      ref: db-crud-batch-2026-07-29
+    - product: civil
+      ref: db-crud-batch-2026-07-29
+
+operations:
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: NAME
+    description: >-
+      Structure Group Name
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: P_TYPE
+    description: >-
+      Plane Type
+    type: integer
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's StructureGroup case completed a live
+      create-read-update-delete round trip on gen and civil without this field
+      in its payload. That is evidence the call is accepted, not that the
+      resulting model is what an engineer wanted.
+    provenance: manual
+  - key: N_LIST
+    description: >-
+      Node List
+    type: array
+    items:
+      type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's StructureGroup case completed a live
+      create-read-update-delete round trip on gen and civil without this field
+      in its payload. That is evidence the call is accepted, not that the
+      resulting model is what an engineer wanted.
+    provenance: manual
+  - key: E_LIST
+    description: >-
+      Element List
+    type: array
+    items:
+      type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's StructureGroup case completed a live
+      create-read-update-delete round trip on gen and civil without this field
+      in its payload. That is evidence the call is accepted, not that the
+      resulting model is what an engineer wanted.
+    provenance: manual
+
+extraction:
+  source: 02_DB_Project_Structure.md line 481
+  table: Specifications

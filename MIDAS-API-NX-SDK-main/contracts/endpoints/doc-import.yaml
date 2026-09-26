@@ -1,0 +1,50 @@
+# /doc/IMPORT
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: doc-import
+endpoint: /doc/IMPORT
+name: Import to JSON
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 01_DOC.md
+    section: "7. `/doc/IMPORT` — Import to JSON"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-write-sweep-2026-08-13
+    - product: gen
+      ref: db-write-sweep-2026-08-13
+
+operations:
+  - method: POST
+    risk: write
+    request:
+      wrapper: argument
+      itemSchema: scalar
+      scalarType: string
+    response:
+      wrapper: table
+      keyStability: stable
+
+# No parameter table could be parsed from this section. Transcribe the
+# fields by hand, or check whether the endpoint takes no payload at all.
+fields: []
+
+extraction:
+  source: 01_DOC.md line ?
+  table: none found

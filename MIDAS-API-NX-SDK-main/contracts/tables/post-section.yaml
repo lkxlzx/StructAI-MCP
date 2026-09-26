@@ -1,0 +1,58 @@
+# Source: 18_POST_PreProcess.md section 6. No SDK source was used.
+contractVersion: 1
+id: post-section
+endpoint: /post/TABLE
+name: Section Table
+summary: Geometric and section-property tables selected by section category.
+products: [gen, civil]
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 18_POST_PreProcess.md
+    section: "6. Section Table"
+verification:
+  status: manual_only
+risk: read_only
+surface:
+  exportName: getSectionTable
+  modulePath: [preProcess]
+  tableType: SECTIONALL
+  factory: variable
+  optionNames: [tableName]
+  documentation: |-
+    docs/manual/18_POST_PreProcess.md #6 — Section Table.
+
+    table_type: one of the TABLE_TYPE_SECTION_* constants above.
+tableTypes:
+  - value: SECTIONALL
+    description: All sections
+    head: [Index, ID, Type, Shape, Name, Area, Asy, Asz, Ixx, Iyy, Izz, Cyp, Cym, Czp, Czm, Qyb, Qzb, Peri.(Out), Peri.(In)]
+    provenance: manual
+  - value: SECTIONCOMBINED
+    description: Combined sections
+    provenance: manual
+  - value: SECTIONCOMPOSITE
+    description: Composite sections
+    provenance: manual
+  - value: SECTIONCONSTRUCTION
+    description: Construction sections
+    provenance: manual
+  - value: SECTIONDB/USER
+    description: DB/User sections
+    provenance: manual
+  - value: SECTIONPSC
+    description: PSC sections
+    provenance: manual
+  - value: SECTIONSRC
+    description: SRC sections
+    provenance: manual
+  - value: SECTIONSTEELGIRDER
+    description: Steel girder sections
+    provenance: manual
+  - value: SECTIONTAPERED
+    description: Tapered sections
+    provenance: manual
+  - value: SECTIONVALUE
+    description: Value sections
+    provenance: manual

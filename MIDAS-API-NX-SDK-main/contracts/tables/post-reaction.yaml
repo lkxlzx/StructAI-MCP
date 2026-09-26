@@ -1,0 +1,131 @@
+# Reaction — a table on the shared /post/TABLE route.
+#
+# The request shape lives once in contracts/endpoints/post-table.yaml. This file
+# carries only what is this table's own: the TABLE_TYPE values that select it and
+# the response columns each returns.
+#
+# Sources: docs/manual/19_POST_AnalysisResult_1.md #1 in Dennis5882/MIDAS-API.
+# No SDK source was consulted.
+contractVersion: 1
+id: post-reaction
+endpoint: /post/TABLE
+name: Reaction
+summary: >-
+  Support reactions, in the global frame, the local frame, or per surface
+  spring.
+
+products: [gen, civil]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 19_POST_AnalysisResult_1.md
+    section: "1. Reaction"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: gen
+      ref: post-table-response-key-2026-07-26
+    - product: civil
+      ref: post-table-response-key-2026-07-26
+
+risk: read_only
+
+surface:
+  exportName: getReactionTable
+  modulePath: [result1]
+  tableType: REACTIONG
+  factory: variable
+  optionNames: [components, constructionStage, loadCaseNames, nodeElements, stageSteps, styles, tableName, unit]
+  documentation: |-
+    docs/manual/19_POST_AnalysisResult_1.md #1 — Reaction.
+
+    table_type: TABLE_TYPE_REACTION_GLOBAL (default), _LOCAL, or
+    _LOCAL_SURFACE_SPRING. opt_cs/stage_step are not supported for the Local
+    Surface Spring variant per the manual.
+tableTypes:
+  - value: REACTIONG
+    description: Global coordinate system
+    head: ["Index", "Node", "Load", "FX", "FY", "FZ", "MX", "MY", "MZ", "Mb"]
+    headNote: >-
+      A construction-stage query inserts Stage and Step columns after Load.
+    subTables:
+      - name: SUMMATIONOFREACTIONFORCESPRINTOUT
+        head: ["Load", "FX(kN)", "FY(kN)", "FZ(kN)"]
+        note: >-
+          Returned in a top-level SUB_TABLES array alongside DATA, and absent
+          from REACTIONL and REACTIONLSURFACESPRING. A construction-stage query
+          adds Stage and Step here too. Older revisions of the manual did not
+          document it at all.
+    provenance: manual
+
+  - value: REACTIONL
+    description: Local coordinate system
+    head: ["Index", "Node", "Load", "Fx", "Fy", "Fz", "Mx", "My", "Mz", "Mb"]
+    headNote: >-
+      Same shape as REACTIONG with lower-case component names. No SUB_TABLES.
+    provenance: manual
+
+  - value: REACTIONLSURFACESPRING
+    description: Local - surface spring
+    head:
+      - Index
+      - ElementType
+      - SurfaceSpringType
+      - Element
+      - Load
+      - Node&Part
+      - Reaction/Area
+      - Reaction/Length
+      - Displacement
+    headNote: >-
+      A different structure entirely from the other two variants, keyed by
+      element rather than node. Does not support OPT_CS or STAGE_STEP.
+    provenance: live_corrected
+    provenanceNote: >-
+      The spelling is the one the server accepts, which is the one the manual's
+      Specifications table and its JSON Schema enum both get wrong. Only the
+      request example has it right. See manualDefects.
+
+requestFields:
+  unsupported: []
+
+manualDefects:
+  - describes: table_type
+    manualSays: >-
+      The Specifications table and the JSON Schema enum both give
+      "REACTIONSURFACESPRING", while the "Reaction(Local-Surface Spring)"
+      request example alone gives "REACTIONLSURFACESPRING", with an extra L.
+    actual: >-
+      The lone request example is right and the two agreeing sources are wrong.
+      On both products the server refuses REACTIONSURFACESPRING and accepts
+      REACTIONLSURFACESPRING. This contract had declared the majority spelling
+      and both SDKs shipped it, so every caller of this one table type was
+      sending a string the server does not know.
+    evidence: >-
+      Cross-checked 2026-08-26 against official article id 36009349748249, where
+      two sources agree and one disagrees - which is why the majority was taken
+      and why it was wrong. Settled live 2026-09-04 on Gen NX 2026 v2.1 and
+      Civil NX 2026 v2.2, both build 09/02/2026, by sending both spellings
+      against the same document: REACTIONSURFACESPRING answers "there was an
+      error creating utbl" and REACTIONLSURFACESPRING answers "[empty] Cannot
+      generate table data as there is no analysis result". That pair is the
+      product's own distinction between a TABLE_TYPE it does not know and one it
+      knows but cannot fill. Recorded as MD-49; see
+      docs/live_verification_notes.md.
+    resolved: true
+
+  - describes: head
+    manualSays: >-
+      Nothing - earlier revisions documented DATA only.
+    actual: >-
+      REACTIONG also returns a top-level SUB_TABLES array carrying
+      SUMMATIONOFREACTIONFORCESPRINTOUT.
+    evidence: >-
+      Confirmed 2026-08-26 while re-checking the chapter against the official
+      article; now recorded in the manual too.
+    resolved: true

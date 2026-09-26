@@ -1,0 +1,854 @@
+# /db/SWIND
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-swind
+endpoint: /db/SWIND
+name: Static Wind Load
+surface:
+  className: StaticWindLoad
+  exportName: staticWindLoad
+  modulePath: [db, staticLoads]
+  payloadTypeName: StaticWindLoadPayload
+
+products: [gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 06_DB_Static_Loads.md
+    section: 20. /db/SWIND — Static Wind Load
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_gen
+  records:
+    - product: gen
+      ref: db-write-sweep-2026-08-13
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/SWIND/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: WIND_CODE
+    description: >-
+      Wind Load Code ("KDS(41-12: 2022)")
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    enum: ["KDS(41-12: 2022)"]
+    safeToOmit: unverified
+    provenance: manual
+  - key: DESC
+    description: >-
+      Description
+    type: string
+    requirement: optional
+    documentedDefault: ""
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: SCALE_FACTOR_X
+    description: >-
+      Scale Factor X
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: SCALE_FACTOR_Y
+    description: >-
+      Scale Factor Y
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: PARAMETERS
+    description: >-
+      KDS(41-12:2022) Parameters
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: INPUT_METHOD
+        description: >-
+          Input Method (0=Simplified / 1=General / 2=General+Vortex)
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        enum: [0, 1, 2]
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'PARAMETERS' by numbering it
+        # '(1)', not by naming a path
+
+variants:
+  - when:
+      - path: INPUT_METHOD
+        equals: 0
+    source:
+      table: INPUT_METHOD = 0 (Simplified)
+      line: 1752
+    fields:
+      - key: WIND_SPEED
+        description: >-
+          Basic Wind Speed
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: ROOF_HEIGHT
+        description: >-
+          Roof Height
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedDefaultNote: system
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: CE
+        description: >-
+          Exposure Coefficient CE
+        type: number
+        requirement: optional
+        documentedDefault: 1
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+  - when:
+      - path: INPUT_METHOD
+        equals: 1
+    source:
+      table: INPUT_METHOD = 1 (General)
+      line: 1756
+    fields:
+      - key: EXP_CATEGORY
+        description: >-
+          Exposure Category (0=A / 1=B / 2=C / 3=D)
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        enum: [0, 1, 2, 3]
+        safeToOmit: unverified
+        provenance: manual
+      - key: WIND_SPEED
+        description: >-
+          Basic Wind Speed
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: IMPORTANCE_FACTOR
+        description: >-
+          Importance Factor
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: ROOF_HEIGHT
+        description: >-
+          Roof Height
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedDefaultNote: system
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: TOPOGRAPHIC_EFFECT
+        description: >-
+          Topographic Effect
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: OPT_USE
+            description: >-
+              Use Topographic Effect
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'TOPOGRAPHIC_EFFECT' by numbering
+            # it 'a', not by naming a path
+          - key: KZT
+            description: >-
+              Topographic Factor KZT (OPT_USE=true)
+            type: number
+            requirement: conditional
+            condition: OPT_USE=true
+            appliesWhen:
+              - path: TOPOGRAPHIC_EFFECT.OPT_USE
+                equals: true
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'TOPOGRAPHIC_EFFECT' by numbering
+            # it 'a', not by naming a path
+      - key: DIRECTION_FACTOR_X
+        description: >-
+          Direction Factor X
+        type: number
+        requirement: optional
+        documentedDefault: 1
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: DIRECTION_FACTOR_Y
+        description: >-
+          Direction Factor Y
+        type: number
+        requirement: optional
+        documentedDefault: 1
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: RIGIDITY
+        description: >-
+          Rigidity Classification
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: GUST_FACTOR_X
+        description: >-
+          Gust Factor X
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: GUST_FACTOR_Y
+        description: >-
+          Gust Factor Y
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: FORCE_COEF
+        description: >-
+          Force Coefficient
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: BUILDING_TYPE
+        description: >-
+          Building Type (0=Middle Low Rise / 1=High Rise)
+        type: integer
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        enum: [0, 1]
+        safeToOmit: unverified
+        provenance: manual
+      - key: VIBRATION_PARAMS
+        description: >-
+          Vibration Parameters
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: ACROSS_WIND
+            description: >-
+              Across-wind Vibration
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'VIBRATION_PARAMS' by numbering it
+            # 'a', not by naming a path
+          - key: TORSIONAL_WIND
+            description: >-
+              Torsional-wind Vibration
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'VIBRATION_PARAMS' by numbering it
+            # 'b', not by naming a path
+          - key: WIND_RESPONSE
+            description: >-
+              Wind Response
+            type: boolean
+            requirement: optional
+            documentedDefault: false
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'VIBRATION_PARAMS' by numbering it
+            # 'c', not by naming a path
+          - key: BL_X
+            description: >-
+              Building Length X
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'VIBRATION_PARAMS' by numbering it
+            # 'd', not by naming a path
+          - key: BL_Y
+            description: >-
+              Building Length Y
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'VIBRATION_PARAMS' by numbering it
+            # 'e', not by naming a path
+          - key: NO_X
+            description: >-
+              Natural Frequency X
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'VIBRATION_PARAMS' by numbering it
+            # 'f', not by naming a path
+          - key: NO_Y
+            description: >-
+              Natural Frequency Y
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'VIBRATION_PARAMS' by numbering it
+            # 'g', not by naming a path
+          - key: NO_T
+            description: >-
+              Torsional Natural Frequency
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'VIBRATION_PARAMS' by numbering it
+            # 'h', not by naming a path
+          - key: M
+            description: >-
+              Mass
+            type: number
+            requirement: optional
+            documentedDefault: null
+            documentedDefaultNote: system
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'VIBRATION_PARAMS' by numbering it
+            # 'i', not by naming a path
+          - key: MX
+            description: >-
+              Mass in X direction
+            type: number
+            requirement: optional
+            documentedDefault: null
+            documentedDefaultNote: system
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'VIBRATION_PARAMS' by numbering it
+            # 'j', not by naming a path
+          - key: MY
+            description: >-
+              Mass in Y direction
+            type: number
+            requirement: optional
+            documentedDefault: null
+            documentedDefaultNote: system
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'VIBRATION_PARAMS' by numbering it
+            # 'k', not by naming a path
+          - key: MI
+            description: >-
+              Mass Moment of Inertia
+            type: number
+            requirement: optional
+            documentedDefault: null
+            documentedDefaultNote: system
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'VIBRATION_PARAMS' by numbering it
+            # 'l', not by naming a path
+          - key: ZF
+            description: >-
+              Damping Ratio
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'VIBRATION_PARAMS' by numbering it
+            # 'm', not by naming a path
+          - key: VIBRATION_MODE
+            description: >-
+              Vibration Mode Coefficient
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'VIBRATION_PARAMS' by numbering it
+            # 'n', not by naming a path
+  - when:
+      - path: INPUT_METHOD
+        equals: 2
+    source:
+      table: INPUT_METHOD = 2 (General + Vortex Shedding)
+      line: 1788
+    fields:
+      - key: ROOF_HEIGHT
+        description: >-
+          Roof Height
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedDefaultNote: system
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: DM
+        description: >-
+          Vortex Shedding DM
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: DB
+        description: >-
+          Vortex Shedding DB
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: N
+        description: >-
+          Natural Frequency for Vortex
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: M
+        description: >-
+          Mass for Vortex Check
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedDefaultNote: system
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: ZF
+        description: >-
+          Damping Ratio for Vortex
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: ADDITIONAL_LOAD
+        description: >-
+          Additional Story-level Wind Load
+        type: array
+        items:
+          type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: STORY_NAME
+            description: >-
+              Story Name
+            type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'ADDITIONAL_LOAD' by numbering it
+            # '(1)', not by naming a path
+          - key: ALONG_X
+            description: >-
+              Along-wind Load X
+            type: number
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'ADDITIONAL_LOAD' by numbering it
+            # '(2)', not by naming a path
+          - key: ALONG_Y
+            description: >-
+              Along-wind Load Y
+            type: number
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'ADDITIONAL_LOAD' by numbering it
+            # '(3)', not by naming a path
+          - key: ACROSS_X
+            description: >-
+              Across-wind Load X
+            type: number
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'ADDITIONAL_LOAD' by numbering it
+            # '(4)', not by naming a path
+          - key: ACROSS_Y
+            description: >-
+              Across-wind Load Y
+            type: number
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'ADDITIONAL_LOAD' by numbering it
+            # '(5)', not by naming a path
+          - key: TORSIONAL_RZ
+            description: >-
+              Torsional Wind Load RZ
+            type: number
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'ADDITIONAL_LOAD' by numbering it
+            # '(6)', not by naming a path
+          - key: TORSIONAL_RZ_X
+            description: >-
+              Torsional Wind Load RZ X
+            type: number
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'ADDITIONAL_LOAD' by numbering it
+            # '(7)', not by naming a path
+          - key: TORSIONAL_RZ_Y
+            description: >-
+              Torsional Wind Load RZ Y
+            type: number
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'ADDITIONAL_LOAD' by numbering it
+            # '(8)', not by naming a path
+  - when:
+      - path: WIND_CODE
+        equals: USER TYPE
+    source:
+      table: "ADDITIONAL — `WIND_CODE = \"USER TYPE\"` 변형 (2026-08-07 공식 반영)"
+      line: 1866
+    fields:
+      - key: WIND_CODE
+        description: >-
+          Wind Load Code ("USER TYPE")
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        enum: [USER TYPE]
+        safeToOmit: unverified
+        provenance: manual
+      - key: DESC
+        description: >-
+          Description
+        type: string
+        requirement: optional
+        documentedDefault: ""
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: WIND_ECCEN_X
+        description: >-
+          Wind Eccentricity Option X (0=Positive / 1=Negative / 2=None)
+        type: integer
+        requirement: optional
+        documentedDefault: 2
+        documentedOptional: true
+        enum: [0, 1, 2]
+        safeToOmit: unverified
+        provenance: manual
+      - key: WIND_ECCEN_Y
+        description: >-
+          Wind Eccentricity Option Y (0=Positive / 1=Negative / 2=None)
+        type: integer
+        requirement: optional
+        documentedDefault: 2
+        documentedOptional: true
+        enum: [0, 1, 2]
+        safeToOmit: unverified
+        provenance: manual
+      - key: SCALE_FACTOR_X
+        description: >-
+          Scale Factor X
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: SCALE_FACTOR_Y
+        description: >-
+          Scale Factor Y
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: STORY_WIND_PRESSURE
+        description: >-
+          User-defined Story-level Wind Pressure
+        type: array
+        items:
+          type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: STORY_NAME
+            description: >-
+              Story Name
+            type: string
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'STORY_WIND_PRESSURE' by numbering
+            # it '(1)', not by naming a path
+          - key: PRESS_X
+            description: >-
+              Wind Pressure X
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'STORY_WIND_PRESSURE' by numbering
+            # it '(2)', not by naming a path
+          - key: PRESS_Y
+            description: >-
+              Wind Pressure Y
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'STORY_WIND_PRESSURE' by numbering
+            # it '(3)', not by naming a path
+      - key: ADDITIONAL_LOAD
+        description: >-
+          Additional Story-level Wind Load
+        type: array
+        items:
+          type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: STORY_NAME
+            description: >-
+              Story Name
+            type: string
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'ADDITIONAL_LOAD' by numbering it
+            # '(1)', not by naming a path
+          - key: ALONG_X
+            description: >-
+              Along-wind Load X
+            type: number
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'ADDITIONAL_LOAD' by numbering it
+            # '(2)', not by naming a path
+          - key: ALONG_Y
+            description: >-
+              Along-wind Load Y
+            type: number
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'ADDITIONAL_LOAD' by numbering it
+            # '(3)', not by naming a path
+          - key: TORSIONAL_RZ
+            description: >-
+              Torsional Wind Load RZ
+            type: number
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # RESOLVED: the manual nests this under 'ADDITIONAL_LOAD' by numbering it
+            # '(4)', not by naming a path
+
+sdkRules:
+  - id: db-swind-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-swind-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 06_DB_Static_Loads.md line 1744
+  table: 파라미터

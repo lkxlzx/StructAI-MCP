@@ -1,0 +1,84 @@
+# The manual labels these STORY_LOAD_SUMMARY_{X,Y,Z}; live Gen NX accepts only
+# STORY_LOAD_{X,Y,Z}. Both facts are recorded below; no SDK source was used.
+contractVersion: 1
+id: post-story-load-summary
+endpoint: /post/TABLE
+name: Story Load Summary Table
+summary: Per-story load totals in a selected direction.
+products: [gen]
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 18_POST_PreProcess.md
+    section: "9. Story Load Summary Table"
+  liveNotes:
+    - docs/live_verification_notes.md
+verification:
+  status: verified_gen
+  records:
+    - product: gen
+      ref: db-write-sweep-2026-08-13
+risk: read_only
+surface:
+  exportName: getStoryLoadSummaryTable
+  modulePath: [preProcess]
+  tableType: STORY_LOAD_
+  factory: directional
+  optionNames: [components, loadCaseNames, styles, tableName, unit]
+  documentation: |-
+    docs/manual/18_POST_PreProcess.md #9 — Story Load Summary Table.
+
+    direction: "X"/"Y"/"Z".
+    load_case_names: e.g. ["DL (ST)"] — present in the manual's Request
+    example but missing from its own Specifications table (a manual
+    self-contradiction; the example wins per this repo's convention).
+
+    2026-08-06 manual update: TABLE_TYPE renamed
+    STORY_LOAD_SUMMARY_{dir} -> STORY_LOAD_{dir}, matching STORY_MASS's
+    naming (the other half of the same ticket, already reflected below).
+    This call also gained unit/styles/components/load_case_names.
+
+    ⚠️ Live-verified 2026-08-13 (Gen NX v2.1, build 08/12/2026): against a
+    model with 2 real Stories and one static load case, direction="X"
+    with load_case_names=["DL(ST)"] returned real per-story populated
+    rows keyed by story name — confirms the renamed TABLE_TYPE and the
+    new params both work as documented.
+
+    ⚠️ 2026-08-27: the sibling manual repo's full re-verification pass
+    reversed course, claiming this was all a mistake — that the 2026-08-06
+    sync had actually copied Story Mass Summary Table's shape by accident,
+    and the real params are just TABLE_NAME/TABLE_TYPE(STORY_LOAD_SUMMARY_
+    {dir})/EXPORT_PATH. Re-tested live the same day on Gen NX to check:
+    `TABLE_TYPE="STORY_LOAD_X"` (this function's value) still answers
+    cleanly (`{"message": ""}` on a document with no story data, same
+    shape as the known-good sibling `STORY_MASS_X`), while
+    `TABLE_TYPE="STORY_LOAD_SUMMARY_X"` (the manual's new claim, tried in
+    every case combination and casing) consistently answers `"there was
+    an error creating utbl"` — an unrecognized-table-type error, not a
+    data-shape error. **The manual's new correction is wrong; this
+    function's existing TABLE_TYPE and params are confirmed correct
+    again.** Don't flip this back without new live evidence.
+tableTypes:
+  - value: STORY_LOAD_X
+    description: X-direction story load
+    head: [Index, Load, Story, Level, Concent, Beam, Floor, Pressure, SelfWeight, Sum]
+    provenance: live_corrected
+  - value: STORY_LOAD_Y
+    description: Y-direction story load
+    head: [Index, Load, Story, Level, Concent, Beam, Floor, Pressure, SelfWeight, Sum]
+    provenance: live_corrected
+  - value: STORY_LOAD_Z
+    description: Z-direction story load
+    head: [Index, Load, Story, Level, Concent, Beam, Floor, Pressure, SelfWeight, Sum]
+    provenance: live_corrected
+manualDefects:
+  - describes: table_type
+    manualSays: STORY_LOAD_SUMMARY_X, STORY_LOAD_SUMMARY_Y, and STORY_LOAD_SUMMARY_Z.
+    actual: STORY_LOAD_X, STORY_LOAD_Y, and STORY_LOAD_Z on Gen NX; Civil NX rejects both spellings.
+    evidence: >-
+      docs/live_verification_notes.md, 2026-08-20 and 2026-08-25: Gen NX
+      accepts STORY_LOAD_X and rejects STORY_LOAD_SUMMARY_X as an unrecognised
+      table type; Civil NX rejects both. The manual's published correction is
+      therefore wrong.
+    resolved: true

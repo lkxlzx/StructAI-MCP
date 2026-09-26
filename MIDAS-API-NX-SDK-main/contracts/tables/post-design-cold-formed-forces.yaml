@@ -1,0 +1,33 @@
+contractVersion: 1
+id: post-design-cold-formed-forces
+endpoint: /post/TABLE
+name: Cold Formed Steel Member Design Forces
+products: [gen, civil]
+source: {manual: {status: documented, repo: Dennis5882/MIDAS-API, chapterFile: 23_POST_Design.md, section: "10. Cold Formed Design – Cold Formed Steel Member Design Forces"}}
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getColdFormedSteelMemberDesignForcesTable
+  modulePath: [design]
+  tableType: COLDFORMEDSTEELMEMBERDESIGNFORCES
+  factory: fixed
+  optionNames: [components, nodeElements, parts, styles, tableName, unit]
+  documentation: |-
+    docs/manual/23_POST_Design.md #10 — Cold Formed Design - Cold Formed Steel Member Design Forces.
+
+    ⚠️ Shares the ``/post/TABLE`` helper with :func:`get_beam_design_forces_table`
+    (confirmed crashing Gen NX, clean on Civil NX) — not independently
+    tested on Gen; confirmed clean on Civil NX 2026-08-07.
+
+    Re-tested 2026-08-11 on Gen NX (v2.1, build 08/11/2026), blank
+    ``/doc/NEW`` document: clean empty response, no crash, session stayed
+    healthy. A single clean pass against a call that shares this
+    module's confirmed-crashing helper is not independent proof the risk
+    is gone — treat as reduced-but-not-cleared until a real-model retest.
+
+    Re-tested independently 2026-09-05 on Gen NX v2.1 build 09/02/2026:
+    clean empty response and a successful liveness GET. Civil NX v2.2 on the
+    same build returned its established no-result error and stayed responsive.
+    This clears the blank-document risk on the current build; a populated,
+    analysed and designed-model path was not re-tested.
+tableTypes: [{value: COLDFORMEDSTEELMEMBERDESIGNFORCES, head: [Index, Memb, Part, LComName, Type, Fx, Fy, Fz, Mx, My, Mz], provenance: manual}]

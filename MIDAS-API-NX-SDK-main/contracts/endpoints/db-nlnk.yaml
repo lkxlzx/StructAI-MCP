@@ -1,0 +1,310 @@
+# /db/NLNK
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-nlnk
+endpoint: /db/NLNK
+name: General Link
+surface:
+  className: GeneralLink
+  exportName: generalLink
+  modulePath: [db, boundary]
+  payloadTypeName: GeneralLinkPayload
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 05_DB_Boundary.md
+    section: "9. `/db/NLNK` — General Link"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-08-16
+    - product: gen
+      ref: db-read-sweep-2026-08-16
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/NLNK/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: NODE1
+    description: >-
+      Node 1 ID
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: NODE2
+    description: >-
+      Node 2 ID
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: GROUP_NAME
+    description: >-
+      Boundary Group Name
+    type: string
+    requirement: optional
+    documentedDefault: ""
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: PROP_NAME
+    description: >-
+      General Link Property Name
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: IEHP_NAME
+    description: >-
+      Inelastic Hinge Property Name
+    type: string
+    requirement: optional
+    documentedDefault: ""
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: REF_SYSTEM
+    description: >-
+      Reference Coordinate System · 0=Element, 1=Global
+    type: integer
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: BETA_ANGLE
+    description: >-
+      Beta Angle (°)
+    type: number
+    requirement: optional
+    condition: REF_SYSTEM=0 (요소계)
+    appliesWhen:
+      - path: REF_SYSTEM
+        equals: 0
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: INPUT_METHOD
+    description: >-
+      Input Method · 0=Angle
+    type: integer
+    requirement: required
+    condition: REF_SYSTEM=1 (전역계) – Angle 방식
+    appliesWhen:
+      - path: REF_SYSTEM
+        equals: 1
+      - path: INPUT_METHOD
+        equals: 0
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: ANGLE_VALUES
+    description: >-
+      Angle Values [about X, about y', about z'']
+    type: array
+    items:
+      type: object
+    requirement: required
+    condition: REF_SYSTEM=1 (전역계) – Angle 방식
+    appliesWhen:
+      - path: REF_SYSTEM
+        equals: 1
+      - path: INPUT_METHOD
+        equals: 0
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: VALUE
+        description: >-
+          Value [x, y, z]
+        type: array
+        items:
+          type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under its array by naming it in a
+        # sentence rather than a table row - "각 ANGLE_VALUES/POINT_VALUES/"
+        # "VECTOR_VALUES 배열 원소는 {\"VALUE\": [x, y, z]} 형태의 object다"
+        # - and the parser reads tables. The three arrays shipped with no
+        # members at all until 2026-09-04. GET /info declares VALUE on each,
+        # as an array. See MD-44.
+        # The sentence is in section 10, /db/NLNK-M1's, and ends "(NLNK와 동일)" - it names this endpoint outright as the one it is describing.
+  - key: POINT_VALUES
+    description: >-
+      Point Values [P0[3], P1[3], P2[3]]
+    type: array
+    items:
+      type: object
+    minItems: 3
+    maxItems: 3
+    requirement: required
+    condition: REF_SYSTEM=1 (전역계) – 3Points 방식
+    appliesWhen:
+      - path: REF_SYSTEM
+        equals: 1
+      - path: INPUT_METHOD
+        equals: 1
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: VALUE
+        description: >-
+          Value [x, y, z]
+        type: array
+        items:
+          type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+  - key: VECTOR_VALUES
+    description: >-
+      Vector Points [V1[3], V2[3]]
+    type: array
+    items:
+      type: object
+    minItems: 2
+    maxItems: 2
+    requirement: required
+    condition: REF_SYSTEM=1 (전역계) – Vector 방식
+    appliesWhen:
+      - path: REF_SYSTEM
+        equals: 1
+      - path: INPUT_METHOD
+        equals: 2
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+
+    properties:
+      - key: VALUE
+        description: >-
+          Value [x, y, z]
+        type: array
+        items:
+          type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+sdkRules:
+  - id: db-nlnk-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-nlnk-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 05_DB_Boundary.md line 783
+  table: 요청 파라미터
+  prose:
+    - line: 884
+      quote: >-
+        각 ANGLE_VALUES/POINT_VALUES/VECTOR_VALUES 배열 원소는 {"VALUE": [x, y, z]} 형태의 object다(NLNK와 동일).
+      # The sentence sits in section 10, /db/NLNK-M1's, and ends
+      # "(NLNK와 동일)" - it names this endpoint outright as the one it
+      # is also describing, so it documents both arrays' members.
+      paths:
+        - ANGLE_VALUES.VALUE
+        - POINT_VALUES.VALUE
+        - VECTOR_VALUES.VALUE

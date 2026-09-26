@@ -1,0 +1,28 @@
+# Source: 19_POST_AnalysisResult_1.md section 7. No SDK source was used.
+contractVersion: 1
+id: post-cable-efficiency
+endpoint: /post/TABLE
+name: Cable Efficiency
+summary: Cable efficiency, stiffness, weight, and tension values.
+products: [gen, civil]
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 19_POST_AnalysisResult_1.md
+    section: "7. Cable Efficiency"
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getCableEfficiencyTable
+  modulePath: [result1]
+  tableType: CABLEEFFIENCY
+  factory: fixed
+  optionNames: [components, constructionStage, loadCaseNames, nodeElements, stageSteps, styles, tableName, unit]
+  documentation: |-
+    docs/manual/19_POST_AnalysisResult_1.md #7 — Cable Efficiency.
+tableTypes:
+  - value: CABLEEFFIENCY
+    description: Cable efficiency; the manual specifies this EFFIENCY spelling.
+    head: [Index, Elem, NodeI, NodeJ, Load, Step, ChordLength, ExA, Weight, Tension, ExA(mod), Efficiency]
+    provenance: manual

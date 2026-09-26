@@ -1,0 +1,901 @@
+# /db/EPMT
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-epmt
+endpoint: /db/EPMT
+name: Plastic Material
+surface:
+  className: PlasticMaterial
+  exportName: plasticMaterial
+  modulePath: [db, properties, material]
+  payloadTypeName: PlasticMaterialPayload
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 04_DB_Properties.md
+    section: "10. `/db/EPMT`"
+    url: https://support.midasuser.com/hc/en-us/articles/35808376517913
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-07-26
+    - product: gen
+      ref: db-read-sweep-2026-07-26
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/EPMT/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: NAME
+    description: >-
+      Plastic Material Name
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: MODEL_TYPE
+    description: >-
+      Model Type · "TR"(Tresca) / "VM"(Von-Mises) / "MC"(Mohr-Coulomb) /
+      "DP"(Drucker-Prager) / "MA"(Masonry) / "DM"(Concrete Damage)
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: TRESCA
+    description: >-
+      Tresca plasticity parameters.
+    type: object
+    requirement: required
+    condition: 'Model Type · "TR"(Tresca)'
+    appliesWhen:
+      - path: MODEL_TYPE
+        equals: "TR"
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    provenanceNote: >-
+      Declared by the section's JSON Schema as an object, and assigned to this
+      MODEL_TYPE value by the Specifications row that enumerates the six models
+      together with the sub-table heading that names the object. Members,
+      requiredness, defaults, value sets and conditions are that sub-table's;
+      it has no Value Type column, so each member's type is GET /info's, which
+      declares every one of them under this object on both products. See MD-10.
+    properties:
+      - key: INIT_YIELD_STRESS
+        description: >-
+          Initial Uniaxial Yield Stress
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: OPT_HARDENING
+        description: >-
+          Hardening Option · Activated: `0` / Inactivated: `1`
+        type: number
+        enum: [0, 1]
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: HARDENING_TYPE
+        description: >-
+          (`OPT_HARDENING`=0일 때만) `"ISO"` / `"KIN"` / `"MIX"`
+        type: string
+        enum: ["ISO", "KIN", "MIX"]
+        requirement: optional
+        condition: "OPT_HARDENING=0일 때만"
+        appliesWhen:
+          - path: TRESCA.OPT_HARDENING
+            equals: 0
+        documentedDefault: "ISO"
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: HARDENING_COEF
+        description: >-
+          (`OPT_HARDENING`=0일 때) Hardening Coefficient
+        type: number
+        requirement: required
+        condition: "OPT_HARDENING=0일 때"
+        appliesWhen:
+          - path: TRESCA.OPT_HARDENING
+            equals: 0
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: BACK_STRESS_COEF
+        description: >-
+          (`HARDENING_TYPE`=`"MIX"`일 때) Back Stress Coefficient
+        type: number
+        requirement: required
+        condition: "HARDENING_TYPE=\"MIX\"일 때"
+        appliesWhen:
+          - path: TRESCA.HARDENING_TYPE
+            equals: "MIX"
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+  - key: VMISES
+    description: >-
+      Von Mises plasticity parameters.
+    type: object
+    requirement: required
+    condition: 'Model Type · "VM"(Von-Mises)'
+    appliesWhen:
+      - path: MODEL_TYPE
+        equals: "VM"
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    provenanceNote: >-
+      Declared by the section's JSON Schema as an object, and assigned to this
+      MODEL_TYPE value by the Specifications row that enumerates the six models
+      together with the sub-table heading that names the object. Members,
+      requiredness, defaults, value sets and conditions are that sub-table's;
+      it has no Value Type column, so each member's type is GET /info's, which
+      declares every one of them under this object on both products. See MD-10.
+    properties:
+      - key: INIT_YIELD_STRESS
+        description: >-
+          Initial Uniaxial Yield Stress
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: OPT_HARDENING
+        description: >-
+          Hardening Option · Activated: `0` / Inactivated: `1`
+        type: number
+        enum: [0, 1]
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: HARDENING_TYPE
+        description: >-
+          (`OPT_HARDENING`=0일 때만) `"ISO"` / `"KIN"` / `"MIX"`
+        type: string
+        enum: ["ISO", "KIN", "MIX"]
+        requirement: optional
+        condition: "OPT_HARDENING=0일 때만"
+        appliesWhen:
+          - path: VMISES.OPT_HARDENING
+            equals: 0
+        documentedDefault: "ISO"
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: HARDENING_COEF
+        description: >-
+          (`OPT_HARDENING`=0일 때) Hardening Coefficient
+        type: number
+        requirement: required
+        condition: "OPT_HARDENING=0일 때"
+        appliesWhen:
+          - path: VMISES.OPT_HARDENING
+            equals: 0
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: BACK_STRESS_COEF
+        description: >-
+          (`HARDENING_TYPE`=`"MIX"`일 때) Back Stress Coefficient
+        type: number
+        requirement: required
+        condition: "HARDENING_TYPE=\"MIX\"일 때"
+        appliesWhen:
+          - path: VMISES.HARDENING_TYPE
+            equals: "MIX"
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+  - key: MOHRCL
+    description: >-
+      Mohr-Coulomb plasticity parameters.
+    type: object
+    requirement: required
+    condition: 'Model Type · "MC"(Mohr-Coulomb)'
+    appliesWhen:
+      - path: MODEL_TYPE
+        equals: "MC"
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    provenanceNote: >-
+      Declared by the section's JSON Schema as an object, and assigned to this
+      MODEL_TYPE value by the Specifications row that enumerates the six models
+      together with the sub-table heading that names the object. Members,
+      requiredness, defaults, value sets and conditions are that sub-table's;
+      it has no Value Type column, so each member's type is GET /info's, which
+      declares every one of them under this object on both products. See MD-10.
+    properties:
+      - key: INIT_COHESION
+        description: >-
+          Initial Cohesion
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: INIT_FRIC_ANGLE
+        description: >-
+          Initial Friction Angle (deg)
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: OPT_HARDENING
+        description: >-
+          Hardening Option · Activated: `0` / Inactivated: `1`
+        type: number
+        enum: [0, 1]
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: HARDENING_TYPE
+        description: >-
+          (`OPT_HARDENING`=0일 때만) `"ISO"` / `"KIN"` / `"MIX"`
+        type: string
+        enum: ["ISO", "KIN", "MIX"]
+        requirement: optional
+        condition: "OPT_HARDENING=0일 때만"
+        appliesWhen:
+          - path: MOHRCL.OPT_HARDENING
+            equals: 0
+        documentedDefault: "ISO"
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: HARDENING_COEF
+        description: >-
+          (`OPT_HARDENING`=0일 때) Hardening Coefficient
+        type: number
+        requirement: required
+        condition: "OPT_HARDENING=0일 때"
+        appliesWhen:
+          - path: MOHRCL.OPT_HARDENING
+            equals: 0
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: BACK_STRESS_COEF
+        description: >-
+          (`HARDENING_TYPE`=`"MIX"`일 때) Back Stress Coefficient
+        type: number
+        requirement: required
+        condition: "HARDENING_TYPE=\"MIX\"일 때"
+        appliesWhen:
+          - path: MOHRCL.HARDENING_TYPE
+            equals: "MIX"
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+  - key: DRUCKER
+    description: >-
+      Drucker-Prager plasticity parameters.
+    type: object
+    requirement: required
+    condition: 'Model Type · "DP"(Drucker-Prager)'
+    appliesWhen:
+      - path: MODEL_TYPE
+        equals: "DP"
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    provenanceNote: >-
+      Declared by the section's JSON Schema as an object, and assigned to this
+      MODEL_TYPE value by the Specifications row that enumerates the six models
+      together with the sub-table heading that names the object. Members,
+      requiredness, defaults, value sets and conditions are that sub-table's;
+      it has no Value Type column, so each member's type is GET /info's, which
+      declares every one of them under this object on both products. See MD-10.
+    properties:
+      - key: INIT_COHESION
+        description: >-
+          Initial Cohesion
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: INIT_FRIC_ANGLE
+        description: >-
+          Initial Friction Angle (deg)
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: OPT_HARDENING
+        description: >-
+          Hardening Option · Activated: `0` / Inactivated: `1`
+        type: number
+        enum: [0, 1]
+        requirement: optional
+        documentedDefault: 0
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: HARDENING_TYPE
+        description: >-
+          (`OPT_HARDENING`=0일 때만) `"ISO"` / `"KIN"` / `"MIX"`
+        type: string
+        enum: ["ISO", "KIN", "MIX"]
+        requirement: optional
+        condition: "OPT_HARDENING=0일 때만"
+        appliesWhen:
+          - path: DRUCKER.OPT_HARDENING
+            equals: 0
+        documentedDefault: "ISO"
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: HARDENING_COEF
+        description: >-
+          (`OPT_HARDENING`=0일 때) Hardening Coefficient
+        type: number
+        requirement: required
+        condition: "OPT_HARDENING=0일 때"
+        appliesWhen:
+          - path: DRUCKER.OPT_HARDENING
+            equals: 0
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: BACK_STRESS_COEF
+        description: >-
+          (`HARDENING_TYPE`=`"MIX"`일 때) Back Stress Coefficient
+        type: number
+        requirement: required
+        condition: "HARDENING_TYPE=\"MIX\"일 때"
+        appliesWhen:
+          - path: DRUCKER.HARDENING_TYPE
+            equals: "MIX"
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+  - key: MASONRY
+    description: >-
+      Masonry plasticity parameters.
+    type: object
+    requirement: required
+    condition: 'Model Type · "MA"(Masonry)'
+    appliesWhen:
+      - path: MODEL_TYPE
+        equals: "MA"
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    provenanceNote: >-
+      Declared by the section's JSON Schema as an object, and assigned to this
+      MODEL_TYPE value by the Specifications row that enumerates the six models
+      together with the sub-table heading that names the object. Members,
+      requiredness, defaults, value sets and conditions are that sub-table's;
+      it has no Value Type column, so each member's type is GET /info's, which
+      declares every one of them under this object on both products. See MD-10.
+    properties:
+      - key: BM
+        description: >-
+          Brick material properties
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: YOUNG_S_MODULUS
+            description: >-
+              Young's Modulus
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: POSSIONS_S_RATIO
+            description: >-
+              Poisson's Ratio
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: TENSION_STRENGTH
+            description: >-
+              Tensile Strength
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: SOFTENING_PARAMETER
+            description: >-
+              Stiffness Reduction Factor
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+      - key: BED_JOINT
+        description: >-
+          Bed Joint material properties
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: YOUNG_S_MODULUS
+            description: >-
+              Young's Modulus
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: POSSIONS_S_RATIO
+            description: >-
+              Poisson's Ratio
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: TENSION_STRENGTH
+            description: >-
+              Tensile Strength
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: HARDENING_PARAM
+            description: >-
+              Stiffness Reduction Factor
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+      - key: HEAD_JOINT
+        description: >-
+          Head Joint material properties
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: YOUNG_S_MODULUS
+            description: >-
+              Young's Modulus
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: POSSIONS_S_RATIO
+            description: >-
+              Poisson's Ratio
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: TENSION_STRENGTH
+            description: >-
+              Tensile Strength
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: HARDENING_PARAM
+            description: >-
+              Stiffness Reduction Factor
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+      - key: GEOM
+        description: >-
+          형상 정보 object
+        type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: BRICK_LENGTH
+            description: >-
+              Brick Length
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: BRICK_HEIGHT
+            description: >-
+              Brick Height
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: THICKNESS_BED
+            description: >-
+              Thickness of Bed
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: THICKNESS_HEAD
+            description: >-
+              Thickness of Head
+            type: number
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: COORD_TYPE
+            description: >-
+              Material Coordinate System(수직/수평) · Global-Y/Global-X: `0` / Local-y/Local-z: `-1` / Global-Z/Angle: `-4`
+            type: integer
+            enum: [0, -1, -4]
+            requirement: required
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+          - key: COORD_ANGLE
+            description: >-
+              (`COORD_TYPE`=`-4`일 때) Global X축 기준 각도
+            type: number
+            requirement: required
+            condition: "COORD_TYPE=-4일 때"
+            appliesWhen:
+              - path: MASONRY.GEOM.COORD_TYPE
+                equals: -4
+            documentedDefault: null
+            documentedOptional: false
+            safeToOmit: unverified
+            provenance: manual
+    # The prose above the first table says BM, BED_JOINT and HEAD_JOINT each
+    # carry the table's rows, SOFTENING_PARAMETER in BM and HARDENING_PARAM
+    # in the two joints, and that all are Required; GEOM is the second table.
+  - key: CONCDMG
+    description: >-
+      Concrete Damage plasticity parameters.
+    type: object
+    requirement: required
+    condition: 'Model Type · "DM"(Concrete Damage)'
+    appliesWhen:
+      - path: MODEL_TYPE
+        equals: "DM"
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    provenanceNote: >-
+      Declared by the section's JSON Schema as an object, and assigned to this
+      MODEL_TYPE value by the Specifications row that enumerates the six models
+      together with the sub-table heading that names the object. Members,
+      requiredness, defaults, value sets and conditions are that sub-table's;
+      it has no Value Type column, so each member's type is GET /info's, which
+      declares every one of them under this object on both products. See MD-10.
+    properties:
+      - key: DILIATION_ANGLE
+        description: >-
+          Dilation Angle
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: ECCEN
+        description: >-
+          Eccentricity
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: FBO_FCO
+        description: >-
+          fbo/fco
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: K
+        description: >-
+          K
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: VISCOSITY_PARAM
+        description: >-
+          Viscosity Parameter
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: COMP_ITEMS
+        description: >-
+          Compressive Behavior — Array of `{INELASTIC_STRAIN, YIELD_STRESS, DAMAGE}`
+        type: array
+        items:
+          type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: INELASTIC_STRAIN
+            description: >-
+              Inelastic Strain
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: YIELD_STRESS
+            description: >-
+              Yield Stress
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: DAMAGE
+            description: >-
+              Damage
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+      - key: TENSILE_ITEMS
+        description: >-
+          Tensile Behavior — Array of `{INELASTIC_STRAIN, YIELD_STRESS, DAMAGE}`
+        type: array
+        items:
+          type: object
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: INELASTIC_STRAIN
+            description: >-
+              Inelastic Strain
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: YIELD_STRESS
+            description: >-
+              Yield Stress
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+          - key: DAMAGE
+            description: >-
+              Damage
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: info_schema
+    # COMP_ITEMS and TENSILE_ITEMS name their element keys in the row's
+    # description without a requiredness for each, so the element members
+    # are /info's alone and stay unstated.
+
+manualDefects:
+  - describes: field_name
+    manualSays: >-
+      The Specifications table lists two keys, NAME and MODEL_TYPE. The six
+      model-parameter objects appear only as sub-table headings
+      (`Tresca / Von-Mises 공통 파라미터 ("TRESCA" or "VMISES" object)`), never as rows
+      with a key of their own.
+    actual: >-
+      The same section's JSON Schema declares TRESCA, VMISES, MOHRCL, DRUCKER,
+      MASONRY and CONCDMG as object properties of the request, and its Request
+      Body sends `"MODEL_TYPE": "VM"` alongside a `"VMISES"` object. A contract
+      built from the table alone would be missing the entire payload below the
+      model type.
+    evidence: >-
+      docs/manual_defects_register.md MD-10, measured by comparing every
+      section's Specifications table against its own JSON Schema block. The
+      six objects are declared here as conditional fields on MODEL_TYPE, whose
+      six values the Specifications row does enumerate; their members are not,
+      because the sub-tables carry no Value Type column.
+
+sdkRules:
+  - id: db-epmt-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-epmt-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 04_DB_Properties.md line 905
+  table: Specifications
+  missingColumns:
+    - heading: "Masonry 파라미터 (`\"MASONRY\"` object)"
+      line: 936
+      columns: [Default]
+    - heading: "Masonry 파라미터 (`\"MASONRY\"` object)"
+      line: 945
+      columns: [Default]
+    - heading: "Concrete Damage 파라미터 (`\"CONCDMG\"` object)"
+      line: 956
+      columns: [Default]
+  structuralTables:
+    - heading: "Tresca / Von-Mises 공통 파라미터 (`\"TRESCA\"` or `\"VMISES\"` object)"
+      line: 912
+      paths: [TRESCA, VMISES]
+    - heading: "Mohr-Coulomb / Drucker-Prager 공통 파라미터 (`\"MOHRCL\"` or `\"DRUCKER\"` object)"
+      line: 922
+      paths: [MOHRCL, DRUCKER]
+    - heading: "Masonry 파라미터 (`\"MASONRY\"` object)"
+      line: 936
+      paths: [MASONRY.BM, MASONRY.BED_JOINT, MASONRY.HEAD_JOINT]
+    - heading: "Masonry 파라미터 (`\"MASONRY\"` object)"
+      line: 945
+      paths: [MASONRY.GEOM]
+    - heading: "Concrete Damage 파라미터 (`\"CONCDMG\"` object)"
+      line: 956
+      paths: [CONCDMG]

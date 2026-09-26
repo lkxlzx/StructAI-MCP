@@ -1,0 +1,339 @@
+# /db/ELNK
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-elnk
+endpoint: /db/ELNK
+name: Elastic Link
+surface:
+  className: ElasticLink
+  exportName: elasticLink
+  modulePath: [db, boundary]
+  payloadTypeName: ElasticLinkPayload
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 05_DB_Boundary.md
+    section: "6. `/db/ELNK` — Elastic Link"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-write-sweep-2026-07-29
+    - product: gen
+      ref: db-write-sweep-2026-07-29
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/ELNK/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: NODE
+    description: >-
+      Node Numbers [i-node, j-node]
+    type: array
+    items:
+      type: integer
+    minItems: 2
+    maxItems: 2
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: BNGR_NAME
+    description: >-
+      Boundary Group Name
+    type: string
+    requirement: optional
+    documentedDefault: ""
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's ElasticLink case completed a live
+      create-read-update-delete round trip on gen and civil without this field
+      in its payload. That is evidence the call is accepted, not that the
+      resulting model is what an engineer wanted.
+    provenance: manual
+  - key: ANGLE
+    description: >-
+      Beta Angle (°)
+    type: number
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: LINK
+    description: >-
+      Link Type
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+
+  - key: SDR
+    description: >-
+      SDx SDy SDz SRx SRy SRz
+    type: array
+    items:
+      type: number
+    minItems: 6
+    maxItems: 6
+    requirement: conditional
+    condition: 'LINK 타입별 추가 파라미터: LINK = "GEN" / "TENS" / "COMP"'
+    appliesWhen:
+      - path: LINK
+        in: ["GEN", "TENS", "COMP"]
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    # RESOLVED: stated elsewhere in the same section - section 6's Specifications
+    # table has four rows, and the section's second table, "LINK 타입별 추가
+    # 파라미터", names the rest inside its 추가 키 cells rather than as rows of
+    # their own. The extractor reads rows, so it saw none of them; see
+    # extraction.prose. The array order is the section's own sentence at line
+    # 537. Under "TENS" and "COMP" the same cell adds "(Dx만 유효)", which is a
+    # statement about which entries carry meaning, not about the array's length.
+  - key: R_S
+    description: >-
+      R_SDx R_SDy R_SDz R_SRx R_SRy R_SRz
+    type: array
+    items:
+      type: boolean
+    minItems: 6
+    maxItems: 6
+    requirement: conditional
+    condition: 'LINK 타입별 추가 파라미터: LINK = "GEN"'
+    appliesWhen:
+      - path: LINK
+        equals: "GEN"
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    # RESOLVED: stated elsewhere in the same section, in the "GEN" row's 추가 키
+    # cell. The manual gives the array order once, for SDR and R_S together;
+    # the per-entry names here are the server's own, from GET /info/db/ELNK.
+  - key: bSHEAR
+    description: >-
+      SHEAR
+    type: boolean
+    requirement: conditional
+    condition: 'LINK 타입별 추가 파라미터: LINK = "GEN" / "MULTILINEAR" / "RAILINTERACT"'
+    appliesWhen:
+      - path: LINK
+        in: ["GEN", "MULTILINEAR", "RAILINTERACT"]
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    # RESOLVED: stated elsewhere in the same section - three of the seven LINK
+    # rows name it. The description is the server's own from /info; the manual
+    # gives the key no gloss anywhere.
+  - key: DR
+    description: >-
+      DRy DRz
+    type: array
+    items:
+      type: number
+    minItems: 2
+    maxItems: 2
+    requirement: conditional
+    condition: 'LINK 타입별 추가 파라미터: LINK = "GEN"'
+    appliesWhen:
+      - path: LINK
+        equals: "GEN"
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    # RESOLVED: stated elsewhere in the same section, as `DR[2]` in the "GEN"
+    # row. The two entries are named by /info's description.
+  - key: DIR
+    description: >-
+      Direction
+    type: integer
+    requirement: conditional
+    condition: 'LINK 타입별 추가 파라미터: LINK = "MULTILINEAR" / "RAILINTERACT"'
+    appliesWhen:
+      - path: LINK
+        in: ["MULTILINEAR", "RAILINTERACT"]
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    # RESOLVED: no enum is transcribed, and this is the reason - the two rows
+    # that name DIR give it two different ranges. "MULTILINEAR" documents
+    # 0=Dx/1=Dy/2=Dz/3=Rx/4=Ry/5=Rz and "RAILINTERACT" documents "1=Dy/2=Dz만
+    # 유효", which the manual itself flags as differing. A single enum would
+    # have to be the union, and the union is a value set neither branch
+    # accepts. The per-branch ranges are a gate `appliesWhen` cannot express:
+    # it selects which fields apply, not which values one of them may take.
+  - key: MLFC
+    description: >-
+      Function
+    type: integer
+    requirement: conditional
+    condition: 'LINK 타입별 추가 파라미터: LINK = "MULTILINEAR"'
+    appliesWhen:
+      - path: LINK
+        equals: "MULTILINEAR"
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    # RESOLVED: stated elsewhere in the same section - the "MULTILINEAR" row
+    # gives it as `MLFC`(함수 ID), and the Request Example sends `"MLFC": 1`.
+    # It is a reference to a record of another table, so a caller has to
+    # create that function first; nothing in this section says which endpoint.
+  - key: RLFC
+    description: >-
+      Rail Track Interaction Function
+    type: integer
+    requirement: conditional
+    condition: 'LINK 타입별 추가 파라미터: LINK = "RAILINTERACT"'
+    appliesWhen:
+      - path: LINK
+        equals: "RAILINTERACT"
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    # RESOLVED: stated elsewhere in the same section, as `RLFC`(함수 ID) in the
+    # "RAILINTERACT" row. The description is /info's; the manual names the key
+    # and its role and nothing more.
+  - key: DRENDI
+    description: >-
+      DistRatioEndI
+    type: number
+    requirement: conditional
+    condition: 'LINK 타입별 추가 파라미터: LINK = "MULTILINEAR" / "RAILINTERACT"'
+    appliesWhen:
+      - path: LINK
+        in: ["MULTILINEAR", "RAILINTERACT"]
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    # RESOLVED: stated elsewhere in the same section - both function-driven
+    # rows name it, and the Python example annotates its value as
+    # "전단 스프링 위치 비율". The description is the server's own.
+sdkRules:
+  - id: db-elnk-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-elnk-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 05_DB_Boundary.md line 512
+  table: 공통 파라미터
+  prose:
+    - line: 529
+      quote: >-
+        | `"GEN"` | General (6자유도 스프링) | `SDR[6]`, `R_S[6]`, `bSHEAR`,
+        `DR[2]` |
+      paths: [SDR, R_S, bSHEAR, DR]
+    - line: 532
+      quote: '| `"TENS"` | Tension-Only | `SDR[6]` (Dx만 유효) |'
+      paths: [SDR]
+    - line: 533
+      quote: '| `"COMP"` | Compression-Only | `SDR[6]` (Dx만 유효) |'
+      paths: [SDR]
+    - line: 534
+      quote: >-
+        | `"MULTILINEAR"` | Multi-Linear |
+        `DIR`(0=Dx/1=Dy/2=Dz/3=Rx/4=Ry/5=Rz), `MLFC`(함수 ID), `bSHEAR`,
+        `DRENDI` |
+      paths: [DIR, MLFC, bSHEAR, DRENDI]
+    - line: 535
+      quote: >-
+        | `"RAILINTERACT"` | Rail Track Interaction | `DIR`(**1=Dy/2=Dz만
+        유효** — Multi-Linear와 enum 범위가 다름), `RLFC`(함수 ID), `bSHEAR`,
+        `DRENDI` |
+      paths: [DIR, RLFC, bSHEAR, DRENDI]
+    - line: 537
+      quote: '`SDR` / `R_S` 배열 순서: `[SDx, SDy, SDz, SRx, SRy, SRz]`'
+      paths: [SDR, R_S]

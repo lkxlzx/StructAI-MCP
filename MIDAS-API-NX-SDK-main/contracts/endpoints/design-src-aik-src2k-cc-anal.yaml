@@ -1,0 +1,130 @@
+# /DESIGN/SRC/AIK-SRC2K/CC-ANAL
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: design-src-aik-src2k-cc-anal
+endpoint: /DESIGN/SRC/AIK-SRC2K/CC-ANAL
+name: SRC Column Checking Perform
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 27_Design_SRC_AIKSRC2K.md
+    section: "18. `DESIGN/SRC/AIK-SRC2K/CC-ANAL` — SRC Column Checking Perform (SRC 기둥 검토 수행)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-08-10
+    - product: gen
+      ref: db-read-sweep-2026-08-10
+
+operations:
+  - method: POST
+    surface:
+      exportName: performSrcColumnCheck
+      modulePath: [design, srcAiksrc2k]
+      argumentTypeName: SrcMemberCheckPerformArgument
+      documentation: |-
+        docs/manual/27_Design_SRC_AIKSRC2K.md #18 — CC-ANAL — SRC Column
+        Check Perform. Response: ``{"message": "success"}``.
+
+        ⚠️ Never independently tested. The RC equivalent
+        (``design.rc_kds.checks.perform_column_check``, CC-ANAL — same endpoint
+        code, different design-code namespace) was confirmed to hang Gen NX
+        2026 (v2.1), build 06/23/2026, then ran clean on that same build on
+        2026-07-25 — the trigger is unidentified, not fixed; see
+        docs/live_verification_notes.md. Every test on both sides used the
+        **KDS 41 20:2022 RC** code, so nothing is confirmed either way for this
+        SRC path. Use a short timeout and read ``get_src_column_check_table``
+        back regardless of whether this call returns.
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: PERFORM_TYPE
+    description: >-
+      설계 계산 대상 타입 선택. ELEMS: 요소번호별, SECTIONS: 단면번호별, ALL: 전체 요소. — ALL=전체 요소;
+      ELEMS=요소번호별; SECTIONS=단면번호별
+    type: string
+    requirement: optional
+    documentedDefault: ALL
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: ELEMS
+    description: >-
+      요소 번호 입력.
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: KEYS
+        description: >-
+          개별 ID 지정
+        type: array
+        items:
+          type: integer
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ELEMS' with a tree marker rather than
+        # a path
+      - key: TO
+        description: >-
+          ID 범위 지정 (예: '1to160')
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ELEMS' with a tree marker rather than
+        # a path
+      - key: STRUCTURE_GROUP_NAME
+        description: >-
+          구조 그룹 이름 지정
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'ELEMS' with a tree marker rather than
+        # a path
+  - key: SECTIONS
+    description: >-
+      단면 번호 입력.
+    type: array
+    items:
+      type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+
+extraction:
+  source: 27_Design_SRC_AIKSRC2K.md line 3330
+  table: 파라미터

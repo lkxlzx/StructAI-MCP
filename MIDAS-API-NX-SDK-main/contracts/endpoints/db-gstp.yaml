@@ -1,0 +1,221 @@
+# /db/GSTP -- Define General Spring Type
+#
+# Sources: docs/manual/05_DB_Boundary.md #3 and the matching Civil/Gen live
+# verification records in docs/live_verification_notes.md. Neither SDK was
+# used to establish any contract fact below.
+contractVersion: 1
+id: db-gstp
+endpoint: /db/GSTP
+name: Define General Spring Type
+surface:
+  className: GeneralSpringType
+  exportName: generalSpringType
+  modulePath: [db, boundary]
+  payloadTypeName: GeneralSpringTypePayload
+summary: >-
+  Defines a general spring type with symmetric 6x6 stiffness, mass and damping
+  matrices represented by their 21 upper-triangular values.
+
+products: [gen, civil]
+productsEvidence: >-
+  A Civil NX full CRUD round trip and a Gen NX matrix-write inspection both
+  succeeded; each observation is recorded below.
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 05_DB_Boundary.md
+    section: "3. `/db/GSTP` — Define General Spring Type"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: gen
+      ref: db-gstp-matrix-order-2026-08-27
+    - product: civil
+      ref: db-gstp-crud-2026-07-26
+
+operations:
+  - method: GET
+    risk: read_only
+    summary: Return the defined general spring types.
+    request:
+      wrapper: none
+    response:
+      wrapper: unknown
+
+  - method: POST
+    risk: write
+    summary: Create general spring types using an ID-keyed Assign map.
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: unknown
+
+  - method: PUT
+    risk: write
+    summary: Update general spring types using an ID-keyed Assign map.
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: unknown
+
+  - method: DELETE
+    variant: per_id
+    path: /db/GSTP/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the general spring type named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: unknown
+    notes: >-
+      The manual does not document this path. The shared live DELETE finding
+      establishes it as the selective-delete form for /db resources.
+
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire general-spring-type table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: The manual's documented DELETE body form.
+    response:
+      wrapper: unknown
+    notes: >-
+      The documented bare-endpoint DELETE ignores the ids in its Assign body
+      and empties the table, as observed in the shared live DELETE finding.
+
+fields:
+  - key: NAME
+    description: General spring name.
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: OPT_STIFFNESS
+    description: Stiffness-matrix option.
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: SPRING
+    description: 21-value stiffness matrix.
+    type: array
+    items:
+      type: number
+    minItems: 21
+    maxItems: 21
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: live_verified
+    provenanceNote: >-
+      The manual's 21-value diagonal-first mapping was confirmed by a Gen NX
+      probe with one distinct value at every index.
+  - key: OPT_MASS
+    description: Mass-matrix option.
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's confirmed GeneralSpringType case completed
+      create/read/update/read/delete on Gen and Civil without this field. The
+      public SDK sends no endpoint-specific normalization for this record.
+    provenance: manual
+  - key: MASS
+    description: 21-value mass matrix.
+    type: array
+    items:
+      type: number
+    minItems: 21
+    maxItems: 21
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's confirmed GeneralSpringType case completed
+      create/read/update/read/delete on Gen and Civil without this field. The
+      public SDK sends no endpoint-specific normalization for this record.
+    provenance: manual
+  - key: OPT_DAMPING
+    description: Damping-matrix option.
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's confirmed GeneralSpringType case completed
+      create/read/update/read/delete on Gen and Civil without this field. The
+      public SDK sends no endpoint-specific normalization for this record.
+    provenance: manual
+  - key: DAMPING
+    description: 21-value damping matrix.
+    type: array
+    items:
+      type: number
+    minItems: 21
+    maxItems: 21
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's confirmed GeneralSpringType case completed
+      create/read/update/read/delete on Gen and Civil without this field. The
+      public SDK sends no endpoint-specific normalization for this record.
+    provenance: manual
+
+sdkRules:
+  - id: gstp-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's bare-endpoint DELETE body ignores named ids and empties the
+      whole table. The per-id path is the shared live-verified selective-delete
+      form for /db resources.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the whole_table operation only when deleting every spring type is intended.
+  - id: gstp-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying all general spring types is destructive and the documented body
+      does so even when it names only one id.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation for a selected spring type.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+manualDefects:
+  - describes: behaviour
+    manualSays: >-
+      DELETE /db/GSTP with an ID-keyed Assign body deletes the named spring type.
+    actual: >-
+      The bare-endpoint DELETE body ignores its ids and empties the table; the
+      undocumented /db/GSTP/{id} path is the selective-delete form.
+    evidence: docs/live_verification_notes.md.
+
+extraction:
+  source: 05_DB_Boundary.md line 294
+  table: 요청 파라미터

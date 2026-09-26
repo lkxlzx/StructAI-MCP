@@ -1,0 +1,1077 @@
+# /db/WVLD
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-wvld
+endpoint: /db/WVLD
+name: Wave Loads
+surface:
+  className: WaveLoad
+  exportName: waveLoad
+  modulePath: [db, miscLoads]
+  payloadTypeName: WaveLoadPayload
+  nestedTypes:
+    - {path: GROWTH, name: WaveLoadGrowthItem, namespace: DbMiscLoadsTypes}
+
+products: [civil]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 11_DB_Settlement_Misc_Loads.md
+    section: 5. /db/WVLD — Wave Loads
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_civil
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-08-31
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/WVLD/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: NAME
+    description: >-
+      Wave Load Name
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: DESC
+    description: >-
+      Description
+    type: string
+    requirement: optional
+    documentedDefault: ""
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bSTLD
+    description: >-
+      Use Static Load Generation
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bTHIS
+    description: >-
+      Use Time History Load Generation
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: NAME_THIS
+    description: >-
+      Time History Load Case Name
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: VERT_COORD
+    description: >-
+      Vertical Coordinate ("GLOBAL_X"(⚠️ 미확인) / "GLOBAL_Y" / "GLOBAL_Z")
+    type: string
+    requirement: required
+    documentedDefault: GLOBAL_Z
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: DENSITY
+    description: >-
+      Water Weight Density
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: DEPTH
+    description: >-
+      Water Depth
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: bSELFW
+    description: >-
+      Use Self Weight
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bBUOYANT
+    description: >-
+      Use Buoyancy Load
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: COEF
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: TYPE
+        description: >-
+          Type ("CONST"(Constant) / ⚠️미확인(Linear Interpolation, 리터럴 값 원문 미공개))
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: COEF_S
+        description: >-
+          Coefficients – Slender Element Array
+        type: array
+        items:
+          type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: GRUP
+            description: >-
+              Structure Group Name
+            type: string
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: DIA
+            description: >-
+              Diameter
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: DRAG_COEF_X
+            description: >-
+              Drag Coefficient X
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: DRAG_COEF_Y
+            description: >-
+              Drag Coefficient Y
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: DRAG_COEF_Z
+            description: >-
+              Drag Coefficient Z
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: INER_COEF_X
+            description: >-
+              Inertia Coefficient X
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: INER_COEF_Y
+            description: >-
+              Inertia Coefficient Y
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: INER_COEF_Z
+            description: >-
+              Inertia Coefficient Z
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+      - key: COEF_R
+        description: >-
+          Coefficients – Rigid Element Array
+        type: array
+        items:
+          type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: GRUP
+            description: >-
+              Structure Group Name
+            type: string
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: DIA
+            description: >-
+              Diameter
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: DRAG_COEF_X
+            description: >-
+              Drag Coefficient X
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: DRAG_COEF_Y
+            description: >-
+              Drag Coefficient Y
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: DRAG_COEF_Z
+            description: >-
+              Drag Coefficient Z
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: INER_COEF_X
+            description: >-
+              Inertia Coefficient X
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: INER_COEF_Y
+            description: >-
+              Inertia Coefficient Y
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: INER_COEF_Z
+            description: >-
+              Inertia Coefficient Z
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+      - key: bOVER
+        description: >-
+          Override Coefficients with Structure Group
+        type: boolean
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: OVER_S
+        description: >-
+          Override Slender Element Array
+        type: array
+        items:
+          type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: GRUP
+            description: >-
+              Structure Group Name
+            type: string
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: DIA
+            description: >-
+              Diameter
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: DRAG_COEF_X
+            description: >-
+              Drag Coefficient X
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: DRAG_COEF_Y
+            description: >-
+              Drag Coefficient Y
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: DRAG_COEF_Z
+            description: >-
+              Drag Coefficient Z
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: INER_COEF_X
+            description: >-
+              Inertia Coefficient X
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: INER_COEF_Y
+            description: >-
+              Inertia Coefficient Y
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: INER_COEF_Z
+            description: >-
+              Inertia Coefficient Z
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+      - key: OVER_R
+        description: >-
+          Override Rigid Element Array
+        type: array
+        items:
+          type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: GRUP
+            description: >-
+              Structure Group Name
+            type: string
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: DIA
+            description: >-
+              Diameter
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: DRAG_COEF_X
+            description: >-
+              Drag Coefficient X
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: DRAG_COEF_Y
+            description: >-
+              Drag Coefficient Y
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: DRAG_COEF_Z
+            description: >-
+              Drag Coefficient Z
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: INER_COEF_X
+            description: >-
+              Inertia Coefficient X
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: INER_COEF_Y
+            description: >-
+              Inertia Coefficient Y
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: INER_COEF_Z
+            description: >-
+              Inertia Coefficient Z
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+  - key: CHAR
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: THEORY
+        description: >-
+          Theory Type ("AIRY" / "STOKES" / "STREAM")
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: FUNC
+        description: >-
+          Function Order (Stokes/Stream 이론에서 사용)
+        type: integer
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: DIR
+        description: >-
+          Wave Direction (degrees)
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: HEIGHT
+        description: >-
+          Wave Height
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: CHAR_TYPE
+        description: >-
+          Wave Length / Wave Period 선택 ("LENGTH" / "PERIOD")
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: LENGTH
+        description: >-
+          Wave Length
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: PERIOD
+        description: >-
+          Wave Period
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: K_FACTOR
+        description: >-
+          Kinematics Factor
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: SURFACE_V
+        description: >-
+          Current Surface Velocity
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: BOTTOM_Y
+        description: >-
+          Current Bottom Velocity
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+  - key: PROF
+    type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: CUR_DIR
+        description: >-
+          Current Direction (degrees)
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: CUR_FACTOR
+        description: >-
+          Current Blockage Factor
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: GRID_DATA
+        description: >-
+          Grid Data (elevation × velocity points)
+        type: array
+        items:
+          type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: D
+            description: >-
+              Elevation
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+          - key: V
+            description: >-
+              Velocity
+            type: number
+            requirement: unstated
+            documentedDefault: null
+            documentedOptional: null
+            safeToOmit: unverified
+            provenance: manual
+  - key: FLOOD_GRUP
+    description: >-
+      Flood Condition (Structure Group Names)
+    type: array
+    items:
+      type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: GROWTH
+    description: >-
+      Marine Growth Data
+    type: array
+    items:
+      type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: Z
+        description: >-
+          Elevation
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: T
+        description: >-
+          Thickness
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+  - key: GRID_X
+    description: >-
+      Grid X Size
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: GRID_Z
+    description: >-
+      Grid Y Size
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: USERGRID
+    description: >-
+      User Defined Grid Data (2D Array)
+    type: array
+    items:
+      type: array
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: X
+        description: >-
+          X 좌표
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: Z
+        description: >-
+          Z 좌표
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: ELEV
+        description: >-
+          Elevation
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: VX
+        description: >-
+          Velocity X
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: VCX
+        description: >-
+          Current Velocity X
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: VT
+        description: >-
+          Total Velocity
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: VZ
+        description: >-
+          Velocity Z
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: AX
+        description: >-
+          Acceleration X
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: AZ
+        description: >-
+          Acceleration Z
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+  - key: TRAJ
+    description: >-
+      Trajectory Grid Data (2D Array)
+    type: array
+    items:
+      type: array
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: X
+        description: >-
+          X 좌표
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: Z
+        description: >-
+          Z 좌표
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: ELEV
+        description: >-
+          Elevation
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: VX
+        description: >-
+          Velocity X
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: VCX
+        description: >-
+          Current Velocity X
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: VT
+        description: >-
+          Total Velocity
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: VZ
+        description: >-
+          Velocity Z
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: AX
+        description: >-
+          Acceleration X
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+      - key: AZ
+        description: >-
+          Acceleration Z
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+  - key: CREST
+    description: >-
+      Crest Critical Position (리터럴 값 원문 미공개, 예제 확인값 "MXM")
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: UNIT
+    description: >-
+      Crest Position Unit (리터럴 값 원문 미공개, 예제 확인값 "PHASE")
+    type: string
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: INITAL_POS
+    description: >-
+      Initial Position
+    type: number
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: STEP
+    description: >-
+      Increase Step
+    type: number
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: POS
+    description: >-
+      Number of Positions
+    type: integer
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+
+sdkRules:
+  - id: db-wvld-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-wvld-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 11_DB_Settlement_Misc_Loads.md line 358
+  table: Parameters — 기본 설정
+  missingColumns:
+    - heading: Parameters — COEF 객체 (항력·관성력 계수)
+      line: 378
+      columns: [Default]
+    - heading: "COEF_S / COEF_R / OVER_S / OVER_R 항목 구조:"
+      line: 394
+      columns: [Default]
+    - heading: Parameters — CHAR 객체 (파랑 특성)
+      line: 407
+      columns: [Default]
+    - heading: Parameters — PROF 객체 (조류 프로파일)
+      line: 422
+      columns: [Default]
+    - heading: "GRID_DATA 항목 구조:"
+      line: 430
+      columns: [Default]
+    - heading: Parameters — 기타 설정
+      line: 437
+      columns: [Default]
+    - heading: "GROWTH 항목 구조:"
+      line: 459
+      columns: [Default]
+    - heading: "USERGRID / TRAJ 항목 구조 (각 격자점):"
+      line: 466
+      columns: [Default]
+  structuralTables:
+    - heading: Parameters — COEF 객체 (항력·관성력 계수)
+      line: 378
+      paths:
+        - COEF
+    - heading: "COEF_S / COEF_R / OVER_S / OVER_R 항목 구조:"
+      line: 394
+      paths:
+        - COEF.COEF_S
+        - COEF.COEF_R
+        - COEF.OVER_S
+        - COEF.OVER_R
+    - heading: Parameters — CHAR 객체 (파랑 특성)
+      line: 407
+      paths:
+        - CHAR
+    - heading: Parameters — PROF 객체 (조류 프로파일)
+      line: 422
+      paths:
+        - PROF
+    - heading: "GRID_DATA 항목 구조:"
+      line: 430
+      paths:
+        - PROF.GRID_DATA
+    - heading: Parameters — 기타 설정
+      line: 437
+      paths:
+        - "<root>"
+    - heading: "GROWTH 항목 구조:"
+      line: 459
+      paths:
+        - GROWTH
+    - heading: "USERGRID / TRAJ 항목 구조 (각 격자점):"
+      line: 466
+      paths:
+        - USERGRID
+        - TRAJ

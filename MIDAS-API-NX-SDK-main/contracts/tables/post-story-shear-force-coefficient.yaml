@@ -1,0 +1,26 @@
+contractVersion: 1
+id: post-story-shear-force-coefficient
+endpoint: /post/TABLE
+name: Story Shear Force Coefficient
+products: [gen, civil]
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 21_POST_StoryTables.md
+    section: "4. Story Shear Force Coefficient (R.S. Analysis)"
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getStoryShearForceCoefficientTable
+  modulePath: [story]
+  tableType: STORY_SHEAR_FORCE_COEFFICIENT
+  factory: fixed
+  optionNames: [components, constructionStage, loadCaseNames, nodeElements, stageSteps, styles, tableName, unit]
+  documentation: |-
+    docs/manual/21_POST_StoryTables.md #4 — Story Shear Force Coefficient (R.S. Analysis).
+
+    Requires a defined and analyzed response-spectrum (RS) load case in
+    load_case_names — DATA is returned empty otherwise.
+tableTypes:
+  - {value: STORY_SHEAR_FORCE_COEFFICIENT, provenance: manual}

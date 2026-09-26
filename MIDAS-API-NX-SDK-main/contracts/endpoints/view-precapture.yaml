@@ -1,0 +1,92 @@
+# /view/PRECAPTURE
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: view-precapture
+endpoint: /view/PRECAPTURE
+name: Dialog Capture
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 16_VIEW.md
+    section: "3. `/view/PRECAPTURE` — Dialog Capture"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-08-10
+    - product: gen
+      ref: db-read-sweep-2026-08-10
+
+operations:
+  - method: POST
+    surface:
+      exportName: precapture
+      modulePath: [view]
+      argumentTypeName: PrecaptureArgument
+      documentation: |-
+        docs/manual/16_VIEW.md #3 — /view/PRECAPTURE — Dialog Capture.
+      nestedTypes:
+        - {path: OPTION, name: PrecaptureOption, namespace: ViewTypes}
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: EXPORT_PATH
+    description: >-
+      이미지 파일 저장 경로 및 파일명
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: VIEW_TYPE
+    description: >-
+      미리보기 그림 타입 · 단면 섬유분할: "FIBR"
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: OPTION
+    description: >-
+      캡처 옵션
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: ID
+        description: >-
+          그림 타입 ID 번호
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+
+extraction:
+  source: 16_VIEW.md line 297
+  table: Parameters

@@ -1,0 +1,145 @@
+# /view/ACTIVE
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: view-active
+endpoint: /view/ACTIVE
+name: Active
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 16_VIEW.md
+    section: "5. `/view/ACTIVE` — Active"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-07-30
+    - product: gen
+      ref: db-read-sweep-2026-07-30
+
+operations:
+  - method: POST
+    surface:
+      exportName: setActive
+      modulePath: [view]
+      argumentTypeName: ActiveArgument
+      documentation: |-
+        docs/manual/16_VIEW.md #5 — /view/ACTIVE — Active.
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: ACTIVE_MODE
+    description: >-
+      활성화 모드 · 전체 활성화: "All"
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: N_LIST
+    description: >-
+      노드 번호 목록
+    type: array
+    items:
+      type: integer
+    requirement: conditional
+    condition: "모드: Active"
+    appliesWhen:
+      - path: ACTIVE_MODE
+        equals: Active
+    # The manual's table has a mode column: this row is Required under
+    # ACTIVE_MODE "Active" only. Read flat, it was required in every mode,
+    # which would refuse {"ACTIVE_MODE": "All"}.
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: E_LIST
+    description: >-
+      요소 번호 목록
+    type: array
+    items:
+      type: integer
+    requirement: conditional
+    condition: "모드: Active"
+    appliesWhen:
+      - path: ACTIVE_MODE
+        equals: Active
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: IDENTITY_TYPE
+    description: >-
+      아이덴티티 타입 · 구조그룹: "Group" / 명명평면: "NamedPlane" / 하중그룹: "LoadGroup" / 경계그룹:
+      "BoundaryGroup" / 층: "STORY"
+    type: string
+    requirement: conditional
+    condition: "모드: Identity"
+    appliesWhen:
+      - path: ACTIVE_MODE
+        equals: Identity
+    # The manual's table has a mode column: this row is Required under
+    # ACTIVE_MODE "Identity" only. Read flat, it was required in every mode,
+    # which would refuse {"ACTIVE_MODE": "All"}.
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: IDENTITY_LIST
+    description: >-
+      아이덴티티 이름 목록(IDENTITY_TYPE="STORY"일 때는 층 이름 목록)
+    type: array
+    items:
+      type: string
+    requirement: conditional
+    condition: "모드: Identity"
+    appliesWhen:
+      - path: ACTIVE_MODE
+        equals: Identity
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: STORY_ACTIVE
+    description: >-
+      층 활성화 방식(IDENTITY_TYPE="STORY"일 때만) · 해당 층만: "FLOOR" / 위쪽 포함: "ABOVE" /
+      아래쪽 포함: "BELOW" / 양쪽 포함: "BOTH"
+    type: string
+    requirement: conditional
+    condition: "IDENTITY_TYPE=\"STORY\""
+    appliesWhen:
+      - path: IDENTITY_TYPE
+        equals: STORY
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+
+extraction:
+  source: 16_VIEW.md line 505
+  table: Parameters
+  missingColumns:
+    - heading: Parameters
+      line: 505
+      columns: [Default]

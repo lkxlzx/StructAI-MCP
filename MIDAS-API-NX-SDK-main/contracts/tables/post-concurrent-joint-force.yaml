@@ -1,0 +1,103 @@
+# Source: 19_POST_AnalysisResult_1.md section 13. No SDK source was used.
+contractVersion: 1
+id: post-concurrent-joint-force
+endpoint: /post/TABLE
+name: Concurrent Joint Force
+summary: Concurrent forces at a selected reaction node.
+products: [gen, civil]
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 19_POST_AnalysisResult_1.md
+    section: "13. Concurrent Joint Force"
+verification: {status: manual_only}
+risk: read_only
+surface:
+  exportName: getConcurrentJointForceTable
+  modulePath: [result1]
+  tableType: CONCURRENT_JOINT_FORCE
+  factory: fixed
+  optionNames: [additional, components, constructionStage, loadCaseNames, nodeElements, stageSteps, styles, tableName, unit]
+  documentation: |-
+    docs/manual/19_POST_AnalysisResult_1.md #13 — Concurrent Joint Force.
+
+    Added to the manual 2026-08-10 — previously undocumented. For the
+    reaction node/component named in ``additional``, finds the load
+    case(s)' extreme (max/min) reaction instant and reports every other
+    named load case's joint force at that same instant — typically paired
+    with moving-load ``(MV:max)``/``(MV:min)`` load cases.
+
+    node_elems/unit/styles/components/load_case_names/opt_cs/stage_step:
+    the chapter's common 10-item parameter table applies to all 13 tables
+    including this one — table #13's own note says ``ADDITIONAL`` is
+    added *on top of* those 10 items, not in place of them. COMPONENTS in
+    particular drives which "Elem./Component" blocks appear in the
+    response (see below).
+
+    additional: SET_REACTION_PARAMS — Required; the reaction node id and
+    which of its 6 components (Fx/Fy/Fz/Mx/My/Mz, as a 6-digit 0/1 string
+    e.g. "111111") to key the extreme-value search on.
+
+    Unlike the other tables in this module, HEAD is not a fixed column
+    list: it repeats a fixed 3-column prefix ("Index", "Elem.", "Load")
+    plus a "Elem./Component" + 6-DOF block per element found, so its
+    length depends on how many elements answer.
+
+    ⚠️ Live-tested 2026-08-13 on both products (Gen NX v2.1 / Civil NX
+    v2.2, both build 08/12/2026) against a plain static-load-case
+    cantilever-column model (a real fixed-support reaction, no moving
+    loads): the route accepts the request on both — no 404, no crash,
+    session stayed healthy — but both refused it with a clean, product-
+    specific error: Gen answered ``"there was an error creating utbl.
+    (ex PostMode ...)"``, Civil answered ``"No data found for the
+    specified node key."`` (confirmed the node id is right — a
+    string-typed ``NODE_KEY`` retry got a worse, clearly-wrong-shape
+    error, ruling out a type mismatch).
+
+    **The Gen error's "PostMode" wording is misleading — this is *not*
+    the same gate `get_wall_force_table`/`generate_bridge_girder_diagram`
+    are blocked on.** That gate (documented on `GSBG`, see
+    `docs/live_verification_notes.md`'s 2026-07-31 findings) clears once
+    a human manually clicks the "Post" tab in the NX GUI. Here, the user
+    confirmed the Gen NX GUI was **already showing Post mode active** at
+    the moment of this test, and the identical error persisted anyway —
+    so toggling to Post mode is not the fix for this specific table.
+    Combined with Civil's "no data for this node key" (on a node that
+    demonstrably does have reaction data), this points at the same root
+    cause on both products: no moving-load result data to search an
+    "extreme instant" over, matching this docstring's own
+    ``(MV:max)``/``(MV:min)`` note literally, not the generic Post-mode
+    gate. Route/shape is confirmed correct on both products; building
+    real moving-load (Vehicle/Lane/MV load case) test data to confirm
+    this table works when that data exists remains untested.
+  nestedTypes:
+    - {path: ADDITIONAL, name: ConcurrentJointForceAdditional, namespace: PostResult1Types}
+    - {path: ADDITIONAL.SET_REACTION_PARAMS, name: ConcurrentJointForceReactionParams, namespace: PostResult1Types}
+tableTypes:
+  - value: CONCURRENT_JOINT_FORCE
+    description: Concurrent joint force
+    headNote: >-
+      HEAD begins Index, Elem., Load, then repeats one 13-column block per
+      selected reaction component; the number of blocks is selected by the
+      required ADDITIONAL.SET_REACTION_PARAMS.COMPONENT value.
+    provenance: manual
+requestFields:
+  unsupported: [NODE_ELEMS, OPT_CS, STAGE_STEP]
+  required: [LOAD_CASE_NAMES]
+  additional:
+    - key: ADDITIONAL
+      description: Contains the required SET_REACTION_PARAMS object for the selected reaction node and components.
+      type: object
+      requirement: required
+      provenance: manual
+      # 19_POST_AnalysisResult_1.md #13, rows 2-1 to 2-1-2.
+      properties:
+        - key: SET_REACTION_PARAMS
+          description: 반력 절점 기준 설정
+          type: object
+          requirement: required
+          provenance: manual
+          properties:
+            - {key: NODE_KEY, description: 반력 절점 ID, type: integer, requirement: required, provenance: manual}
+            - {key: COMPONENT, description: '반력 성분 사용 여부 6자리(0/1), 순서 Fx·Fy·Fz·Mx·My·Mz', type: string, requirement: required, provenance: manual}

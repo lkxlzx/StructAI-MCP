@@ -1,0 +1,413 @@
+# /db/SDST
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-sdst
+endpoint: /db/SDST
+name: Seismic Device – Steel Damper
+surface:
+  className: SeismicDeviceSteelDamper
+  exportName: seismicDeviceSteelDamper
+  modulePath: [db, boundary]
+  payloadTypeName: SeismicDeviceSteelDamperPayload
+  nestedTypes:
+    - {path: BL2, name: SeismicDeviceSteelDamperBL2, namespace: DbBoundaryTypes}
+    - {path: COMMON, name: SeismicDeviceCommon, namespace: DbBoundaryTypes}
+    - {path: IK2, name: SeismicDeviceSteelDamperIK2, namespace: DbBoundaryTypes}
+    - {path: LY2, name: SeismicDeviceSteelDamperLY2, namespace: DbBoundaryTypes}
+    - {path: LY3, name: SeismicDeviceSteelDamperLY3, namespace: DbBoundaryTypes}
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 05_DB_Boundary.md
+    section: "18. `/db/SDST` — Seismic Device – Steel Damper"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-write-sweep-2026-08-31
+    - product: gen
+      ref: db-write-sweep-2026-08-31
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/SDST/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: COMMON
+    description: >-
+      Common Data
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: NAME
+        description: >-
+          Name
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: stated in these sibling sections: section 16,
+        # `/db/SDVI`, whose 요청 파라미터 table gives COMMON's six members as
+        # rows (1) to (6) - this section's own row says "Common Data" and
+        # stops there. This section's Request Example sends five of the
+        # six, omitting COMPANY, and GET /info/db/SDST declares all six
+        # with the same names and types on the product that answers. Until
+        # 2026-09-04 COMMON was an object with nothing in it, so the npm
+        # payload type offered a bare object where the server requires a
+        # name.
+      - key: DESC
+        description: >-
+          Description
+        type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      - key: INPUT_METHOD
+        description: >-
+          Input Method · 0=사용자 입력, 1=참조 DB
+        type: integer
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: COMPANY
+        description: >-
+          Company
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: PRODUCT_NAME
+        description: >-
+          Product Name
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: TYPE_NUMBER
+        description: >-
+          Type Number
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+  - key: DIR
+    description: >-
+      Direction
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: SDST_HYS_MODEL
+    description: >-
+      Hysteresis Model · Degrading Bilinear: "BL2" / Low Yielding Steel(LY2):
+      "LY2" / Low Yielding Steel(LY3): "LY3" / Isotropic-Kinematic(IK2): "IK2"
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: K0
+    description: >-
+      Initial Stiffness (K0)
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: P1
+    description: >-
+      Yield Strength (P1)
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: ALPHA1
+    description: >-
+      Stiffness Factor (α1)
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: KB
+    description: >-
+      Mounting Parts Stiffness (Kb)
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: BL2
+    description: >-
+      Degrading Bilinear 하위 데이터
+    type: object
+    requirement: conditional
+    condition: 'SDST_HYS_MODEL = "BL2"'
+    appliesWhen:
+      - path: SDST_HYS_MODEL
+        equals: "BL2"
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    # RESOLVED: stated elsewhere in the same section - the
+    # "`SDST_HYS_MODEL` 별 하위 객체" table at line 1533 gives one row per
+    # model, naming the object in its Key column and its members, with
+    # glosses, in a 하위 필드 cell. The parser reads Key columns, so it saw
+    # four object names and none of their members, and the contract
+    # carried neither until 2026-09-04. GET /info/db/SDST declares BL2,
+    # LY2, LY3 and IK2 with exactly these members.
+    properties:
+      - key: BETA
+        description: >-
+          Exponent in Unloading Stiffness Calculation (β)
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+  - key: LY2
+    description: >-
+      Low Yielding Steel (LY2) 하위 데이터
+    type: object
+    requirement: conditional
+    condition: 'SDST_HYS_MODEL = "LY2"'
+    appliesWhen:
+      - path: SDST_HYS_MODEL
+        equals: "LY2"
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: ALPHA2
+        description: >-
+          Stiffness Factor (α2)
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: THETA
+        description: >-
+          Strength Factor (θ)
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+  - key: LY3
+    description: >-
+      Low Yielding Steel (LY3) 하위 데이터
+    type: object
+    requirement: conditional
+    condition: 'SDST_HYS_MODEL = "LY3"'
+    appliesWhen:
+      - path: SDST_HYS_MODEL
+        equals: "LY3"
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: ALPHA2
+        description: >-
+          Stiffness Factor (α2)
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: THETA
+        description: >-
+          Strength Factor (θ)
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+      - key: GAMMA
+        description: >-
+          Stiffness Ratio (γ)
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+  - key: IK2
+    description: >-
+      Isotropic-Kinematic (IK2) 하위 데이터
+    type: object
+    requirement: conditional
+    condition: 'SDST_HYS_MODEL = "IK2"'
+    appliesWhen:
+      - path: SDST_HYS_MODEL
+        equals: "IK2"
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: GAMMA
+        description: >-
+          Isotropic Factor (γ)
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+
+sdkRules:
+  - id: db-sdst-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-sdst-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 05_DB_Boundary.md line 1521
+  table: 요청 파라미터
+  missingColumns:
+    - heading: 요청 파라미터
+      line: 1521
+      columns: [Default]
+    - heading: "`SDST_HYS_MODEL` 별 하위 객체"
+      line: 1533
+      columns: [Default]
+  structuralTables:
+    - heading: "`SDST_HYS_MODEL` 별 하위 객체"
+      line: 1533
+      paths: [BL2, LY2, LY3, IK2]
+      note: >-
+        Recorded as unmerged until 2026-09-04, on the reading that the table
+        "enumerates object keys but does not state a complete field-level
+        discriminator". It does state one: its Model column gives the literal
+        SDST_HYS_MODEL value for each row, and row 3 of the Specifications
+        table lists the same four literals against the same four objects. What
+        the table does not do is put the members in a Key column - they are in
+        a 하위 필드 cell - which is why the parser saw four names and no
+        members and this contract published four bare objects. Merged, with
+        each object's gate kept as `appliesWhen` on SDST_HYS_MODEL.
+  prose:
+    - line: 1291
+      quote: >-
+        | (1) | Name | `"NAME"` | String | Required | ... | (6) | Type Number |
+        `"TYPE_NUMBER"` | String | Required |  (section 16, /db/SDVI)
+      paths: [COMMON.NAME, COMMON.DESC, COMMON.INPUT_METHOD, COMMON.COMPANY,
+              COMMON.PRODUCT_NAME, COMMON.TYPE_NUMBER]
+    - line: 1536
+      quote: >-
+        | `"BL2"` | `"BL2"` | `BETA`(Exponent in Unloading Stiffness
+        Calculation) | ... | `"IK2"` | `"IK2"` | `GAMMA`(Isotropic Factor) |
+      paths: [BL2.BETA, LY2.ALPHA2, LY2.THETA, LY3.ALPHA2, LY3.THETA,
+              LY3.GAMMA, IK2.GAMMA]

@@ -1,0 +1,722 @@
+# /db/SPLC
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: db-splc
+endpoint: /db/SPLC
+name: Response Spectrum Load Cases
+surface:
+  className: ResponseSpectrumLoadCase
+  exportName: responseSpectrumLoadCase
+  modulePath: [db, dynamicLoads]
+  payloadTypeName: ResponseSpectrumLoadCasePayload
+  nestedTypes:
+    - {path: aUSEMODE, name: ResponseSpectrumUseMode, namespace: DbDynamicLoadsTypes}
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 09_DB_Dynamic_Loads.md
+    section: 2. /db/SPLC – Response Spectrum Load Cases
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_civil
+  records:
+    - product: civil
+      ref: db-write-sweep-2026-09-01
+
+operations:
+  - method: DELETE
+    variant: per_id
+    path: /db/SPLC/{id}
+    risk: destructive
+    mitigation: none
+    summary: Delete exactly the record named in the path.
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      Undocumented route, and the only DELETE form that deletes a selection
+      rather than the whole table - see risk db-delete-body-empties-table.
+  - method: DELETE
+    variant: whole_table
+    risk: destructive
+    mitigation: confirmation_required
+    summary: Empty the entire table.
+    request:
+      wrapper: assign
+      itemSchema: none
+      description: >-
+        The manual's documented form. The ids in that body are ignored.
+    response:
+      wrapper: message
+  - method: GET
+    risk: read_only
+    request:
+      wrapper: none
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: POST
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+  - method: PUT
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+    notes: >-
+      `aACCECC_ECCEN_LIST[].ALONG` is created but not updated. Live on Gen,
+      Build 09/15/2026: a POST stored 2.5, a following PUT echoed 3.5, and the
+      GET after it still returned 2.5. The accidental-eccentricity table is
+      unmerged, so the contract publishes no member to carry this; it is
+      recorded here because a PUT that reports success and changes nothing is
+      not something a caller can see.
+
+fields:
+  - key: NAME
+    description: >-
+      하중 케이스명
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: DESC
+    description: >-
+      설명
+    type: string
+    requirement: optional
+    documentedDefault: ""
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: DIR
+    description: >-
+      방향 ("XY" 또는 "Z")
+    type: string
+    requirement: optional
+    documentedDefault: XY
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: ANGLE
+    description: >-
+      가진 각도
+    type: number
+    requirement: optional
+    documentedDefault: 0
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: SCALE
+    description: >-
+      스케일 계수
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: PMFT
+    description: >-
+      주기 수정 계수
+    type: number
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: aFUNCNAME
+    description: >-
+      스펙트럼 함수명 목록
+    type: array
+    items:
+      type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: INTERP
+    description: >-
+      스펙트럼 데이터 보간 방법 ("LINEAR" / "LOG")
+    type: string
+    requirement: optional
+    documentedDefault: LINEAR
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: COMTYPE
+    description: >-
+      모드 조합 방법 ("SRSS" / "CQC" / "ABS" / "Linear")
+    type: string
+    requirement: optional
+    documentedDefault: CQC
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bADDSIGN
+    description: >-
+      결과에 부호 추가
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: iSIGNTYPE
+    description: >-
+      부호 추가 방법 (0=주모드방향, 1=절대최대값방향)
+    type: integer
+    requirement: optional
+    documentedDefault: 1
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bMODE
+    description: >-
+      모드 형상 선택
+    type: boolean
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: aUSEMODE
+    description: >-
+      사용 모드 목록
+    type: array
+    items:
+      type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: bUSE
+        description: >-
+          모드 사용 여부
+        type: boolean
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'aUSEMODE' by numbering it '(1)', not
+        # by naming a path
+      - key: MSFACTOR
+        description: >-
+          모드 형상 계수
+        type: number
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'aUSEMODE' by numbering it '(2)', not
+        # by naming a path
+  - key: bDAMP
+    description: >-
+      감쇠 방법 적용 여부
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bCDAMP
+    description: >-
+      감쇠비 보정 여부
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: iMDTYPE
+    description: >-
+      감쇠 방법 (1=Modal, 2=Mass&Stiff, 3=StrainEnergy)
+    type: integer
+    requirement: conditional
+    condition: bDAMP=true 시
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: bACCECC
+    description: >-
+      우발 편심 적용
+    products: [gen]
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: bACCECC_AUTO
+    description: >-
+      편심 데이터 (true=자동, false=사용자 정의)
+    products: [gen]
+    type: boolean
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's ResponseSpectrumLoadCase case completed a
+      confirmed create-read-update-delete round trip on gen without this field
+      in its payload. That is evidence the call is accepted, not that the
+      resulting model is what an engineer wanted.
+    provenance: live_corrected
+  - key: ACCECC_PERCENT
+    description: >-
+      편심 비율
+    products: [gen]
+    type: number
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's ResponseSpectrumLoadCase case completed a
+      confirmed create-read-update-delete round trip on gen without this field
+      in its payload. That is evidence the call is accepted, not that the
+      resulting model is what an engineer wanted.
+    provenance: live_corrected
+  - key: bACCECC_CONSIDER_GL
+    description: >-
+      GL 이하 편심 고려 여부
+    products: [gen]
+    type: boolean
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's ResponseSpectrumLoadCase case completed a
+      confirmed create-read-update-delete round trip on gen without this field
+      in its payload. That is evidence the call is accepted, not that the
+      resulting model is what an engineer wanted.
+    provenance: live_corrected
+  - key: bACCECC_MINIMUM_TORSION
+    description: >-
+      최소 우발 비틀림 모멘트 제한
+    products: [gen]
+    type: boolean
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's ResponseSpectrumLoadCase case completed a
+      confirmed create-read-update-delete round trip on gen without this field
+      in its payload. That is evidence the call is accepted, not that the
+      resulting model is what an engineer wanted.
+    provenance: live_corrected
+  - key: aACCECC_ECCEN_LIST
+    description: >-
+      편심 목록
+    products: [gen]
+    type: array
+    items:
+      type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's ResponseSpectrumLoadCase case completed a
+      confirmed create-read-update-delete round trip on gen without this field
+      in its payload. That is evidence the call is accepted, not that the
+      resulting model is what an engineer wanted.
+    provenance: live_corrected
+    # Rows 25-29 are marked Required under row 24's switch without saying
+    # "when bACCECC is true", and they are not required either way: a
+    # confirmed round trip omits them with bACCECC at its default, and
+    # bACCECC=true without any of them is accepted as well, the server
+    # supplying bACCECC_AUTO, bACCECC_CONSIDER_GL and
+    # bACCECC_MINIMUM_TORSION itself (Gen NX, 2026-09-22). An item's own
+    # STORY/CROSS/ALONG stay as the table states them; nothing sent a
+    # partial item.
+    properties:
+      - key: STORY
+        description: >-
+          층 이름
+        products: [gen]
+        type: string
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'aACCECC_ECCEN_LIST' by numbering
+        # it '(1)', not by naming a path
+      - key: CROSS
+        description: >-
+          Cross 방향 위치
+        products: [gen]
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'aACCECC_ECCEN_LIST' by numbering
+        # it '(2)', not by naming a path
+      - key: ALONG
+        description: >-
+          Along 방향 위치
+        products: [gen]
+        type: number
+        requirement: required
+        documentedDefault: null
+        documentedOptional: false
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'aACCECC_ECCEN_LIST' by numbering
+        # it '(3)', not by naming a path
+  - key: bNDP
+    description: 비소산 요소 설계
+    products: [gen]
+    type: boolean
+    requirement: optional
+    documentedDefault: false
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+  - key: NDP
+    description: 비소산 계수
+    products: [gen]
+    type: number
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: true
+    omissionEvidence: >-
+      scripts/live_crud_check.py's ResponseSpectrumLoadCase case completed a
+      confirmed create-read-update-delete round trip on gen without this field
+      in its payload. That is evidence the call is accepted, not that the
+      resulting model is what an engineer wanted.
+    provenance: live_corrected
+    # Marked Required as row (1) under bNDP. bNDP=true without it is accepted
+    # on Gen NX, and so is bNDP=true with it - but GET returns neither bNDP
+    # nor NDP afterwards in either case (2026-09-22), so what the server does
+    # with them is not established.
+  - key: DALL
+    description: >-
+      전체 모드 감쇠비
+    type: number
+    requirement: unstated
+    condition: Modal 감쇠 추가 파라미터 (bDAMP=true, iMDTYPE=1)
+    appliesWhen:
+      - path: bDAMP
+        equals: true
+      - path: iMDTYPE
+        equals: 1
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: live_verified
+  - key: aDAMPING
+    description: >-
+      모드별 감쇠비 목록
+    type: array
+    items:
+      type: object
+    requirement: unstated
+    condition: Modal 감쇠 추가 파라미터 (bDAMP=true, iMDTYPE=1)
+    appliesWhen:
+      - path: bDAMP
+        equals: true
+      - path: iMDTYPE
+        equals: 1
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: live_verified
+    properties:
+      - key: iMODE
+        description: >-
+          - 모드 번호
+        type: integer
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'aDAMPING' by a dash description
+        # row
+      - key: DAMPING
+        description: >-
+          - 감쇠비
+        type: number
+        requirement: unstated
+        documentedDefault: null
+        documentedOptional: null
+        safeToOmit: unverified
+        provenance: manual
+        # RESOLVED: the manual nests this under 'aDAMPING' by a dash description
+        # row
+  - key: iCOEF
+    description: >-
+      감쇠 유형 (1=직접 지정, 2=모달 감쇠로부터 계산)
+    type: integer
+    requirement: unstated
+    condition: "Mass & Stiffness Proportional 감쇠 추가 파라미터 (bDAMP=true, iMDTYPE=2)"
+    appliesWhen:
+      - path: bDAMP
+        equals: true
+      - path: iMDTYPE
+        equals: 2
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: live_verified
+    # The table's 비고 column reads "Required" for this row and "iCOEF=2 시" for
+    # iCALC through DR2. The column is a remark, not the Required column, so
+    # requiredness stays unstated and the gates are appliesWhen.
+  - key: bMASSP
+    description: >-
+      질량 비례 여부
+    type: boolean
+    requirement: unstated
+    condition: "Mass & Stiffness Proportional 감쇠 추가 파라미터 (bDAMP=true, iMDTYPE=2)"
+    appliesWhen:
+      - path: bDAMP
+        equals: true
+      - path: iMDTYPE
+        equals: 2
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: live_verified
+  - key: bSTIFFP
+    description: >-
+      강성 비례 여부
+    type: boolean
+    requirement: unstated
+    condition: "Mass & Stiffness Proportional 감쇠 추가 파라미터 (bDAMP=true, iMDTYPE=2)"
+    appliesWhen:
+      - path: bDAMP
+        equals: true
+      - path: iMDTYPE
+        equals: 2
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: live_verified
+  - key: MASSC
+    description: >-
+      질량 비례 계수 (iCOEF=1)
+    type: number
+    requirement: unstated
+    condition: "Mass & Stiffness Proportional 감쇠 추가 파라미터 (bDAMP=true, iMDTYPE=2); iCOEF=1"
+    appliesWhen:
+      - path: bDAMP
+        equals: true
+      - path: iMDTYPE
+        equals: 2
+      - path: iCOEF
+        equals: 1
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: live_verified
+  - key: STIFFC
+    description: >-
+      강성 비례 계수 (iCOEF=1)
+    type: number
+    requirement: unstated
+    condition: "Mass & Stiffness Proportional 감쇠 추가 파라미터 (bDAMP=true, iMDTYPE=2); iCOEF=1"
+    appliesWhen:
+      - path: bDAMP
+        equals: true
+      - path: iMDTYPE
+        equals: 2
+      - path: iCOEF
+        equals: 1
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: live_verified
+  - key: iCALC
+    description: >-
+      계산 방법 (1=주파수, 2=주기)
+    type: integer
+    requirement: unstated
+    condition: "Mass & Stiffness Proportional 감쇠 추가 파라미터 (bDAMP=true, iMDTYPE=2); iCOEF=2 시"
+    appliesWhen:
+      - path: bDAMP
+        equals: true
+      - path: iMDTYPE
+        equals: 2
+      - path: iCOEF
+        equals: 2
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: live_verified
+  - key: FP1
+    description: >-
+      모드1 주파수/주기
+    type: number
+    requirement: unstated
+    condition: "Mass & Stiffness Proportional 감쇠 추가 파라미터 (bDAMP=true, iMDTYPE=2); iCOEF=2 시"
+    appliesWhen:
+      - path: bDAMP
+        equals: true
+      - path: iMDTYPE
+        equals: 2
+      - path: iCOEF
+        equals: 2
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: live_verified
+  - key: FP2
+    description: >-
+      모드2 주파수/주기
+    type: number
+    requirement: unstated
+    condition: "Mass & Stiffness Proportional 감쇠 추가 파라미터 (bDAMP=true, iMDTYPE=2); iCOEF=2 시"
+    appliesWhen:
+      - path: bDAMP
+        equals: true
+      - path: iMDTYPE
+        equals: 2
+      - path: iCOEF
+        equals: 2
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: live_verified
+  - key: DR1
+    description: >-
+      모드1 감쇠비
+    type: number
+    requirement: unstated
+    condition: "Mass & Stiffness Proportional 감쇠 추가 파라미터 (bDAMP=true, iMDTYPE=2); iCOEF=2 시"
+    appliesWhen:
+      - path: bDAMP
+        equals: true
+      - path: iMDTYPE
+        equals: 2
+      - path: iCOEF
+        equals: 2
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: live_verified
+  - key: DR2
+    description: >-
+      모드2 감쇠비
+    type: number
+    requirement: unstated
+    condition: "Mass & Stiffness Proportional 감쇠 추가 파라미터 (bDAMP=true, iMDTYPE=2); iCOEF=2 시"
+    appliesWhen:
+      - path: bDAMP
+        equals: true
+      - path: iMDTYPE
+        equals: 2
+      - path: iCOEF
+        equals: 2
+    documentedDefault: null
+    documentedOptional: null
+    safeToOmit: unverified
+    provenance: live_verified
+    # The section's Modal and both Mass & Stiffness Request Bodies were sent
+    # as printed on both products on 2026-09-22 and read back unchanged.
+
+manualDefects:
+  - describes: requiredness
+    manualSays: >-
+      The accidental-eccentricity table marks rows 25-29 (bACCECC_AUTO,
+      ACCECC_PERCENT, bACCECC_CONSIDER_GL, bACCECC_MINIMUM_TORSION,
+      aACCECC_ECCEN_LIST) Required, and the non-dissipative table marks NDP
+      Required, each directly under the Boolean that turns the feature on and
+      with no condition.
+    actual: >-
+      None of them is required. With bACCECC left at its default a confirmed
+      round trip omits all five; with bACCECC=true and all five omitted the
+      POST is accepted and the record reads back with bACCECC_AUTO,
+      bACCECC_CONSIDER_GL and bACCECC_MINIMUM_TORSION supplied by the server.
+      bNDP=true without NDP is accepted too.
+    evidence: >-
+      scripts/live_manual_feedback.py --case c1 on Gen NX, 2026-09-22, and the
+      confirmed /db/SPLC case in scripts/live_crud_check.py; recorded in
+      docs/live_verification_notes.md and as MD-57 in
+      docs/manual_defects_register.md.
+
+sdkRules:
+  - id: db-splc-delete-per-id
+    kind: per_id_request
+    appliesTo: [DELETE]
+    variant: per_id
+    reason: >-
+      The manual's DELETE body form empties the whole table regardless of the
+      ids it names. Measured on /db/NODE, /db/STLD, /db/LDGR and /db/MATL and
+      treated as a property of /db/* DELETE, so an SDK's ordinary "delete these
+      ids" call must use the undocumented per-id URL. Requests go one at a time
+      and stop at the first failure.
+    riskRef: db-delete-body-empties-table
+    alternative: Emptying the table on purpose is the separate whole_table operation.
+  - id: db-splc-delete-all-confirmation
+    kind: require_confirmation
+    appliesTo: [DELETE]
+    variant: whole_table
+    reason: >-
+      Emptying the table cannot be undone through the API and raises no
+      product-side dialog.
+    riskRef: db-delete-body-empties-table
+    alternative: Use the per_id DELETE operation to remove selected records.
+
+knownDefects:
+  - ref: db-delete-body-empties-table
+
+extraction:
+  source: 09_DB_Dynamic_Loads.md line 625
+  table: 2-2. 파라미터
+  missingColumns:
+    - heading: Modal 감쇠 추가 파라미터
+      line: 648
+      columns: [Default]
+    - heading: "Mass & Stiffness Proportional 감쇠 추가 파라미터"
+      line: 657
+      columns: [Default]
+  structuralTables:
+    - heading: "우발 편심(Accidental Eccentricity) 파라미터"
+      line: 672
+      paths: [<root>]
+      note: >-
+        The manual marks this table GEN NX only, and GET /info/db/SPLC places
+        all of its members at record root. The product label is not a payload
+        branch.
+    - heading: 비소산 요소 설계 파라미터
+      line: 701
+      paths: [<root>]
+      note: >-
+        The manual marks this table GEN NX only, and GET /info/db/SPLC places
+        both members at record root. The product label is not a payload branch.

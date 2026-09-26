@@ -1,0 +1,180 @@
+# /DESIGN/RC/KDS-41-20-2022/WD-REPORT
+#
+# Drafted by scripts/extract_contracts.py from the official manual, then promoted
+# by scripts/promote_contract.py: products and verification status come from
+# docs/coverage.json's live record, not from the manual's framing. For /db/*
+# endpoints, the DELETE shape comes from measured /db/* DELETE behaviour.
+# safeToOmit is answered `true` only where a confirmed live payload actually
+# omitted the field.
+contractVersion: 1
+id: design-rc-kds-41-20-2022-wd-report
+endpoint: /DESIGN/RC/KDS-41-20-2022/WD-REPORT
+name: RC Wall Design Report
+
+products: [civil, gen]
+
+source:
+  manual:
+    status: documented
+    repo: Dennis5882/MIDAS-API
+    chapterFile: 26_Design_RC_KDS41202022.md
+    section: "50. `DESIGN/RC/KDS-41-20-2022/WD-REPORT` — RC Wall Design Report (RC 벽체 설계 리포트)"
+  liveNotes:
+    - docs/live_verification_notes.md
+
+verification:
+  status: verified_both
+  records:
+    - product: civil
+      ref: db-read-sweep-2026-08-10
+    - product: gen
+      ref: db-read-sweep-2026-08-10
+
+operations:
+  - method: POST
+    surface:
+      exportName: exportWallDesignReport
+      modulePath: [design, rcKds, designForces]
+      argumentTypeName: RcWallDesignReportArgument
+      documentation: |-
+        docs/manual/26_Design_RC_KDS41202022.md #50 — WD-REPORT — RC Wall
+        Design Report. Response: ``{"SUCCESS": bool, "FILE_PATH": str,
+        "MESSAGE": str}``.
+      nestedTypes:
+        - {path: SELECTIONS, name: RcWallDesignSelection, namespace: DesignRcKdsDesignForcesTypes}
+        - {path: SELECTIONS.WALL_IDS, name: RcWallIdsSelector, namespace: DesignRcKdsDesignForcesTypes}
+    risk: write
+    request:
+      wrapper: assign
+      itemSchema: fields
+    response:
+      wrapper: table
+      keyStability: stable
+
+fields:
+  - key: Argument
+    description: >-
+      Argument 래퍼
+    type: object
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: REPORT_TYPE
+    description: >-
+      리포트 타입 ("WID+STORY"/"WID")
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    enum: [WID+STORY, WID]
+    safeToOmit: unverified
+    provenance: manual
+  - key: CURRENT_MODE_WID_STORY
+    description: >-
+      출력 모드 (벽체+층, Detail 지원) — "Graphic"/"Detail"/"Summary"/"PMCurve"
+    type: string
+    requirement: conditional
+    condition: WID+STORY
+    documentedDefault: null
+    documentedOptional: false
+    enum: [Graphic, Detail, Summary, PMCurve]
+    safeToOmit: unverified
+    provenance: manual
+  - key: CURRENT_MODE_WID
+    description: >-
+      출력 모드 (벽체, Detail 미지원) — "Graphic"/"Summary"/"PMCurve"
+    type: string
+    requirement: conditional
+    condition: WID
+    documentedDefault: null
+    documentedOptional: false
+    enum: [Graphic, Summary, PMCurve]
+    safeToOmit: unverified
+    provenance: manual
+  - key: SELECTIONS
+    description: >-
+      벽체 ID · 층 조합 목록 (WALL_IDS+STORY, 생략 시 전체)
+    type: array
+    items:
+      type: object
+    requirement: optional
+    documentedDefault: null
+    documentedOptional: true
+    safeToOmit: unverified
+    provenance: manual
+    properties:
+      - key: WALL_IDS
+        description: >-
+          벽체 ID 지정
+        type: object
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+        properties:
+          - key: KEYS
+            description: >-
+              벽 ID 각각
+            type: array
+            items:
+              type: integer
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+            # From this section's JSON Schema (line 8810), which declares KEYS and TO
+            # under WALL_IDS; the Parameters table names them only in its description.
+          - key: TO
+            description: >-
+              벽 ID 범위 (예 "10to20")
+            type: string
+            requirement: optional
+            documentedDefault: null
+            documentedOptional: true
+            safeToOmit: unverified
+            provenance: manual
+      - key: STORY
+        description: >-
+          층 이름 목록
+        type: array
+        items:
+          type: string
+        requirement: optional
+        documentedDefault: null
+        documentedOptional: true
+        safeToOmit: unverified
+        provenance: manual
+      # WALL_IDS and STORY are from this section's JSON Schema (line 8810);
+      # the Parameters table lists SELECTIONS without its child rows.
+  - key: EXPORT_PATH
+    description: >-
+      저장 디렉터리 경로
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+  - key: OUTPUT_NAME
+    description: >-
+      출력 파일 기본 이름
+    type: string
+    requirement: required
+    documentedDefault: null
+    documentedOptional: false
+    safeToOmit: unverified
+    provenance: manual
+
+extraction:
+  prose:
+    - line: 8810
+      quote: >-
+        "KEYS": { "type": "array", "items": { "type": "integer" } },
+        "TO": { "type": "string" }
+      paths: [SELECTIONS.WALL_IDS, SELECTIONS.WALL_IDS.KEYS, SELECTIONS.WALL_IDS.TO, SELECTIONS.STORY]
+  source: 26_Design_RC_KDS41202022.md line 8827
+  table: 파라미터
